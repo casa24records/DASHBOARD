@@ -1,0 +1,163 @@
+:root {
+  --color-bg: #1a1a1a;
+  --color-text: #e0e0e0;
+  --color-accent: #ff9966;
+  --color-secondary: #6b7fd7;
+  --color-tertiary: #8c52ff;
+  --color-spotify: #1DB954;
+  --color-youtube: #FF0000;
+}
+
+body {
+  font-family: 'Space Mono', monospace;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  background-image: 
+    radial-gradient(rgba(255, 153, 102, 0.1) 2px, transparent 2px),
+    radial-gradient(rgba(107, 127, 215, 0.1) 2px, transparent 2px);
+  background-size: 40px 40px;
+  background-position: 0 0, 20px 20px;
+}
+
+h1, h2, h3, h4 {
+  font-family: 'VT323', monospace;
+  letter-spacing: 1px;
+}
+
+.retro-card {
+  background: rgba(26, 26, 26, 0.7);
+  border: 2px solid var(--color-accent);
+  box-shadow: 4px 4px 0px var(--color-accent);
+}
+
+.retro-btn {
+  transition: all 0.2s;
+}
+
+.retro-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0px var(--color-accent);
+}
+
+.retro-tab {
+  position: relative;
+  overflow: hidden;
+}
+
+.retro-tab::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--color-accent);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+  transform-origin: bottom left;
+}
+
+.retro-tab-active::after,
+.retro-tab:hover::after {
+  transform: scaleX(1);
+}
+
+.vinyl-bg {
+  position: relative;
+}
+
+.vinyl-bg::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(
+    circle,
+    #1a1a1a 20%,
+    rgba(26, 26, 26, 0.8) 21%,
+    rgba(26, 26, 26, 0.8) 40%,
+    #1a1a1a 41%,
+    #1a1a1a 60%,
+    rgba(26, 26, 26, 0.8) 61%
+  );
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.1;
+  z-index: -1;
+}
+
+.vinyl-decoration {
+  position: fixed;
+  top: -120px;
+  left: -120px;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(
+    circle,
+    #1a1a1a 15%,
+    var(--color-accent) 16%,
+    var(--color-accent) 17%,
+    #1a1a1a 18%,
+    #1a1a1a 19%,
+    var(--color-accent) 20%,
+    var(--color-accent) 21%,
+    #1a1a1a 22%,
+    #1a1a1a 30%,
+    var(--color-accent) 31%,
+    var(--color-accent) 32%,
+    #1a1a1a 33%
+  );
+  border-radius: 50%;
+  opacity: 0.1;
+  z-index: -1;
+}
+
+.cassette-decoration {
+  position: fixed;
+  bottom: -80px;
+  right: -80px;
+  width: 240px;
+  height: 150px;
+  background-color: rgba(255, 153, 102, 0.1);
+  border: 2px solid rgba(255, 153, 102, 0.2);
+  border-radius: 10px;
+  z-index: -1;
+  transform: rotate(-15deg);
+}
+
+.cassette-decoration::before,
+.cassette-decoration::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: rgba(26, 26, 26, 0.7);
+  border: 2px solid rgba(255, 153, 102, 0.3);
+  transform: translateY(-50%);
+}
+
+.cassette-decoration::before {
+  left: 40px;
+}
+
+.cassette-decoration::after {
+  right: 40px;
+}
+
+/* Custom chart stylings */
+.recharts-cartesian-grid line {
+  stroke: rgba(224, 224, 224, 0.1);
+}
+
+.recharts-text {
+  fill: var(--color-text);
+}
+
+.recharts-default-tooltip {
+  background-color: var(--color-bg) !important;
+  border-color: var(--color-accent) !important;
+}

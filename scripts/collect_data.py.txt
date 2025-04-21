@@ -1,0 +1,42 @@
+import base64
+import requests
+import json
+import pandas as pd
+from datetime import datetime
+import os
+
+# ------------------ CONFIGURATION ------------------
+
+# Spotify API Credentials
+CLIENT_ID = '737e719bb4c4413dab75709796eea4f5'
+CLIENT_SECRET = '2257b35c9acb46ea817f4a99cf833a8c'
+
+# YouTube API Key
+YOUTUBE_API_KEY = 'AIzaSyCgffLM7bMJ2vqw-VBGaNNJWkMQPEfNfgk'
+
+# List of artists with their platform IDs
+artists = [
+    {
+        'name': 'Casa 24',
+        'spotify_id': '2QpRYjtwNg9z6KwD4fhC5h',
+        'youtube_id': 'UCshvYG0n1I_gXbM8htuANAg',
+    },
+    {
+        'name': 'Chef Lino',
+        'spotify_id': '56tisU5xMB4CYyzG99hyBN',
+        'youtube_id': 'UCTH5Cs-r1YShzfARJLQ5Hzw',
+    },
+    {
+        'name': 'PYRO',
+        'spotify_id': '5BsYYsSnFsE9SoovY7aQV0',
+        'youtube_id': None,
+    },
+    {
+        'name': 'bo.wlie',
+        'spotify_id': '2DqDBHhQzNE3KHZq6yKG96',
+        'youtube_id': 'UCWnUHb8KCdprdkBBts9GxSA',
+    },
+    {
+        'name': 'Mango Blade',
+        'spotify_id': '4vYClJG7K1FGWMMalEW5Hg',
+        'youtube_id': 'UCkKr9JaItuEsGRn8QEy

@@ -1,0 +1,424 @@
+const { useState, useEffect } = React;
+const { 
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
+} = Recharts;
+
+// Colors for charts
+const COLORS = ['#ff9966', '#6b7fd7', '#8c52ff', '#1DB954', '#FF0000'];
+const SPOTIFY_COLOR = '#1DB954';
+const YOUTUBE_COLOR = '#FF0000';
+
+// Helper function to format large numbers
+const formatNumber = (num) => {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K';
+  }
+  return num;
+};
+
+function App() {
+  const [data, setData] = useState(null);
+  const [selectedArtist, setSelectedArtist] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState('artist');
+
+  useEffect(() => {
+    // Fetch the data from the JSON file
+    fetch('data/latest.json')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(jsonData => {
+        setData(jsonData);
+        // Set the first artist as selected by default
+        if (jsonData.artists && jsonData.artists.length > 0) {
+          setSelectedArtist(jsonData.artists[0].name);
+        }
+        setLoading(false);
+      })
+      .catch(error => {
+        setError(error.message);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-pulse text-center">
+          <div className="text-4xl font-bold mb-3 text-accent">LOADING VIBES...</div>
+          <div className="text-lg text-gray-400">Dusting off the vinyl records...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-red-500 p-4">Error loading data: {error}</div>;
+  }
+
+  if (!data || !data.artists || data.artists.length === 0) {
+    return <div className="p-4">No artist data available.</div>;
+  }
+
+  // Get current artist data
+  const currentArtistData = data.artists.find(artist => artist.name === selectedArtist) || data.artists[0];
+
+  // Calculate collective totals
+  const collectiveTotals = data.artists.reduce((acc, artist) => {
+    acc.spotify.followers += artist.spotify.followers || 0;
+    acc.spotify.popularity_score += artist.spotify.popularity_score || 0;
+    acc.youtube.subscribers += artist.youtube.subscribers || 0;
+    acc.youtube.total_views += artist.youtube.total_views || 0;
+    acc.youtube.video_count += artist.youtube.video_count || 0;
+    return acc;
+  }, {
+    spotify: { followers: 0, popularity_score: 0 },
+    youtube: { subscribers: 0, total_views: 0, video_count: 0 }
+  });
+
+  // Prepare data for charts
+  const followerData = [
+    { name: 'Spotify', value: currentArtistData.spotify.followers || 0, color: SPOTIFY_COLOR },
+    { name: 'YouTube', value: currentArtistData.youtube.subscribers || 0, color: YOUTUBE_COLOR }
+  ].filter(item => item.value > 0);
+
+  // Prepare top tracks data
+  const topTracks = currentArtistData.spotify.top_tracks || [];
+  const topTracksData = topTracks.map(track => ({
+    name: track.name,
+    popularity: track.popularity
+  }));
+
+  // Prepare data for artist comparison
+  const artistComparisonData = data.artists.map(artist => ({
+    name: artist.name,
+    spotify: artist.spotify.followers || 0,
+    youtube: artist.youtube.subscribers || 0
+  }));
+
+  return (
+    <div className="max-w-7xl mx-auto">
+      <header className="mb-8 text-center">
+        <h1 className="text-5xl font-bold text-accent mb-2">Casa 24 Records</h1>
+        <p className="text-xl text-gray-400">Vinyl Vibes Analytics Dashboard</p>
+        <p className="text-sm text-gray-500 mt-1">Last updated: {data.date}</p>
+      </header>
+
+      <div className="mb-8">
+        <div className="border-b border-gray-700">
+          <nav className="-mb-px flex space-x-8 justify-center">
+            <a 
+              href="#artist"
+              className={`py-4 px-1 font-medium text-lg retro-tab ${
+                activeTab === 'artist' ? 'text-accent retro-tab-active' : 'text-gray-400'
+              }`}
+              onClick={(e) => { e.preventDefault(); setActiveTab('artist'); }}
+            >
+              Artist Analytics
+            </a>
+            <a 
+              href="#collective"
+              className={`py-4 px-1 font-medium text-lg retro-tab ${
+                activeTab === 'collective' ? 'text-accent retro-tab-active' : 'text-gray-400'
+              }`}
+              onClick={(e) => { e.preventDefault(); setActiveTab('collective'); }}
+            >
+              Collective Overview
+            </a>
+          </nav>
+        </div>
+      </div>
+
+      {activeTab === 'artist' && (
+        <div>
+          <div className="mb-8 flex justify-between items-center">
+            <h2 className="text-3xl font-bold text-accent">Artist Performance</h2>
+            <select 
+              className="bg-gray-800 border-2 border-accent text-white py-2 px-4 rounded retro-btn"
+              value={selectedArtist || ''}
+              onChange={(e) => setSelectedArtist(e.target.value)}
+              style={{
+                WebkitAppearance: "none",
+                appearance: "none",
+                backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23ff9966'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E\")",
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 0.7rem top 50%",
+                backgroundSize: "1.5rem auto",
+                paddingRight: "2.5rem"
+              }}
+            >
+              {data.artists.map((artist, index) => (
+                <option key={index} value={artist.name}>
+                  {artist.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Spotify Followers Card */}
+            <div className="retro-card p-6 rounded-lg">
+              <h3 className="text-lg text-gray-400 mb-1">Spotify Followers</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-spotify mr-2"></div>
+                <div className="text-3xl font-bold">{formatNumber(currentArtistData.spotify.followers || 0)}</div>
+              </div>
+            </div>
+
+            {/* Spotify Popularity Card */}
+            <div className="retro-card p-6 rounded-lg">
+              <h3 className="text-lg text-gray-400 mb-1">Spotify Popularity</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-spotify mr-2"></div>
+                <div className="text-3xl font-bold">{currentArtistData.spotify.popularity_score || 0}</div>
+                <div className="text-xl ml-1">/100</div>
+              </div>
+            </div>
+
+            {/* YouTube Subscribers Card */}
+            <div className="retro-card p-6 rounded-lg">
+              <h3 className="text-lg text-gray-400 mb-1">YouTube Subscribers</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-youtube mr-2"></div>
+                <div className="text-3xl font-bold">{formatNumber(currentArtistData.youtube.subscribers || 0)}</div>
+              </div>
+            </div>
+
+            {/* YouTube Views Card */}
+            <div className="retro-card p-6 rounded-lg">
+              <h3 className="text-lg text-gray-400 mb-1">YouTube Views</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-youtube mr-2"></div>
+                <div className="text-3xl font-bold">{formatNumber(currentArtistData.youtube.total_views || 0)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Follower Distribution Chart */}
+            <div className="retro-card p-6 rounded-lg">
+              <h3 className="text-2xl font-bold mb-4">Follower Distribution</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={followerData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({name, percent}) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {followerData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => formatNumber(value)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Top Tracks Chart */}
+            <div className="retro-card p-6 rounded-lg">
+              <h3 className="text-2xl font-bold mb-4">Top Tracks</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={topTracksData}
+                    layout="vertical"
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis type="number" domain={[0, 100]} stroke="#e0e0e0" />
+                    <YAxis dataKey="name" type="category" width={120} stroke="#e0e0e0" />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1a1a1a', 
+                        border: '1px solid #ff9966',
+                        borderRadius: '4px' 
+                      }}
+                    />
+                    <Bar dataKey="popularity" fill="#ff9966" name="Popularity" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* YouTube Stats */}
+          {currentArtistData.youtube.video_count > 0 && (
+            <div className="retro-card p-6 rounded-lg mb-8">
+              <h3 className="text-2xl font-bold mb-4">YouTube Performance</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center p-4 border border-youtube rounded-lg">
+                  <h4 className="text-lg text-gray-400 mb-2">Total Videos</h4>
+                  <p className="text-3xl font-bold">{currentArtistData.youtube.video_count}</p>
+                </div>
+                <div className="text-center p-4 border border-youtube rounded-lg">
+                  <h4 className="text-lg text-gray-400 mb-2">Total Views</h4>
+                  <p className="text-3xl font-bold">{formatNumber(currentArtistData.youtube.total_views)}</p>
+                </div>
+                <div className="text-center p-4 border border-youtube rounded-lg">
+                  <h4 className="text-lg text-gray-400 mb-2">Avg. Views/Video</h4>
+                  <p className="text-3xl font-bold">
+                    {formatNumber(
+                      Math.round(
+                        currentArtistData.youtube.total_views / currentArtistData.youtube.video_count
+                      ) || 0
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'collective' && (
+        <div>
+          <h2 className="text-3xl font-bold text-accent mb-8">Collective Overview</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Total Artists Card */}
+            <div className="retro-card p-6 rounded-lg">
+              <h3 className="text-lg text-gray-400 mb-1">Total Artists</h3>
+              <div className="text-3xl font-bold">{data.artists.length}</div>
+            </div>
+
+            {/* Total Spotify Followers Card */}
+            <div className="retro-card p-6 rounded-lg">
+              <h3 className="text-lg text-gray-400 mb-1">Total Spotify Followers</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-spotify mr-2"></div>
+                <div className="text-3xl font-bold">{formatNumber(collectiveTotals.spotify.followers)}</div>
+              </div>
+            </div>
+
+            {/* Total YouTube Subscribers Card */}
+            <div className="retro-card p-6 rounded-lg">
+              <h3 className="text-lg text-gray-400 mb-1">Total YouTube Subscribers</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-youtube mr-2"></div>
+                <div className="text-3xl font-bold">{formatNumber(collectiveTotals.youtube.subscribers)}</div>
+              </div>
+            </div>
+
+            {/* Total YouTube Views Card */}
+            <div className="retro-card p-6 rounded-lg">
+              <h3 className="text-lg text-gray-400 mb-1">Total YouTube Views</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full bg-youtube mr-2"></div>
+                <div className="text-3xl font-bold">{formatNumber(collectiveTotals.youtube.total_views)}</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Artist Comparison - Spotify */}
+            <div className="retro-card p-6 rounded-lg">
+              <h3 className="text-2xl font-bold mb-4">Spotify Followers by Artist</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={artistComparisonData}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="name" stroke="#e0e0e0" />
+                    <YAxis stroke="#e0e0e0" />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1a1a1a', 
+                        border: '1px solid #ff9966',
+                        borderRadius: '4px' 
+                      }}
+                      formatter={(value) => formatNumber(value)} 
+                    />
+                    <Bar dataKey="spotify" fill={SPOTIFY_COLOR} name="Spotify Followers" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Artist Comparison - YouTube */}
+            <div className="retro-card p-6 rounded-lg">
+              <h3 className="text-2xl font-bold mb-4">YouTube Subscribers by Artist</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={artistComparisonData}
+                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis dataKey="name" stroke="#e0e0e0" />
+                    <YAxis stroke="#e0e0e0" />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#1a1a1a', 
+                        border: '1px solid #ff9966',
+                        borderRadius: '4px' 
+                      }}
+                      formatter={(value) => formatNumber(value)} 
+                    />
+                    <Bar dataKey="youtube" fill={YOUTUBE_COLOR} name="YouTube Subscribers" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Platform Distribution */}
+          <div className="retro-card p-6 rounded-lg mb-8">
+            <h3 className="text-2xl font-bold mb-4">Platform Distribution</h3>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={data.artists.filter(artist => artist.spotify.followers > 0 || artist.youtube.subscribers > 0)}
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                  <XAxis dataKey="name" stroke="#e0e0e0" />
+                  <YAxis stroke="#e0e0e0" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1a1a1a', 
+                      border: '1px solid #ff9966',
+                      borderRadius: '4px' 
+                    }}
+                    formatter={(value) => formatNumber(value)} 
+                  />
+                  <Legend />
+                  <Bar dataKey="spotify.followers" name="Spotify" fill={SPOTIFY_COLOR} stackId="a" />
+                  <Bar dataKey="youtube.subscribers" name="YouTube" fill={YOUTUBE_COLOR} stackId="a" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <footer className="mt-12 pt-6 border-t border-gray-700 text-center text-gray-500">
+        <p className="text-lg">Casa 24 Records Analytics Dashboard</p>
+        <p className="text-sm mt-1 mb-6">Keeping it old school since 2023</p>
+      </footer>
+    </div>
+  );
+}
+
+ReactDOM.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+  document.getElementById('root')
+);
