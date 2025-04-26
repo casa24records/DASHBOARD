@@ -1,0 +1,284 @@
+{
+  "date": "2025-04-26",
+  "artists": [
+    {
+      "name": "Casa 24",
+      "spotify": {
+        "popularity_score": 7,
+        "followers": 334,
+        "genres": [],
+        "top_tracks": [
+          {
+            "name": "Miradita Bob-Esponja",
+            "popularity": 9,
+            "preview_url": null
+          },
+          {
+            "name": "Facil Relajado",
+            "popularity": 8,
+            "preview_url": null
+          },
+          {
+            "name": "Fuck Not Attempting",
+            "popularity": 6,
+            "preview_url": null
+          },
+          {
+            "name": "Lo Q Env Quiero (Real Shit)",
+            "popularity": 5,
+            "preview_url": null
+          },
+          {
+            "name": "Tiempos Mejores",
+            "popularity": 5,
+            "preview_url": null
+          }
+        ]
+      },
+      "youtube": {
+        "subscribers": 621,
+        "total_views": 28554,
+        "video_count": 94
+      }
+    },
+    {
+      "name": "Chef Lino",
+      "spotify": {
+        "popularity_score": 5,
+        "followers": 251,
+        "genres": [
+          "latin hip hop"
+        ],
+        "top_tracks": [
+          {
+            "name": "Miradita Bob-Esponja",
+            "popularity": 9,
+            "preview_url": null
+          },
+          {
+            "name": "Facil Relajado",
+            "popularity": 8,
+            "preview_url": null
+          },
+          {
+            "name": "Lo Q Env Quiero (Real Shit)",
+            "popularity": 5,
+            "preview_url": null
+          },
+          {
+            "name": "Tiempos Mejores",
+            "popularity": 5,
+            "preview_url": null
+          },
+          {
+            "name": "Presidente Extraterrestre",
+            "popularity": 5,
+            "preview_url": null
+          }
+        ]
+      },
+      "youtube": {
+        "subscribers": 13,
+        "total_views": 128,
+        "video_count": 3
+      }
+    },
+    {
+      "name": "PYRO",
+      "spotify": {
+        "popularity_score": 2,
+        "followers": 154,
+        "genres": [],
+        "top_tracks": [
+          {
+            "name": "Fuck Not Attempting",
+            "popularity": 6,
+            "preview_url": null
+          },
+          {
+            "name": "Las Nubes",
+            "popularity": 5,
+            "preview_url": null
+          },
+          {
+            "name": "Atando Los Cabos",
+            "popularity": 4,
+            "preview_url": null
+          },
+          {
+            "name": "Irresistible",
+            "popularity": 0,
+            "preview_url": null
+          },
+          {
+            "name": "En Busca De La Luz",
+            "popularity": 0,
+            "preview_url": null
+          }
+        ]
+      },
+      "youtube": {
+        "subscribers": 0,
+        "total_views": 0,
+        "video_count": 0
+      }
+    },
+    {
+      "name": "bo.wlie",
+      "spotify": {
+        "popularity_score": 0,
+        "followers": 87,
+        "genres": [],
+        "top_tracks": [
+          {
+            "name": "2ds4u",
+            "popularity": 0,
+            "preview_url": null
+          },
+          {
+            "name": "PIKMIN BEAT",
+            "popularity": 0,
+            "preview_url": null
+          },
+          {
+            "name": "ATE MY WEIGHT IN OLIVE LEAVES",
+            "popularity": 0,
+            "preview_url": null
+          }
+        ]
+      },
+      "youtube": {
+        "subscribers": 95,
+        "total_views": 13627,
+        "video_count": 71
+      }
+    },
+    {
+      "name": "Mango Blade",
+      "spotify": {
+        "popularity_score": 1,
+        "followers": 129,
+        "genres": [],
+        "top_tracks": [
+          {
+            "name": "Japon",
+            "popularity": 6,
+            "preview_url": null
+          },
+          {
+            "name": "Cigarrillos en el Cenicero",
+            "popularity": 1,
+            "preview_url": null
+          },
+          {
+            "name": "K\u00f3be",
+            "popularity": 0,
+            "preview_url": null
+          },
+          {
+            "name": "Scorsese",
+            "popularity": 0,
+            "preview_url": null
+          },
+          {
+            "name": "Cherry Trees",
+            "popularity": 0,
+            "preview_url": null
+          }
+        ]
+      },
+      "youtube": {
+        "subscribers": 5,
+        "total_views": 0,
+        "video_count": 0
+      }
+    },
+    {
+      "name": "ZACKO",
+      "spotify": {
+        "popularity_score": 0,
+        "followers": 7,
+        "genres": [],
+        "top_tracks": []
+      },
+      "youtube": {
+        "subscribers": 0,
+        "total_views": 0,
+        "video_count": 0
+      }
+    },
+    {
+      "name": "pax",
+      "spotify": {
+        "popularity_score": 0,
+        "followers": 5,
+        "genres": [
+          "shoegaze",
+          "post-punk"
+        ],
+        "top_tracks": [
+          {
+            "name": "A song for a Bird",
+            "popularity": 0,
+            "preview_url": null
+          },
+          {
+            "name": "deep within yourself",
+            "popularity": 0,
+            "preview_url": null
+          },
+          {
+            "name": "A7C7E7 (Pastel Blue)",
+            "popularity": 0,
+            "preview_url": null
+          }
+        ]
+      },
+      "youtube": {
+        "subscribers": 0,
+        "total_views": 0,
+        "video_count": 0
+      }
+    },
+    {
+      "name": "ARANDA",
+      "spotify": {
+        "popularity_score": 0,
+        "followers": 99,
+        "genres": [],
+        "top_tracks": [
+          {
+            "name": "Mi Oasis",
+            "popularity": 0,
+            "preview_url": null
+          },
+          {
+            "name": "Wipe my Life Away",
+            "popularity": 0,
+            "preview_url": null
+          },
+          {
+            "name": "no quiero volver a mi casa",
+            "popularity": 0,
+            "preview_url": null
+          },
+          {
+            "name": "que hubiera sido",
+            "popularity": 0,
+            "preview_url": null
+          },
+          {
+            "name": "1020",
+            "popularity": 0,
+            "preview_url": null
+          }
+        ]
+      },
+      "youtube": {
+        "subscribers": 0,
+        "total_views": 0,
+        "video_count": 0
+      }
+    }
+  ]
+}
