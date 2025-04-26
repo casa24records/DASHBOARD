@@ -9,18 +9,27 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=VT323&family=Space+Mono&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  
+  <!-- Load React libraries locally -->
+  <script src="libs/react/react.production.min.js"></script>
+  <script src="libs/react-dom/react-dom.production.min.js"></script>
+  
+  <!-- Load D3 dependencies locally -->
+  <script src="libs/recharts/d3-array.min.js"></script>
+  <script src="libs/recharts/d3-scale.min.js"></script>
+  <script src="libs/recharts/d3-shape.min.js"></script>
+  
+  <!-- Load Recharts locally -->
+  <script src="libs/recharts/Recharts.js"></script>
+  
+  <!-- Load Babel locally -->
+  <script src="libs/babel/babel.min.js"></script>
 </head>
 <body>
   <div class="cassette-decoration"></div>
   <div class="vinyl-decoration"></div>
   
   <div id="root" class="min-h-screen p-6 vinyl-bg"></div>
-  
-  <!-- Libraries -->
-  <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/recharts@2.5.0/umd/Recharts.js"></script>
-  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
   
   <!-- Application Code -->
   <script type="text/babel" src="app.js"></script>
