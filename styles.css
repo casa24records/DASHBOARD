@@ -1,7 +1,7 @@
 :root {
   --color-bg: #1a1a1a;
   --color-text: #e0e0e0;
-  --color-accent: #ff9966;
+  --color-accent: #00a651; /* Changed from #ff9966 to green */
   --color-secondary: #6b7fd7;
   --color-tertiary: #8c52ff;
   --color-spotify: #1DB954;
@@ -13,7 +13,7 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
   background-image: 
-    radial-gradient(rgba(255, 153, 102, 0.1) 2px, transparent 2px),
+    radial-gradient(rgba(0, 166, 81, 0.1) 2px, transparent 2px),
     radial-gradient(rgba(107, 127, 215, 0.1) 2px, transparent 2px);
   background-size: 40px 40px;
   background-position: 0 0, 20px 20px;
@@ -120,8 +120,8 @@ h1, h2, h3, h4 {
   right: -80px;
   width: 240px;
   height: 150px;
-  background-color: rgba(255, 153, 102, 0.1);
-  border: 2px solid rgba(255, 153, 102, 0.2);
+  background-color: rgba(0, 166, 81, 0.1);
+  border: 2px solid rgba(0, 166, 81, 0.2);
   border-radius: 10px;
   z-index: -1;
   transform: rotate(-15deg);
@@ -136,7 +136,7 @@ h1, h2, h3, h4 {
   height: 50px;
   border-radius: 50%;
   background-color: rgba(26, 26, 26, 0.7);
-  border: 2px solid rgba(255, 153, 102, 0.3);
+  border: 2px solid rgba(0, 166, 81, 0.3);
   transform: translateY(-50%);
 }
 
@@ -160,4 +160,17 @@ h1, h2, h3, h4 {
 .recharts-default-tooltip {
   background-color: var(--color-bg) !important;
   border-color: var(--color-accent) !important;
+}
+
+/* Adding Casa24 brand colors */
+.bg-casa24 {
+  background-color: #00a651;
+}
+
+.text-casa24 {
+  color: #00a651;
+}
+
+.border-casa24 {
+  border-color: #00a651;
 }
