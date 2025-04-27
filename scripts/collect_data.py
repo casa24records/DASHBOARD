@@ -12,7 +12,9 @@ CLIENT_ID = '737e719bb4c4413dab75709796eea4f5'
 CLIENT_SECRET = '2257b35c9acb46ea817f4a99cf833a8c'
 
 # YouTube API Key
-YOUTUBE_API_KEY = 'AIzaSyCgffLM7bMJ2vqw-VBGaNNJWkMQPEfNfgk'
+import os
+YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY', '')  # Fallback to empty string if not set
+
 
 # List of artists with their platform IDs - matching your original list exactly
 artists = [
