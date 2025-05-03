@@ -286,31 +286,6 @@ function App() {
             <h2 className="text-4xl font-bold" style={{color: "#00a651"}}>LIFE@24</h2>
           </div>
 
-          {/* Magazine Sort Options */}
-          <div className="flex justify-center mb-6">
-            <div className="bg-gray-800 rounded-lg p-1 inline-flex">
-              <button 
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  magazineSort === 'newest' 
-                    ? 'bg-green-600 text-white' 
-                    : 'text-gray-400 hover:bg-gray-700'
-                }`}
-                onClick={() => setMagazineSort('newest')}
-              >
-                Newest First
-              </button>
-              <button 
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  magazineSort === 'oldest' 
-                    ? 'bg-green-600 text-white' 
-                    : 'text-gray-400 hover:bg-gray-700'}`}
-                onClick={() => setMagazineSort('oldest')}
-              >
-                Oldest First
-              </button>
-            </div>
-          </div>
-
           {!magazineData || !magazineData.magazines || magazineData.magazines.length === 0 ? (
             <div className="p-6 rounded-lg mb-8" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
               <p className="text-center py-8 text-gray-400">No magazine issues are currently available.</p>
@@ -378,7 +353,7 @@ function App() {
                     Open in Drive
                   </a>
                   <a 
-                    href={`pdfs/${selectedMagazine.name}`} 
+                    href={selectedMagazine.url.replace('view', 'download')} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
@@ -387,7 +362,7 @@ function App() {
                     Download
                   </a>
                   <button 
-                    onClick={() => window.print()}
+                    onClick={() => window.open(selectedMagazine.url + '&printable=true')}
                     className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
                     style={{border: "1px solid #00a651"}}
                   >
