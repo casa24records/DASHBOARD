@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 import googleapiclient.errors
 
-# Import Google libraries
+# For GitHub Actions environment
 try:
     from google.oauth2.credentials import Credentials
     from googleapiclient.discovery import build
@@ -104,20 +104,18 @@ def get_credentials():
         
     creds = None
     
-    # Check if credentials file exists (GitHub Actions creates this from secrets)
+    # Check if credential files exist (created by GitHub Actions)
     if os.path.exists('credentials.json') and os.path.exists('token.json'):
-        print("Using credentials from files created by GitHub Actions")
+        print("Using credentials from files")
         try:
-            # Load credentials from token file
             creds = Credentials.from_authorized_user_info(
-                json.loads(open('token.json', 'r').read()), SCOPES)
+                json.loads(open('token.json').read()), SCOPES)
                 
             # If credentials are expired but we have a refresh token, refresh them
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
-                
         except Exception as e:
-            print(f"Error loading credentials from files: {e}")
+            print(f"Error loading token.json: {e}")
             return None
     else:
         print("No credential files found")
@@ -156,87 +154,3 @@ def get_files_from_folder(service, folder_id):
                     date_part = name.split('[')[1].split(']')[0]
                     
                     # Handle month abbreviations
-                    if 'DIC' in date_part.upper():
-                        month = 12
-                    elif 'ENE' in date_part.upper():
-                        month = 1
-                    elif 'FEB' in date_part.upper():
-                        month = 2
-                    else:
-                        month = 1  # Default
-                    
-                    # Extract the first day
-                    day_part = date_part.split('-')[0].strip()
-                    day = int(''.join(filter(str.isdigit, day_part)))
-                    
-                    # Use 2024 for December, 2025 for January and February
-                    year = 2024 if month == 12 else 2025
-                    
-                    pub_date = f"{year}-{month:02d}-{day:02d}"
-                else:
-                    # Use creation date as fallback
-                    pub_date = item['createdTime'].split('T')[0]
-            except Exception as e:
-                print(f"Error extracting date from '{name}': {e}")
-                # Default to created time if parsing fails
-                pub_date = item['createdTime'].split('T')[0]
-            
-            print(f"Processing: {name} with date {pub_date}")
-            
-            magazines.append({
-                'id': item['id'],
-                'name': name,
-                'date': pub_date,
-                'url': item['webViewLink'],
-                'thumbnail': item.get('thumbnailLink', '')
-            })
-        
-        # Sort magazines by date (newest first)
-        magazines.sort(key=lambda x: x['date'], reverse=True)
-        return magazines
-        
-    except Exception as error:
-        print(f"Error getting files: {error}")
-        return []
-
-def main():
-    """Fetch all PDF magazines from the specified Google Drive folder."""
-    # Create directory if it doesn't exist
-    os.makedirs('data/magazines', exist_ok=True)
-    today = datetime.now().strftime('%Y-%m-%d')
-    output_path = 'data/magazines/latest.json'
-    
-    try:
-        # Get credentials
-        creds = get_credentials()
-        
-        if not creds:
-            print("Failed to get valid credentials, using dummy magazine data")
-            magazines = create_dummy_magazines()
-        else:
-            # Create drive service
-            service = build('drive', 'v3', credentials=creds)
-            
-            # Fetch magazines
-            magazines = get_files_from_folder(service, FOLDER_ID)
-            
-            # If no magazines found, use dummy data
-            if not magazines:
-                print("No magazines found, using dummy data instead")
-                magazines = create_dummy_magazines()
-    except Exception as e:
-        print(f"Error occurred: {e}")
-        print("Using dummy magazine data")
-        magazines = create_dummy_magazines()
-    
-    # Save to JSON file
-    with open(output_path, 'w') as f:
-        json.dump({
-            'date': today,
-            'magazines': magazines
-        }, f, indent=2)
-    
-    print(f"Saved {len(magazines)} magazines to {output_path}")
-
-if __name__ == '__main__':
-    main()

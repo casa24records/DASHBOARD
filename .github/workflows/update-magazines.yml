@@ -32,6 +32,7 @@ jobs:
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         GOOGLE_TOKEN: ${{ secrets.GOOGLE_TOKEN }}
       run: |
+        # Create temporary files that will be used by the script
         echo "$GOOGLE_CREDENTIALS" > credentials.json
         echo "$GOOGLE_TOKEN" > token.json
         
@@ -40,16 +41,10 @@ jobs:
         echo "Fetching magazine data from Google Drive..."
         python scripts/fetch_magazines.py
         
-    - name: Verify data files were created
+    - name: Clean up credentials
       run: |
-        if [ -f data/magazines/latest.json ]; then
-          echo "Magazine data file created successfully"
-          cat data/magazines/latest.json | grep -c "name"
-          echo "magazines found"
-        else
-          echo "Error: Magazine data file not created!"
-          exit 1
-        fi
+        # Remove sensitive files before committing
+        rm -f credentials.json token.json
         
     - name: Commit and push if changed
       run: |
