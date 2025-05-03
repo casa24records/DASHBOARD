@@ -136,16 +136,6 @@ function App() {
               Artist Analytics
             </a>
             <a 
-              href="#life"
-              className={`py-4 px-1 font-medium text-lg ${
-                activeTab === 'life' ? 'text-accent' : 'text-gray-400'
-              }`}
-              style={{color: activeTab === 'life' ? "#00a651" : ""}}
-              onClick={(e) => { e.preventDefault(); setActiveTab('life'); }}
-            >
-              LIFE@24
-            </a>
-            <a 
               href="#collective"
               className={`py-4 px-1 font-medium text-lg ${
                 activeTab === 'collective' ? 'text-accent' : 'text-gray-400'
@@ -154,6 +144,16 @@ function App() {
               onClick={(e) => { e.preventDefault(); setActiveTab('collective'); }}
             >
               Collective Overview
+            </a>
+            <a 
+              href="#life"
+              className={`py-4 px-1 font-medium text-lg ${
+                activeTab === 'life' ? 'text-accent' : 'text-gray-400'
+              }`}
+              style={{color: activeTab === 'life' ? "#00a651" : ""}}
+              onClick={(e) => { e.preventDefault(); setActiveTab('life'); }}
+            >
+              LIFE@24
             </a>
           </nav>
         </div>
@@ -280,6 +280,76 @@ function App() {
         </div>
       )}
 
+      {activeTab === 'collective' && (
+        <div>
+          <h2 className="text-3xl font-bold mb-8" style={{color: "#00a651"}}>Collective Overview</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* Total Artists Card */}
+            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+              <h3 className="text-lg text-gray-400 mb-1">Total Artists</h3>
+              <div className="text-3xl font-bold">{data.artists.length}</div>
+            </div>
+
+            {/* Total Spotify Followers Card */}
+            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+              <h3 className="text-lg text-gray-400 mb-1">Total Spotify Followers</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
+                <div className="text-3xl font-bold">{formatNumber(collectiveTotals.spotify.followers)}</div>
+              </div>
+            </div>
+
+            {/* Total YouTube Subscribers Card */}
+            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+              <h3 className="text-lg text-gray-400 mb-1">Total YouTube Subscribers</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
+                <div className="text-3xl font-bold">{formatNumber(collectiveTotals.youtube.subscribers)}</div>
+              </div>
+            </div>
+
+            {/* Total YouTube Views Card */}
+            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+              <h3 className="text-lg text-gray-400 mb-1">Total YouTube Views</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
+                <div className="text-3xl font-bold">{formatNumber(collectiveTotals.youtube.total_views)}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Artist Comparison Table */}
+          <div className="p-6 rounded-lg mb-8" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+            <h3 className="text-2xl font-bold mb-4">Artist Comparison</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left pb-2">Artist</th>
+                    <th className="text-right pb-2">Spotify Followers</th>
+                    <th className="text-right pb-2">Spotify Popularity</th>
+                    <th className="text-right pb-2">YouTube Subscribers</th>
+                    <th className="text-right pb-2">YouTube Views</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.artists.map((artist, index) => (
+                    <tr key={index} className="border-b border-gray-700">
+                      <td className="py-3 font-medium">{artist.name}</td>
+                      <td className="text-right">{formatNumber(artist.spotify.followers || 0)}</td>
+                      <td className="text-right">{artist.spotify.popularity_score || 0}/100</td>
+                      <td className="text-right">{formatNumber(artist.youtube.subscribers || 0)}</td>
+                      <td className="text-right">{formatNumber(artist.youtube.total_views || 0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
       {activeTab === 'life' && (
         <div>
           <div className="text-center mb-12">
@@ -372,76 +442,6 @@ function App() {
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {activeTab === 'collective' && (
-        <div>
-          <h2 className="text-3xl font-bold mb-8" style={{color: "#00a651"}}>Collective Overview</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {/* Total Artists Card */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-lg text-gray-400 mb-1">Total Artists</h3>
-              <div className="text-3xl font-bold">{data.artists.length}</div>
-            </div>
-
-            {/* Total Spotify Followers Card */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-lg text-gray-400 mb-1">Total Spotify Followers</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
-                <div className="text-3xl font-bold">{formatNumber(collectiveTotals.spotify.followers)}</div>
-              </div>
-            </div>
-
-            {/* Total YouTube Subscribers Card */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-lg text-gray-400 mb-1">Total YouTube Subscribers</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
-                <div className="text-3xl font-bold">{formatNumber(collectiveTotals.youtube.subscribers)}</div>
-              </div>
-            </div>
-
-            {/* Total YouTube Views Card */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-lg text-gray-400 mb-1">Total YouTube Views</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
-                <div className="text-3xl font-bold">{formatNumber(collectiveTotals.youtube.total_views)}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Artist Comparison Table */}
-          <div className="p-6 rounded-lg mb-8" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-            <h3 className="text-2xl font-bold mb-4">Artist Comparison</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left pb-2">Artist</th>
-                    <th className="text-right pb-2">Spotify Followers</th>
-                    <th className="text-right pb-2">Spotify Popularity</th>
-                    <th className="text-right pb-2">YouTube Subscribers</th>
-                    <th className="text-right pb-2">YouTube Views</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.artists.map((artist, index) => (
-                    <tr key={index} className="border-b border-gray-700">
-                      <td className="py-3 font-medium">{artist.name}</td>
-                      <td className="text-right">{formatNumber(artist.spotify.followers || 0)}</td>
-                      <td className="text-right">{artist.spotify.popularity_score || 0}/100</td>
-                      <td className="text-right">{formatNumber(artist.youtube.subscribers || 0)}</td>
-                      <td className="text-right">{formatNumber(artist.youtube.total_views || 0)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
       )}
 
