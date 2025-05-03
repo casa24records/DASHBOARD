@@ -1,11 +1,15 @@
-name: Update Magazines Data
+name: Update Magazines
 
 on:
-  schedule:
-    # Run daily at midnight UTC
-    - cron: '0 0 * * *'
-  # Allow manual triggering
+  # Run on push to the scripts folder
+  push:
+    paths:
+      - 'scripts/fetch_magazines.py'
+  # Allow manual trigger
   workflow_dispatch:
+  # Run on a schedule (twice per week - Monday and Thursday at 8am UTC)
+  schedule:
+    - cron: '0 8 * * 1,4'
 
 jobs:
   update-magazines:
@@ -13,33 +17,41 @@ jobs:
     
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
-        python-version: '3.9'
+        python-version: '3.10'
         
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
         
-    - name: Set up credentials
+    - name: Fetch magazine data
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
         GOOGLE_TOKEN: ${{ secrets.GOOGLE_TOKEN }}
       run: |
-        echo "$GOOGLE_CREDENTIALS" > credentials.json
-        echo "$GOOGLE_TOKEN" > token.json
+        echo "Fetching magazine data from Google Drive..."
+        python scripts/fetch_magazines.py
         
-    - name: Run magazine fetch script
-      run: python scripts/fetch_magazines.py
+    - name: Verify data files were created
+      run: |
+        if [ -f data/magazines/latest.json ]; then
+          echo "Magazine data file created successfully"
+          cat data/magazines/latest.json | grep -c "name"
+          echo "magazines found"
+        else
+          echo "Error: Magazine data file not created!"
+          exit 1
+        fi
         
     - name: Commit and push if changed
       run: |
-        git config --global user.email "actions@github.com"
-        git config --global user.name "GitHub Actions"
-        git add data/magazines/
-        git commit -m "Update magazine data" || exit 0
-        git push
+        git config --global user.name 'GitHub Actions'
+        git config --global user.email 'actions@github.com'
+        git add data/magazines/latest.json
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Update magazine data [automated]" && git push)
+
