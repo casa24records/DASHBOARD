@@ -124,11 +124,11 @@ function App() {
 
       <div className="mb-8">
         <div className="border-b border-gray-700">
-          <nav className="-mb-px flex space-x-8 justify-center">
+          <nav className="flex space-x-8 justify-center">
             <a 
               href="#artist"
-              className={`py-4 px-1 font-medium text-lg retro-tab ${
-                activeTab === 'artist' ? 'text-accent retro-tab-active' : 'text-gray-400'
+              className={`py-4 px-1 font-medium text-lg ${
+                activeTab === 'artist' ? 'text-accent' : 'text-gray-400'
               }`}
               style={{color: activeTab === 'artist' ? "#00a651" : ""}}
               onClick={(e) => { e.preventDefault(); setActiveTab('artist'); }}
@@ -137,8 +137,8 @@ function App() {
             </a>
             <a 
               href="#life"
-              className={`py-4 px-1 font-medium text-lg retro-tab ${
-                activeTab === 'life' ? 'text-accent retro-tab-active' : 'text-gray-400'
+              className={`py-4 px-1 font-medium text-lg ${
+                activeTab === 'life' ? 'text-accent' : 'text-gray-400'
               }`}
               style={{color: activeTab === 'life' ? "#00a651" : ""}}
               onClick={(e) => { e.preventDefault(); setActiveTab('life'); }}
@@ -147,8 +147,8 @@ function App() {
             </a>
             <a 
               href="#collective"
-              className={`py-4 px-1 font-medium text-lg retro-tab ${
-                activeTab === 'collective' ? 'text-accent retro-tab-active' : 'text-gray-400'
+              className={`py-4 px-1 font-medium text-lg ${
+                activeTab === 'collective' ? 'text-accent' : 'text-gray-400'
               }`}
               style={{color: activeTab === 'collective' ? "#00a651" : ""}}
               onClick={(e) => { e.preventDefault(); setActiveTab('collective'); }}
@@ -282,17 +282,8 @@ function App() {
 
       {activeTab === 'life' && (
         <div>
-          <div className="mb-8 flex justify-between items-center">
-            <h2 className="text-3xl font-bold" style={{color: "#00a651"}}>LIFE@24 Magazine</h2>
-            <select 
-              className="bg-gray-800 border-2 border-accent text-white py-2 px-4 rounded retro-btn"
-              style={{borderColor: "#00a651"}}
-              value={magazineSort}
-              onChange={(e) => setMagazineSort(e.target.value)}
-            >
-              <option value="newest">Latest Issues</option>
-              <option value="oldest">Oldest Issues</option>
-            </select>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold" style={{color: "#00a651"}}>LIFE@24</h2>
           </div>
 
           {!magazineData || !magazineData.magazines || magazineData.magazines.length === 0 ? (
@@ -454,11 +445,6 @@ function App() {
         </div>
       )}
 
-      <footer className="mt-12 pt-6 border-t border-gray-700 text-center text-gray-500">
-        <p className="text-lg">Casa 24 Records Analytics Dashboard</p>
-        <p className="text-sm mt-1 mb-6">Keeping it old school since 2021</p>
-      </footer>
-      
       <footer className="mt-12 pt-6 border-t border-gray-700 text-center text-gray-500">
         <p className="text-lg">Casa 24 Records Analytics Dashboard</p>
         <p className="text-sm mt-1 mb-6">Keeping it old school since 2021</p>

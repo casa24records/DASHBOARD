@@ -1,7 +1,7 @@
 :root {
   --color-bg: #1a1a1a;
   --color-text: #e0e0e0;
-  --color-accent: #00a651; /* Changed from #ff9966 to green */
+  --color-accent: #00a651; /* Green */
   --color-secondary: #6b7fd7;
   --color-tertiary: #8c52ff;
   --color-spotify: #1DB954;
@@ -272,4 +272,73 @@ h1, h2, h3, h4 {
 
 .magazine-btn:hover {
   background-color: rgba(0, 166, 81, 0.2);
+}
+
+/* Tab navigation improvements */
+.nav-tabs {
+  display: flex;
+  justify-content: center;
+  border-bottom: 1px solid rgba(107, 114, 128, 0.7);
+  margin-bottom: 2rem;
+}
+
+.nav-tab {
+  position: relative;
+  padding: 1rem 1.5rem;
+  font-family: 'VT323', monospace;
+  font-size: 1.25rem;
+  color: #999;
+  transition: color 0.3s ease;
+}
+
+.nav-tab.active, .nav-tab:hover {
+  color: #00a651;
+}
+
+.nav-tab::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: #00a651;
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.nav-tab.active::after, .nav-tab:hover::after {
+  transform: scaleX(1);
+}
+
+/* LIFE@24 specific styling */
+.life-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.life-title {
+  font-size: 2.5rem;
+  color: #00a651;
+  letter-spacing: 2px;
+  display: inline-block;
+  padding-bottom: 0.5rem;
+  border-bottom: 3px solid #00a651;
+}
+
+.no-magazines-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  border: 2px solid #00a651;
+  border-radius: 0.5rem;
+  background: rgba(26, 26, 26, 0.7);
+  box-shadow: 4px 4px 0px #00a651;
+}
+
+.no-magazines-message {
+  color: #999;
+  font-size: 1.1rem;
+  text-align: center;
 }
