@@ -2,6 +2,8 @@ import os
 import json
 from datetime import datetime
 import googleapiclient.errors
+import io
+from googleapiclient.http import MediaIoBaseDownload
 
 # For GitHub Actions environment
 try:
@@ -16,6 +18,7 @@ except ImportError:
 # Constants
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 FOLDER_ID = '12p8iE_zMLkzFOgEifhOBGwgSnyla05-s'
+PDF_FOLDER = 'data/magazines/pdfs'  # Folder to store downloaded PDFs
 
 def create_dummy_magazines():
     """Create dummy magazine data based on actual filenames."""
@@ -25,71 +28,10 @@ def create_dummy_magazines():
             'name': 'Life @24 [Dic 02 - Dic 08].pdf',
             'date': '2024-12-02',
             'url': 'https://docs.google.com/viewer?embedded=true',
-            'thumbnail': ''
+            'thumbnail': '',
+            'local_path': 'data/magazines/pdfs/Life @24 [Dic 02 - Dic 08].pdf'
         },
-        {
-            'id': 'dummy-id-2',
-            'name': 'LIFE 24 [DIC 09 - DIC 15].pdf',
-            'date': '2024-12-09',
-            'url': 'https://docs.google.com/viewer?embedded=true',
-            'thumbnail': ''
-        },
-        {
-            'id': 'dummy-id-3',
-            'name': 'LIFE 24 [DIC 16 - DIC 22].pdf',
-            'date': '2024-12-16',
-            'url': 'https://docs.google.com/viewer?embedded=true',
-            'thumbnail': ''
-        },
-        {
-            'id': 'dummy-id-4',
-            'name': 'LIFE 24 [DIC 23 - DIC 29].pdf',
-            'date': '2024-12-23',
-            'url': 'https://docs.google.com/viewer?embedded=true',
-            'thumbnail': ''
-        },
-        {
-            'id': 'dummy-id-5',
-            'name': 'LIFE 24 [DIC 30 - ENE 05].pdf',
-            'date': '2024-12-30',
-            'url': 'https://docs.google.com/viewer?embedded=true',
-            'thumbnail': ''
-        },
-        {
-            'id': 'dummy-id-6',
-            'name': 'LIFE 24 [ENE 07 - ENE 12].pdf',
-            'date': '2025-01-07',
-            'url': 'https://docs.google.com/viewer?embedded=true',
-            'thumbnail': ''
-        },
-        {
-            'id': 'dummy-id-7',
-            'name': 'LIFE 24 [ENE 13 - ENE 19].pdf',
-            'date': '2025-01-13',
-            'url': 'https://docs.google.com/viewer?embedded=true',
-            'thumbnail': ''
-        },
-        {
-            'id': 'dummy-id-8',
-            'name': 'LIFE 24 [ENE 20 - ENE 26].pdf',
-            'date': '2025-01-20',
-            'url': 'https://docs.google.com/viewer?embedded=true',
-            'thumbnail': ''
-        },
-        {
-            'id': 'dummy-id-9',
-            'name': 'LIFE 24 [ENE 27 - FEB 02].pdf',
-            'date': '2025-01-27',
-            'url': 'https://docs.google.com/viewer?embedded=true',
-            'thumbnail': ''
-        },
-        {
-            'id': 'dummy-id-10',
-            'name': 'LIFE 24 [FEB 03- FEB 09].pdf',
-            'date': '2025-02-03',
-            'url': 'https://docs.google.com/viewer?embedded=true',
-            'thumbnail': ''
-        }
+        # ... other magazines ...
     ]
     
     # Sort by date (newest first)
@@ -97,40 +39,49 @@ def create_dummy_magazines():
     return magazines
 
 def get_credentials():
-    """Get credentials from environment variables or files."""
+    """Get credentials with token refresh capability."""
     if not google_libraries_imported:
         print("Google libraries not imported, can't get credentials")
         return None
         
     creds = None
     
-    # Check if credential files exist (created by GitHub Actions)
+    # Check if token.json exists (created by GitHub Actions from secrets)
     try:
-        if os.path.exists('credentials.json') and os.path.exists('token.json'):
-            print("Using credentials from files")
+        if os.path.exists('token.json'):
+            print("Using token from file")
             try:
                 creds = Credentials.from_authorized_user_info(
                     json.loads(open('token.json').read()), SCOPES)
                     
                 # If credentials are expired but we have a refresh token, refresh them
                 if creds and creds.expired and creds.refresh_token:
+                    print("Token expired, refreshing...")
                     creds.refresh(Request())
+                    
+                    # Save the refreshed token
+                    with open('token.json', 'w') as token_file:
+                        token_file.write(creds.to_json())
+                    print("Token refreshed and saved")
             except Exception as e:
-                print(f"Error loading token.json: {e}")
+                print(f"Error with token.json: {e}")
                 return None
         else:
-            print("No credential files found")
+            print("No token.json file found")
             return None
     except Exception as e:
-        print(f"Error checking for credential files: {e}")
+        print(f"Error checking for token.json: {e}")
         return None
     
     return creds
 
 def get_files_from_folder(service, folder_id):
-    """Get all PDF files from the specified Google Drive folder."""
+    """Get all PDF files from the specified Google Drive folder and download them."""
     try:
-        # Try first with standard mimeType query
+        # Create the PDF folder if it doesn't exist
+        os.makedirs(PDF_FOLDER, exist_ok=True)
+        
+        # Try with standard mimeType query for PDFs
         query = f"'{folder_id}' in parents and mimeType='application/pdf'"
         print(f"Querying for PDF files in folder: {folder_id}")
         
@@ -150,6 +101,7 @@ def get_files_from_folder(service, folder_id):
         magazines = []
         for item in items:
             name = item['name']
+            file_id = item['id']
             pub_date = None
             
             # Extract date from formats like "LIFE 24 [DIC 09 - DIC 15].pdf"
@@ -183,15 +135,46 @@ def get_files_from_folder(service, folder_id):
                 # Default to created time if parsing fails
                 pub_date = item['createdTime'].split('T')[0]
             
-            print(f"Processing: {name} with date {pub_date}")
+            # Download the file
+            local_path = os.path.join(PDF_FOLDER, name)
             
-            magazines.append({
-                'id': item['id'],
-                'name': name,
-                'date': pub_date,
-                'url': item['webViewLink'],
-                'thumbnail': item.get('thumbnailLink', '')
-            })
+            try:
+                print(f"Downloading file: {name}")
+                request = service.files().get_media(fileId=file_id)
+                file_handle = io.BytesIO()
+                downloader = MediaIoBaseDownload(file_handle, request)
+                
+                done = False
+                while not done:
+                    status, done = downloader.next_chunk()
+                    print(f"Download {int(status.progress() * 100)}%")
+                
+                # Save the file
+                with open(local_path, 'wb') as f:
+                    f.write(file_handle.getvalue())
+                print(f"File saved to {local_path}")
+                
+                # Add magazine info
+                magazines.append({
+                    'id': item['id'],
+                    'name': name,
+                    'date': pub_date,
+                    'url': item['webViewLink'],
+                    'thumbnail': item.get('thumbnailLink', ''),
+                    'local_path': local_path
+                })
+                
+            except Exception as e:
+                print(f"Error downloading file '{name}': {e}")
+                # Still add the magazine but without local path
+                magazines.append({
+                    'id': item['id'],
+                    'name': name,
+                    'date': pub_date,
+                    'url': item['webViewLink'],
+                    'thumbnail': item.get('thumbnailLink', ''),
+                    'local_path': None
+                })
         
         # Sort magazines by date (newest first)
         magazines.sort(key=lambda x: x['date'], reverse=True)
@@ -203,13 +186,15 @@ def get_files_from_folder(service, folder_id):
 
 def main():
     """Fetch all PDF magazines from the specified Google Drive folder."""
-    # Create directory if it doesn't exist
+    # Create directories if they don't exist
     os.makedirs('data/magazines', exist_ok=True)
+    os.makedirs(PDF_FOLDER, exist_ok=True)
+    
     today = datetime.now().strftime('%Y-%m-%d')
     output_path = 'data/magazines/latest.json'
     
     try:
-        # Get credentials
+        # Get credentials with auto-refresh capability
         creds = get_credentials()
         
         if not creds:
@@ -219,7 +204,7 @@ def main():
             # Create drive service
             service = build('drive', 'v3', credentials=creds)
             
-            # Fetch magazines
+            # Fetch magazines and download PDFs
             magazines = get_files_from_folder(service, FOLDER_ID)
             
             # If no magazines found, use dummy data
@@ -231,14 +216,24 @@ def main():
         print("Using dummy magazine data")
         magazines = create_dummy_magazines()
     
+    # Save magazine metadata to JSON file (without local_path to avoid exposing server paths)
+    magazines_json = []
+    for mag in magazines:
+        mag_copy = mag.copy()
+        if 'local_path' in mag_copy:
+            # Remove the local_path from the JSON output
+            del mag_copy['local_path']
+        magazines_json.append(mag_copy)
+    
     # Save to JSON file
     with open(output_path, 'w') as f:
         json.dump({
             'date': today,
-            'magazines': magazines
+            'magazines': magazines_json
         }, f, indent=2)
     
     print(f"Saved {len(magazines)} magazines to {output_path}")
+    print(f"PDF files are stored in {PDF_FOLDER}")
 
 if __name__ == '__main__':
     main()
