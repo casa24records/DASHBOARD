@@ -352,8 +352,25 @@ function App() {
 
       {activeTab === 'life' && (
         <div>
-          <div className="text-center mb-12">
+          <div className="text-center mb-6">
             <h2 className="text-4xl font-bold" style={{color: "#00a651"}}>LIFE@24</h2>
+          </div>
+
+          <div className="flex justify-center mb-8">
+            <div className="bg-gray-800 inline-flex rounded-lg p-1" style={{border: "2px solid #00a651", boxShadow: "3px 3px 0px #00a651"}}>
+              <button
+                className={`px-4 py-2 rounded-md ${magazineSort === 'newest' ? 'bg-gray-700' : ''}`}
+                onClick={() => setMagazineSort('newest')}
+              >
+                Newest First
+              </button>
+              <button
+                className={`px-4 py-2 rounded-md ${magazineSort === 'oldest' ? 'bg-gray-700' : ''}`}
+                onClick={() => setMagazineSort('oldest')}
+              >
+                Oldest First
+              </button>
+            </div>
           </div>
 
           {!magazineData || !magazineData.magazines || magazineData.magazines.length === 0 ? (
