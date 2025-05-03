@@ -16,7 +16,9 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
-      
+      with:
+        fetch-depth: 0  # Fetch all history so we can commit properly
+    
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
@@ -38,47 +40,63 @@ jobs:
         echo "Fetching magazine data from Google Drive..."
         python scripts/fetch_magazines.py
         
-    - name: Update token in GitHub secrets (if refreshed)
-      if: success()
-      env:
-        GH_TOKEN: ${{ secrets.REPO_TOKEN }}
-        REPO: ${{ github.repository }}
+    - name: Check if token was refreshed
+      id: check_token
       run: |
-        # Check if token file exists and is different from the original
         if [ -f token.json ]; then
           NEW_TOKEN=$(cat token.json)
           OLD_TOKEN='${{ secrets.GOOGLE_TOKEN }}'
           
-          # Only update if the token has changed
           if [ "$NEW_TOKEN" != "$OLD_TOKEN" ]; then
-            echo "Token was refreshed, updating GitHub secret..."
-            
-            # This requires a PAT with repo scope to update secrets
-            # REPO_TOKEN should be a Personal Access Token with the 'repo' scope
-            curl -X PUT \
-              -H "Authorization: token $GH_TOKEN" \
-              -H "Accept: application/vnd.github.v3+json" \
-              https://api.github.com/repos/$REPO/actions/secrets/GOOGLE_TOKEN \
-              -d "{\"encrypted_value\":\"$(echo -n "$NEW_TOKEN" | base64)\", \"key_id\":\"$(curl -s -H "Authorization: token $GH_TOKEN" https://api.github.com/repos/$REPO/actions/secrets/public-key | jq -r .key_id)\"}"
-            
-            echo "GitHub secret updated!"
+            echo "TOKEN_REFRESHED=true" >> $GITHUB_ENV
+            echo "Token was refreshed, will update secret"
           else
-            echo "Token has not changed, no need to update GitHub secret."
+            echo "TOKEN_REFRESHED=false" >> $GITHUB_ENV
+            echo "Token has not changed"
           fi
         else
-          echo "Token file not found, can't update GitHub secret."
+          echo "TOKEN_REFRESHED=false" >> $GITHUB_ENV
+          echo "Token file not found"
+        fi
+    
+    - name: Create Git LFS directory for PDFs if needed
+      run: |
+        if [ ! -f .gitattributes ]; then
+          echo "*.pdf filter=lfs diff=lfs merge=lfs -text" > .gitattributes
+          git add .gitattributes
+        fi
+        
+        # Ensure the PDFs directory exists
+        mkdir -p data/magazines/pdfs
+      
+    - name: Commit and push changes
+      run: |
+        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub Actions"
+        
+        # Stage all changes
+        git add data/magazines/
+        git add data/magazines/pdfs/
+        git add .gitattributes
+        
+        # Only commit if there are changes
+        if git diff --staged --quiet; then
+          echo "No changes to commit"
+        else
+          git commit -m "Update magazine data"
+          git push
         fi
         
     - name: Clean up credentials
       run: |
-        # Remove sensitive files before committing
+        # Remove sensitive files after committing
         rm -f credentials.json token.json
         
-    - name: Commit and push if changed
-      run: |
-        git config --global user.email "actions@github.com"
-        git config --global user.name "GitHub Actions"
-        git add data/magazines/
-        git add data/magazines/pdfs/
-        git commit -m "Update magazine data" || exit 0
-        git push
+    # This step requires a PAT with repo scope to be set up as REPO_TOKEN secret
+    - name: Update token in GitHub secrets if refreshed
+      if: env.TOKEN_REFRESHED == 'true'
+      uses: gliech/create-github-secret-action@v1.4.0
+      with:
+        name: GOOGLE_TOKEN
+        value: ${{ env.NEW_TOKEN }}
+        pa_token: ${{ secrets.REPO_TOKEN }}
