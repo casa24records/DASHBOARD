@@ -407,9 +407,9 @@ function App() {
           {/* Magazine Preview Modal */}
           {selectedMagazine && (
             <div className="fixed inset-0 flex items-center justify-center z-50">
-              <div className="absolute inset-0 bg-black bg-opacity-75" onClick={closeMagazinePreview}></div>
-              <div className="relative bg-gray-900 p-6 rounded-lg w-full max-w-6xl mx-4 max-h-screen overflow-hidden" style={{border: "2px solid #00a651"}}>
-                <div className="flex justify-between items-center mb-4">
+              <div className="absolute inset-0 bg-black bg-opacity-90" onClick={closeMagazinePreview}></div>
+              <div className="relative bg-gray-900 rounded-lg w-full h-screen mx-4 flex flex-col" style={{border: "2px solid #00a651"}}>
+                <div className="flex justify-between items-center p-3 border-b border-gray-700">
                   <h3 className="text-xl font-bold">{selectedMagazine.name.replace('.pdf', '')}</h3>
                   <button 
                     onClick={closeMagazinePreview}
@@ -421,20 +421,22 @@ function App() {
                   </button>
                 </div>
                 
-                <div className="h-[70vh] overflow-hidden mb-4">
+                <div className="flex-grow overflow-hidden">
                   <iframe 
-                    src={selectedMagazine.url} 
+                    src={selectedMagazine.url.replace('/view', '/preview')} 
                     className="w-full h-full border-0"
                     title={selectedMagazine.name}
+                    allowFullScreen
+                    frameBorder="0"
                   ></iframe>
                 </div>
                 
-                <div className="flex justify-center space-x-4">
+                <div className="flex justify-center p-2 border-t border-gray-700">
                   <a 
                     href={selectedMagazine.url} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
+                    className="px-4 py-2 bg-gray-800 text-white rounded mx-2 hover:bg-gray-700 transition-colors"
                     style={{border: "1px solid #00a651"}}
                   >
                     Open in Drive
@@ -443,14 +445,14 @@ function App() {
                     href={selectedMagazine.url.replace('view', 'download')} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
+                    className="px-4 py-2 bg-gray-800 text-white rounded mx-2 hover:bg-gray-700 transition-colors"
                     style={{border: "1px solid #00a651"}}
                   >
                     Download
                   </a>
                   <button 
                     onClick={() => window.open(selectedMagazine.url + '&printable=true')}
-                    className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
+                    className="px-4 py-2 bg-gray-800 text-white rounded mx-2 hover:bg-gray-700 transition-colors"
                     style={{border: "1px solid #00a651"}}
                   >
                     Print
