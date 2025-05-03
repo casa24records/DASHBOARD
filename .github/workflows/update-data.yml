@@ -10,6 +10,8 @@ on:
 jobs:
   update-data:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
     - name: Checkout repository
@@ -23,10 +25,21 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests pandas
+        pip install requests pandas google-api-python-client google-auth-httplib2 google-auth-oauthlib
+        
+    - name: Set up Google credentials
+      env:
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        GOOGLE_TOKEN: ${{ secrets.GOOGLE_TOKEN }}
+      run: |
+        echo "$GOOGLE_CREDENTIALS" > credentials.json
+        echo "$GOOGLE_TOKEN" > token.json
         
     - name: Run data collection script
       run: python scripts/collect_data.py
+        
+    - name: Run magazine fetch script
+      run: python scripts/fetch_magazines.py
         
     - name: Commit and push if changed
       run: |

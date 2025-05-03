@@ -174,3 +174,102 @@ h1, h2, h3, h4 {
 .border-casa24 {
   border-color: #00a651;
 }
+
+/* Magazine styles */
+.magazine-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.magazine-card {
+  border: 2px solid var(--color-accent);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+
+.magazine-card:hover {
+  transform: scale(1.03);
+}
+
+.magazine-thumbnail {
+  position: relative;
+  padding-bottom: 140%; /* Aspect ratio */
+  overflow: hidden;
+}
+
+.magazine-thumbnail img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.magazine-info {
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.magazine-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.magazine-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+}
+
+.magazine-modal-content {
+  position: relative;
+  width: 90%;
+  max-width: 1200px;
+  max-height: 90vh;
+  border-radius: 0.5rem;
+  border: 2px solid var(--color-accent);
+  background-color: var(--color-bg);
+  overflow: hidden;
+}
+
+.magazine-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.magazine-modal-body {
+  height: 70vh;
+  overflow: hidden;
+}
+
+.magazine-modal-footer {
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.magazine-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-accent);
+  background-color: rgba(0, 0, 0, 0.3);
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.magazine-btn:hover {
+  background-color: rgba(0, 166, 81, 0.2);
+}

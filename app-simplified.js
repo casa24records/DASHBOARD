@@ -19,9 +19,12 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('artist');
+  const [magazineData, setMagazineData] = useState(null);
+  const [magazineSort, setMagazineSort] = useState('newest');
+  const [selectedMagazine, setSelectedMagazine] = useState(null);
 
   useEffect(() => {
-    // Fetch the data from the JSON file
+    // Fetch the artist data from the JSON file
     fetch('data/latest.json')
       .then(response => {
         if (!response.ok) {
@@ -40,6 +43,21 @@ function App() {
       .catch(error => {
         setError(error.message);
         setLoading(false);
+      });
+    
+    // Fetch magazine data from JSON file
+    fetch('data/magazines/latest.json')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(jsonData => {
+        setMagazineData(jsonData);
+      })
+      .catch(error => {
+        console.error('Error loading magazine data:', error);
       });
   }, []);
 
@@ -78,6 +96,24 @@ function App() {
     youtube: { subscribers: 0, total_views: 0, video_count: 0 }
   });
 
+  // Sort magazines by date
+  const sortedMagazines = magazineData && magazineData.magazines ? [...magazineData.magazines] : [];
+  if (magazineSort === 'newest') {
+    sortedMagazines.sort((a, b) => new Date(b.date) - new Date(a.date));
+  } else {
+    sortedMagazines.sort((a, b) => new Date(a.date) - new Date(b.date));
+  }
+
+  // Handle magazine click
+  const handleMagazineClick = (magazine) => {
+    setSelectedMagazine(magazine);
+  };
+
+  // Close magazine preview
+  const closeMagazinePreview = () => {
+    setSelectedMagazine(null);
+  };
+
   return (
     <div className="max-w-7xl mx-auto">
       <header className="mb-8 text-center">
@@ -98,6 +134,16 @@ function App() {
               onClick={(e) => { e.preventDefault(); setActiveTab('artist'); }}
             >
               Artist Analytics
+            </a>
+            <a 
+              href="#life"
+              className={`py-4 px-1 font-medium text-lg retro-tab ${
+                activeTab === 'life' ? 'text-accent retro-tab-active' : 'text-gray-400'
+              }`}
+              style={{color: activeTab === 'life' ? "#00a651" : ""}}
+              onClick={(e) => { e.preventDefault(); setActiveTab('life'); }}
+            >
+              LIFE@24
             </a>
             <a 
               href="#collective"
@@ -234,6 +280,110 @@ function App() {
         </div>
       )}
 
+      {activeTab === 'life' && (
+        <div>
+          <div className="mb-8 flex justify-between items-center">
+            <h2 className="text-3xl font-bold" style={{color: "#00a651"}}>LIFE@24 Magazine</h2>
+            <select 
+              className="bg-gray-800 border-2 border-accent text-white py-2 px-4 rounded retro-btn"
+              style={{borderColor: "#00a651"}}
+              value={magazineSort}
+              onChange={(e) => setMagazineSort(e.target.value)}
+            >
+              <option value="newest">Latest Issues</option>
+              <option value="oldest">Oldest Issues</option>
+            </select>
+          </div>
+
+          {!magazineData || !magazineData.magazines || magazineData.magazines.length === 0 ? (
+            <div className="p-6 rounded-lg mb-8" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+              <p className="text-center py-8 text-gray-400">No magazine issues are currently available.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+              {sortedMagazines.map((magazine, index) => (
+                <div 
+                  key={index} 
+                  className="p-4 rounded-lg text-center cursor-pointer transition-transform hover:scale-105" 
+                  style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}
+                  onClick={() => handleMagazineClick(magazine)}
+                >
+                  <div className="relative mb-2" style={{paddingBottom: '120%'}}>
+                    <img 
+                      src="images/RetroFolder.png" 
+                      alt={magazine.name}
+                      className="absolute top-0 left-0 w-full h-full object-cover rounded"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="bg-black bg-opacity-70 text-white p-2 rounded">
+                        {magazine.name.replace('.pdf', '')}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-400">{new Date(magazine.date).toLocaleDateString()}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Magazine Preview Modal */}
+          {selectedMagazine && (
+            <div className="fixed inset-0 flex items-center justify-center z-50">
+              <div className="absolute inset-0 bg-black bg-opacity-75" onClick={closeMagazinePreview}></div>
+              <div className="relative bg-gray-900 p-6 rounded-lg w-full max-w-6xl mx-4 max-h-screen overflow-hidden" style={{border: "2px solid #00a651"}}>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold">{selectedMagazine.name.replace('.pdf', '')}</h3>
+                  <button 
+                    onClick={closeMagazinePreview}
+                    className="text-gray-400 hover:text-white focus:outline-none"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                  </button>
+                </div>
+                
+                <div className="h-[70vh] overflow-hidden mb-4">
+                  <iframe 
+                    src={selectedMagazine.url} 
+                    className="w-full h-full border-0"
+                    title={selectedMagazine.name}
+                  ></iframe>
+                </div>
+                
+                <div className="flex justify-center space-x-4">
+                  <a 
+                    href={selectedMagazine.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
+                    style={{border: "1px solid #00a651"}}
+                  >
+                    Open in Drive
+                  </a>
+                  <a 
+                    href={selectedMagazine.url.replace('view', 'download')} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
+                    style={{border: "1px solid #00a651"}}
+                  >
+                    Download
+                  </a>
+                  <button 
+                    onClick={() => window.open(selectedMagazine.url + '&printable=true')}
+                    className="px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-700 transition-colors"
+                    style={{border: "1px solid #00a651"}}
+                  >
+                    Print
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === 'collective' && (
         <div>
           <h2 className="text-3xl font-bold mb-8" style={{color: "#00a651"}}>Collective Overview</h2>
@@ -304,6 +454,11 @@ function App() {
         </div>
       )}
 
+      <footer className="mt-12 pt-6 border-t border-gray-700 text-center text-gray-500">
+        <p className="text-lg">Casa 24 Records Analytics Dashboard</p>
+        <p className="text-sm mt-1 mb-6">Keeping it old school since 2021</p>
+      </footer>
+      
       <footer className="mt-12 pt-6 border-t border-gray-700 text-center text-gray-500">
         <p className="text-lg">Casa 24 Records Analytics Dashboard</p>
         <p className="text-sm mt-1 mb-6">Keeping it old school since 2021</p>
