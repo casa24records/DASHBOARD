@@ -3,14 +3,17 @@ import json
 from datetime import datetime
 import googleapiclient.errors
 
-# For GitHub Actions environment
+# Import Google libraries
 try:
     from google.oauth2.credentials import Credentials
     from googleapiclient.discovery import build
+    from google.auth.transport.requests import Request
+    google_libraries_imported = True
 except ImportError:
     print("Google API libraries not found, will use dummy data")
+    google_libraries_imported = False
 
-# If modifying these SCOPES, update the scope in GitHub secrets too
+# Constants
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 FOLDER_ID = '12p8iE_zMLkzFOgEifhOBGwgSnyla05-s'
 
@@ -95,47 +98,30 @@ def create_dummy_magazines():
 
 def get_credentials():
     """Get credentials from environment variables or files."""
-    # Check if Google API libraries are available
-    if 'google.oauth2.credentials' not in globals():
+    if not google_libraries_imported:
         print("Google libraries not imported, can't get credentials")
         return None
         
     creds = None
     
-    # Check if running in GitHub Actions (environment variables)
-    if 'GOOGLE_CREDENTIALS' in os.environ and 'GOOGLE_TOKEN' in os.environ:
-        print("Using credentials from GitHub secrets")
+    # Check if credentials file exists (GitHub Actions creates this from secrets)
+    if os.path.exists('credentials.json') and os.path.exists('token.json'):
+        print("Using credentials from files created by GitHub Actions")
         try:
-            # Create temp files for the credentials
-            with open('temp_credentials.json', 'w') as f:
-                f.write(os.environ['GOOGLE_CREDENTIALS'])
-                
-            with open('temp_token.json', 'w') as f:
-                f.write(os.environ['GOOGLE_TOKEN'])
-                
-            # Load credentials from temp token file
+            # Load credentials from token file
             creds = Credentials.from_authorized_user_info(
-                json.loads(open('temp_token.json', 'r').read()), SCOPES)
+                json.loads(open('token.json', 'r').read()), SCOPES)
                 
-            # Clean up temp files
-            os.remove('temp_credentials.json')
-            os.remove('temp_token.json')
+            # If credentials are expired but we have a refresh token, refresh them
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+                
         except Exception as e:
-            print(f"Error loading credentials from GitHub secrets: {e}")
+            print(f"Error loading credentials from files: {e}")
             return None
     else:
-        print("Using credentials from local files")
-        try:
-            # Check for token.json first
-            if os.path.exists('token.json'):
-                creds = Credentials.from_authorized_user_info(
-                    json.loads(open('token.json').read()), SCOPES)
-            else:
-                print("No token.json file found")
-                return None
-        except Exception as e:
-            print(f"Error loading token.json: {e}")
-            return None
+        print("No credential files found")
+        return None
     
     return creds
 
