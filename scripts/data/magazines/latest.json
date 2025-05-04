@@ -1,0 +1,75 @@
+{
+  "date": "2025-05-03",
+  "magazines": [
+    {
+      "id": "dummy-id-10",
+      "name": "LIFE 24 [FEB 03- FEB 09].pdf",
+      "date": "2025-02-03",
+      "url": "https://docs.google.com/viewer?embedded=true",
+      "thumbnail": ""
+    },
+    {
+      "id": "dummy-id-9",
+      "name": "LIFE 24 [ENE 27 - FEB 02].pdf",
+      "date": "2025-01-27",
+      "url": "https://docs.google.com/viewer?embedded=true",
+      "thumbnail": ""
+    },
+    {
+      "id": "dummy-id-8",
+      "name": "LIFE 24 [ENE 20 - ENE 26].pdf",
+      "date": "2025-01-20",
+      "url": "https://docs.google.com/viewer?embedded=true",
+      "thumbnail": ""
+    },
+    {
+      "id": "dummy-id-7",
+      "name": "LIFE 24 [ENE 13 - ENE 19].pdf",
+      "date": "2025-01-13",
+      "url": "https://docs.google.com/viewer?embedded=true",
+      "thumbnail": ""
+    },
+    {
+      "id": "dummy-id-6",
+      "name": "LIFE 24 [ENE 07 - ENE 12].pdf",
+      "date": "2025-01-07",
+      "url": "https://docs.google.com/viewer?embedded=true",
+      "thumbnail": ""
+    },
+    {
+      "id": "dummy-id-5",
+      "name": "LIFE 24 [DIC 30 - ENE 05].pdf",
+      "date": "2024-12-30",
+      "url": "https://docs.google.com/viewer?embedded=true",
+      "thumbnail": ""
+    },
+    {
+      "id": "dummy-id-4",
+      "name": "LIFE 24 [DIC 23 - DIC 29].pdf",
+      "date": "2024-12-23",
+      "url": "https://docs.google.com/viewer?embedded=true",
+      "thumbnail": ""
+    },
+    {
+      "id": "dummy-id-3",
+      "name": "LIFE 24 [DIC 16 - DIC 22].pdf",
+      "date": "2024-12-16",
+      "url": "https://docs.google.com/viewer?embedded=true",
+      "thumbnail": ""
+    },
+    {
+      "id": "dummy-id-2",
+      "name": "LIFE 24 [DIC 09 - DIC 15].pdf",
+      "date": "2024-12-09",
+      "url": "https://docs.google.com/viewer?embedded=true",
+      "thumbnail": ""
+    },
+    {
+      "id": "dummy-id-1",
+      "name": "Life @24 [Dic 02 - Dic 08].pdf",
+      "date": "2024-12-02",
+      "url": "https://docs.google.com/viewer?embedded=true",
+      "thumbnail": ""
+    }
+  ]
+}

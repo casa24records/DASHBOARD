@@ -21,7 +21,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('artist');
 
   useEffect(() => {
-    // Fetch the data from the JSON file
+    // Fetch the artist data from the JSON file
     fetch('data/latest.json')
       .then(response => {
         if (!response.ok) {
@@ -42,6 +42,16 @@ function App() {
         setLoading(false);
       });
   }, []);
+
+  // Initialize Life@24 section when the tab changes
+  useEffect(() => {
+    if (activeTab === 'life' && window.life24 && typeof window.life24.initialize === 'function') {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        window.life24.initialize('newest');
+      }, 100);
+    }
+  }, [activeTab]);
 
   if (loading) {
     return (
@@ -88,11 +98,11 @@ function App() {
 
       <div className="mb-8">
         <div className="border-b border-gray-700">
-          <nav className="-mb-px flex space-x-8 justify-center">
+          <nav className="flex space-x-8 justify-center">
             <a 
               href="#artist"
-              className={`py-4 px-1 font-medium text-lg retro-tab ${
-                activeTab === 'artist' ? 'text-accent retro-tab-active' : 'text-gray-400'
+              className={`py-4 px-1 font-medium text-lg ${
+                activeTab === 'artist' ? 'text-accent' : 'text-gray-400'
               }`}
               style={{color: activeTab === 'artist' ? "#00a651" : ""}}
               onClick={(e) => { e.preventDefault(); setActiveTab('artist'); }}
@@ -101,13 +111,23 @@ function App() {
             </a>
             <a 
               href="#collective"
-              className={`py-4 px-1 font-medium text-lg retro-tab ${
-                activeTab === 'collective' ? 'text-accent retro-tab-active' : 'text-gray-400'
+              className={`py-4 px-1 font-medium text-lg ${
+                activeTab === 'collective' ? 'text-accent' : 'text-gray-400'
               }`}
               style={{color: activeTab === 'collective' ? "#00a651" : ""}}
               onClick={(e) => { e.preventDefault(); setActiveTab('collective'); }}
             >
               Collective Overview
+            </a>
+            <a 
+              href="#life"
+              className={`py-4 px-1 font-medium text-lg ${
+                activeTab === 'life' ? 'text-accent' : 'text-gray-400'
+              }`}
+              style={{color: activeTab === 'life' ? "#00a651" : ""}}
+              onClick={(e) => { e.preventDefault(); setActiveTab('life'); }}
+            >
+              LIFE@24
             </a>
           </nav>
         </div>
@@ -299,6 +319,39 @@ function App() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'life' && (
+        <div>
+          <div className="text-center mb-6">
+            <h2 className="text-4xl font-bold" style={{color: "#00a651"}}>LIFE@24</h2>
+          </div>
+
+          <div className="flex justify-center mb-8">
+            <div className="bg-gray-800 inline-flex rounded-lg p-1" style={{border: "2px solid #00a651", boxShadow: "3px 3px 0px #00a651"}}>
+              <button
+                id="sort-newest-btn"
+                className="px-4 py-2 rounded-md bg-gray-700"
+              >
+                Newest First
+              </button>
+              <button
+                id="sort-oldest-btn"
+                className="px-4 py-2 rounded-md"
+              >
+                Oldest First
+              </button>
+            </div>
+          </div>
+
+          {/* Container for magazine buttons - will be populated by life24.js */}
+          <div id="life-at-24-container">
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mb-2"></div>
+              <p className="text-gray-400">Loading magazines...</p>
             </div>
           </div>
         </div>

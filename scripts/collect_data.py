@@ -49,7 +49,7 @@ artists = [
     {
         'name': 'pax',
         'spotify_id': '14UWYN8hKe7U5r0Vqe6ztL',
-        'youtube_id': None,
+        'youtube_id': 'UCJfqzcZjdxhkgk3mV0GJITA',
     },
     {
         'name': 'ARANDA',

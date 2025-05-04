@@ -10,6 +10,8 @@ on:
 jobs:
   update-data:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
     - name: Checkout repository
@@ -27,7 +29,7 @@ jobs:
         
     - name: Run data collection script
       run: python scripts/collect_data.py
-        
+          
     - name: Commit and push if changed
       run: |
         git config --global user.email "actions@github.com"
