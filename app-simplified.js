@@ -19,9 +19,6 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('artist');
-  const [magazineData, setMagazineData] = useState(null);
-  const [magazineSort, setMagazineSort] = useState('newest');
-  const [selectedMagazine, setSelectedMagazine] = useState(null);
 
   useEffect(() => {
     // Fetch the artist data from the JSON file
@@ -44,22 +41,17 @@ function App() {
         setError(error.message);
         setLoading(false);
       });
-    
-    // Fetch magazine data from JSON file
-    fetch('data/magazines/latest.json')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return response.json();
-      })
-      .then(jsonData => {
-        setMagazineData(jsonData);
-      })
-      .catch(error => {
-        console.error('Error loading magazine data:', error);
-      });
   }, []);
+
+  // Initialize Life@24 section when the tab changes
+  useEffect(() => {
+    if (activeTab === 'life' && window.life24 && typeof window.life24.initialize === 'function') {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        window.life24.initialize('newest');
+      }, 100);
+    }
+  }, [activeTab]);
 
   if (loading) {
     return (
@@ -95,24 +87,6 @@ function App() {
     spotify: { followers: 0, popularity_score: 0 },
     youtube: { subscribers: 0, total_views: 0, video_count: 0 }
   });
-
-  // Sort magazines by date
-  const sortedMagazines = magazineData && magazineData.magazines ? [...magazineData.magazines] : [];
-  if (magazineSort === 'newest') {
-    sortedMagazines.sort((a, b) => new Date(b.date) - new Date(a.date));
-  } else {
-    sortedMagazines.sort((a, b) => new Date(a.date) - new Date(b.date));
-  }
-
-  // Handle magazine click
-  const handleMagazineClick = (magazine) => {
-    setSelectedMagazine(magazine);
-  };
-
-  // Close magazine preview
-  const closeMagazinePreview = () => {
-    setSelectedMagazine(null);
-  };
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -359,108 +333,27 @@ function App() {
           <div className="flex justify-center mb-8">
             <div className="bg-gray-800 inline-flex rounded-lg p-1" style={{border: "2px solid #00a651", boxShadow: "3px 3px 0px #00a651"}}>
               <button
-                className={`px-4 py-2 rounded-md ${magazineSort === 'newest' ? 'bg-gray-700' : ''}`}
-                onClick={() => setMagazineSort('newest')}
+                id="sort-newest-btn"
+                className="px-4 py-2 rounded-md bg-gray-700"
               >
                 Newest First
               </button>
               <button
-                className={`px-4 py-2 rounded-md ${magazineSort === 'oldest' ? 'bg-gray-700' : ''}`}
-                onClick={() => setMagazineSort('oldest')}
+                id="sort-oldest-btn"
+                className="px-4 py-2 rounded-md"
               >
                 Oldest First
               </button>
             </div>
           </div>
 
-          {!magazineData || !magazineData.magazines || magazineData.magazines.length === 0 ? (
-            <div className="p-6 rounded-lg mb-8" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <p className="text-center py-8 text-gray-400">No magazine issues are currently available.</p>
+          {/* Container for magazine buttons - will be populated by life24.js */}
+          <div id="life-at-24-container">
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mb-2"></div>
+              <p className="text-gray-400">Loading magazines...</p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
-              {sortedMagazines.map((magazine, index) => (
-                <div 
-                  key={index} 
-                  className="p-4 rounded-lg text-center cursor-pointer transition-transform hover:scale-105" 
-                  style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}
-                  onClick={() => handleMagazineClick(magazine)}
-                >
-                  <div className="relative mb-2" style={{paddingBottom: '120%'}}>
-                    <img 
-                      src="images/RetroFolder.png" 
-                      alt={magazine.name}
-                      className="absolute top-0 left-0 w-full h-full object-cover rounded"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="bg-black bg-opacity-70 text-white p-2 rounded">
-                        {magazine.name.replace('.pdf', '')}
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-400">{new Date(magazine.date).toLocaleDateString()}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Magazine Preview Modal */}
-          {selectedMagazine && (
-            <div className="fixed inset-0 flex items-center justify-center z-50">
-              <div className="absolute inset-0 bg-black bg-opacity-90" onClick={closeMagazinePreview}></div>
-              <div className="relative bg-gray-900 rounded-lg w-full h-screen mx-4 flex flex-col" style={{border: "2px solid #00a651"}}>
-                <div className="flex justify-between items-center p-3 border-b border-gray-700">
-                  <h3 className="text-xl font-bold">{selectedMagazine.name.replace('.pdf', '')}</h3>
-                  <button 
-                    onClick={closeMagazinePreview}
-                    className="text-gray-400 hover:text-white focus:outline-none"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                  </button>
-                </div>
-                
-                <div className="flex-grow overflow-hidden">
-                  <iframe 
-                    src={selectedMagazine.url.replace('/view', '/preview')} 
-                    className="w-full h-full border-0"
-                    title={selectedMagazine.name}
-                    allowFullScreen
-                    frameBorder="0"
-                  ></iframe>
-                </div>
-                
-                <div className="flex justify-center p-2 border-t border-gray-700">
-                  <a 
-                    href={selectedMagazine.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="px-4 py-2 bg-gray-800 text-white rounded mx-2 hover:bg-gray-700 transition-colors"
-                    style={{border: "1px solid #00a651"}}
-                  >
-                    Open in Drive
-                  </a>
-                  <a 
-                    href={selectedMagazine.url.replace('view', 'download')} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="px-4 py-2 bg-gray-800 text-white rounded mx-2 hover:bg-gray-700 transition-colors"
-                    style={{border: "1px solid #00a651"}}
-                  >
-                    Download
-                  </a>
-                  <button 
-                    onClick={() => window.open(selectedMagazine.url + '&printable=true')}
-                    className="px-4 py-2 bg-gray-800 text-white rounded mx-2 hover:bg-gray-700 transition-colors"
-                    style={{border: "1px solid #00a651"}}
-                  >
-                    Print
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       )}
 
