@@ -50,6 +50,11 @@ function App() {
       setTimeout(() => {
         window.life24.initialize('newest');
       }, 100);
+    } else if (activeTab === 'unmastered' && window.unmastered && typeof window.unmastered.initialize === 'function') {
+      // Initialize untitled unmastered section when tab is selected
+      setTimeout(() => {
+        window.unmastered.initialize('newest');
+      }, 100);
     }
   }, [activeTab]);
 
@@ -128,6 +133,16 @@ function App() {
               onClick={(e) => { e.preventDefault(); setActiveTab('life'); }}
             >
               LIFE@24
+            </a>
+            <a 
+              href="#unmastered"
+              className={`py-4 px-1 font-medium text-lg ${
+                activeTab === 'unmastered' ? 'text-accent' : 'text-gray-400'
+              }`}
+              style={{color: activeTab === 'unmastered' ? "#00a651" : ""}}
+              onClick={(e) => { e.preventDefault(); setActiveTab('unmastered'); }}
+            >
+              untitled unmastered
             </a>
           </nav>
         </div>
@@ -352,6 +367,39 @@ function App() {
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mb-2"></div>
               <p className="text-gray-400">Loading magazines...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'unmastered' && (
+        <div>
+          <div className="text-center mb-6">
+            <h2 className="text-4xl font-bold" style={{color: "#00a651"}}>untitled unmastered</h2>
+          </div>
+
+          <div className="flex justify-center mb-8">
+            <div className="bg-gray-800 inline-flex rounded-lg p-1" style={{border: "2px solid #00a651", boxShadow: "3px 3px 0px #00a651"}}>
+              <button
+                id="unmastered-sort-newest-btn"
+                className="px-4 py-2 rounded-md bg-gray-700"
+              >
+                Newest First
+              </button>
+              <button
+                id="unmastered-sort-oldest-btn"
+                className="px-4 py-2 rounded-md"
+              >
+                Oldest First
+              </button>
+            </div>
+          </div>
+
+          {/* Container for track buttons - will be populated by unmastered.js */}
+          <div id="untitled-unmastered-container">
+            <div className="text-center py-8">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mb-2"></div>
+              <p className="text-gray-400">Loading tracks...</p>
             </div>
           </div>
         </div>
