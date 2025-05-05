@@ -68,7 +68,8 @@ const unmasteredConfig = {
             name: file.name,
             date: datePart.date,
             displayName: datePart.displayName,
-            audioUrl: `https://docs.google.com/uc?export=open&id=${file.id}`,
+            // Use a direct embedding URL that should work better for audio playback
+            audioUrl: `https://drive.google.com/a/ui/v1/m?id=${file.id}`,
             previewUrl: `https://drive.google.com/file/d/${file.id}/preview`,
             downloadUrl: `https://drive.google.com/uc?export=download&id=${file.id}`,
             createdTime: file.createdTime
@@ -235,7 +236,7 @@ const unmasteredConfig = {
       document.body.appendChild(modal);
     }
     
-    // Set modal content
+    // Set modal content with an iframe for better audio playback
     modal.innerHTML = `
       <div class="absolute inset-0 bg-black bg-opacity-90" id="modal-backdrop"></div>
       <div class="relative bg-gray-900 rounded-lg w-full max-w-2xl mx-4 flex flex-col" style="border: 2px solid #00a651">
@@ -255,12 +256,19 @@ const unmasteredConfig = {
             class="w-48 h-48 mb-4 rounded"
           />
           
-          <audio 
-            id="audio-player"
-            src="${track.audioUrl}" 
-            controls
-            class="w-full mb-4"
-          ></audio>
+          <iframe 
+            src="https://drive.google.com/file/d/${track.id}/preview" 
+            width="100%" 
+            height="80" 
+            allow="autoplay"
+            class="mb-4"
+          ></iframe>
+          
+          <div class="text-center mt-2">
+            <p class="text-sm text-gray-400">
+              If the audio doesn't play automatically, you can also:
+            </p>
+          </div>
         </div>
         
         <div class="flex justify-center p-2 border-t border-gray-700">
@@ -295,23 +303,6 @@ const unmasteredConfig = {
     
     // Prevent scrolling on the body
     document.body.style.overflow = 'hidden';
-    
-    // Play the audio automatically after a short delay
-    setTimeout(() => {
-      const audioPlayer = document.getElementById('audio-player');
-      if (audioPlayer) {
-        // Try playing the audio
-        const playPromise = audioPlayer.play();
-        
-        // Handle potential play() promise rejection (browser policy might prevent autoplay)
-        if (playPromise !== undefined) {
-          playPromise.catch(error => {
-            console.log('Auto-play was prevented. Please interact with the document first.');
-            // We can show a UI element asking user to click to play if needed
-          });
-        }
-      }
-    }, 300);
   }
   
   /**
@@ -320,13 +311,6 @@ const unmasteredConfig = {
   function closeAudioPlayer() {
     const modal = document.getElementById('audio-modal');
     if (modal) {
-      // Stop any playing audio before closing
-      const audioPlayer = document.getElementById('audio-player');
-      if (audioPlayer) {
-        audioPlayer.pause();
-        audioPlayer.currentTime = 0;
-      }
-      
       modal.style.display = 'none';
       
       // Re-enable scrolling
