@@ -256,10 +256,10 @@ const unmasteredConfig = {
           />
           
           <audio 
+            id="audio-player"
             src="${track.audioUrl}" 
             controls
             class="w-full mb-4"
-            autoplay
           ></audio>
         </div>
         
@@ -295,6 +295,23 @@ const unmasteredConfig = {
     
     // Prevent scrolling on the body
     document.body.style.overflow = 'hidden';
+    
+    // Play the audio automatically after a short delay
+    setTimeout(() => {
+      const audioPlayer = document.getElementById('audio-player');
+      if (audioPlayer) {
+        // Try playing the audio
+        const playPromise = audioPlayer.play();
+        
+        // Handle potential play() promise rejection (browser policy might prevent autoplay)
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.log('Auto-play was prevented. Please interact with the document first.');
+            // We can show a UI element asking user to click to play if needed
+          });
+        }
+      }
+    }, 300);
   }
   
   /**
@@ -303,6 +320,13 @@ const unmasteredConfig = {
   function closeAudioPlayer() {
     const modal = document.getElementById('audio-modal');
     if (modal) {
+      // Stop any playing audio before closing
+      const audioPlayer = document.getElementById('audio-player');
+      if (audioPlayer) {
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+      }
+      
       modal.style.display = 'none';
       
       // Re-enable scrolling
