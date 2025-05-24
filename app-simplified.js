@@ -341,24 +341,10 @@ function App() {
 
       {activeTab === 'life' && (
         <div>
-          <div className="text-center mb-6">
-            <h2 className="text-4xl font-bold" style={{color: "#00a651"}}>LIFE@24</h2>
-          </div>
-
-          <div className="flex justify-center mb-8">
-            <div className="bg-gray-800 inline-flex rounded-lg p-1" style={{border: "2px solid #00a651", boxShadow: "3px 3px 0px #00a651"}}>
-              <button
-                id="sort-newest-btn"
-                className="px-4 py-2 rounded-md bg-gray-700"
-              >
-                Newest First
-              </button>
-              <button
-                id="sort-oldest-btn"
-                className="px-4 py-2 rounded-md"
-              >
-                Oldest First
-              </button>
+          <div className="mb-8 flex justify-between items-center">
+            <h2 className="text-3xl font-bold" style={{color: "#00a651"}}>LIFE@24</h2>
+            <div id="life24-dropdown-container">
+              {/* Dropdown will be injected here by life24.js */}
             </div>
           </div>
 
@@ -374,24 +360,10 @@ function App() {
 
       {activeTab === 'unmastered' && (
         <div>
-          <div className="text-center mb-6">
-            <h2 className="text-4xl font-bold" style={{color: "#00a651"}}>untitled unmastered</h2>
-          </div>
-
-          <div className="flex justify-center mb-8">
-            <div className="bg-gray-800 inline-flex rounded-lg p-1" style={{border: "2px solid #00a651", boxShadow: "3px 3px 0px #00a651"}}>
-              <button
-                id="unmastered-sort-newest-btn"
-                className="px-4 py-2 rounded-md bg-gray-700"
-              >
-                Newest First
-              </button>
-              <button
-                id="unmastered-sort-oldest-btn"
-                className="px-4 py-2 rounded-md"
-              >
-                Oldest First
-              </button>
+          <div className="mb-8 flex justify-between items-center">
+            <h2 className="text-3xl font-bold" style={{color: "#00a651"}}>untitled unmastered</h2>
+            <div id="unmastered-dropdown-container">
+              {/* Dropdown will be injected here by unmastered.js */}
             </div>
           </div>
 
