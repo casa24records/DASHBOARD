@@ -26,9 +26,26 @@ const unmasteredConfig = {
       // Maximum number of files to fetch
       pageSize: 50,
       // Fields to include in the response
-      fields: 'files(id,name,createdTime,webViewLink)'
+      fields: 'files(id,name,createdTime,webViewLink,modifiedTime)'
     }
   };
+  
+  /**
+   * Format date to D-MMM-YYYY format
+   * @param {string} dateString - ISO date string
+   * @returns {string} Formatted date
+   */
+  function formatDisplayDate(dateString) {
+    if (!dateString) return 'Date unavailable';
+    
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    
+    return `${day}-${month}-${year}`;
+  }
   
   /**
    * Fetch the list of tracks from Google Drive
@@ -72,10 +89,11 @@ const unmasteredConfig = {
             audioUrl: `https://drive.google.com/a/ui/v1/m?id=${file.id}`,
             previewUrl: `https://drive.google.com/file/d/${file.id}/preview`,
             downloadUrl: `https://drive.google.com/uc?export=download&id=${file.id}`,
-            createdTime: file.createdTime
+            createdTime: file.createdTime,
+            modifiedTime: file.modifiedTime || file.createdTime
           };
         })
-        .sort((a, b) => new Date(b.date || b.createdTime) - new Date(a.date || a.createdTime));
+        .sort((a, b) => new Date(b.modifiedTime) - new Date(a.modifiedTime));
     } catch (error) {
       console.error('Error fetching tracks:', error);
       return [];
@@ -154,6 +172,36 @@ const unmasteredConfig = {
   }
   
   /**
+   * Create the dropdown for sorting
+   */
+  function createSortDropdown() {
+    const container = document.getElementById('unmastered-dropdown-container');
+    if (!container) {
+      console.log('Dropdown container not found, waiting for React to render...');
+      return null;
+    }
+    
+    const dropdown = document.createElement('select');
+    dropdown.className = 'bg-gray-800 border-2 border-accent text-white py-2 px-4 rounded retro-btn';
+    dropdown.style.borderColor = '#00a651';
+    dropdown.innerHTML = `
+      <option value="newest">Newest</option>
+      <option value="oldest">Oldest</option>
+    `;
+    
+    dropdown.addEventListener('change', (e) => {
+      if (window.unmasteredTracks) {
+        renderUnmasteredTracks(window.unmasteredTracks, e.target.value);
+      }
+    });
+    
+    container.innerHTML = '';
+    container.appendChild(dropdown);
+    
+    return dropdown;
+  }
+  
+  /**
    * Render the track buttons in the container
    * @param {Array} tracks - Array of track objects
    * @param {string} sort - Sort order ('newest' or 'oldest')
@@ -169,12 +217,12 @@ const unmasteredConfig = {
     // Clear any existing content
     container.innerHTML = '';
     
-    // Sort tracks by date
+    // Sort tracks by modifiedTime (last modified date)
     const sortedTracks = [...tracks];
     if (sort === 'newest') {
-      sortedTracks.sort((a, b) => new Date(b.date || b.createdTime) - new Date(a.date || a.createdTime));
+      sortedTracks.sort((a, b) => new Date(b.modifiedTime) - new Date(a.modifiedTime));
     } else {
-      sortedTracks.sort((a, b) => new Date(a.date || a.createdTime) - new Date(b.date || b.createdTime));
+      sortedTracks.sort((a, b) => new Date(a.modifiedTime) - new Date(b.modifiedTime));
     }
     
     if (sortedTracks.length === 0) {
@@ -198,7 +246,7 @@ const unmasteredConfig = {
       // Add click handler to open the audio player
       card.addEventListener('click', () => openAudioPlayer(track));
       
-      // Create card content
+      // Create card content with file name in center and formatted date below
       card.innerHTML = `
         <div class="relative mb-2" style="padding-bottom: 120%">
           <img 
@@ -206,14 +254,14 @@ const unmasteredConfig = {
             alt="${track.displayName || track.name}"
             class="absolute top-0 left-0 w-full h-full object-cover rounded"
           />
-          <div class="absolute inset-0 flex items-center justify-center">
-            <div class="bg-black bg-opacity-70 text-white p-2 rounded">
-              ${track.displayName || track.name.replace('.mp3', '')}
+          <div class="absolute inset-0 flex items-center justify-center p-2">
+            <div class="bg-black bg-opacity-70 text-white p-2 rounded max-w-full">
+              <div class="break-words text-sm">${track.name.replace('.mp3', '')}</div>
             </div>
           </div>
         </div>
         <p class="text-sm text-gray-400">
-          ${track.date ? new Date(track.date).toLocaleDateString() : 'Date unavailable'}
+          ${formatDisplayDate(track.modifiedTime)}
         </p>
       `;
       
@@ -345,6 +393,14 @@ const unmasteredConfig = {
       // Save tracks in a global variable for sorting
       window.unmasteredTracks = tracks;
       
+      // Create the dropdown after we have the data
+      setTimeout(() => {
+        const dropdown = createSortDropdown();
+        if (dropdown) {
+          dropdown.value = sort;
+        }
+      }, 100);
+      
       // Render tracks
       renderUnmasteredTracks(tracks, sort);
     } catch (error) {
@@ -353,30 +409,8 @@ const unmasteredConfig = {
     }
   }
   
-  // Event handling for tab navigation and sort buttons
+  // Event handling for tab navigation
   document.addEventListener('DOMContentLoaded', function() {
-    // Initial setup for untitled unmastered section
-    const sortNewestBtn = document.getElementById('unmastered-sort-newest-btn');
-    const sortOldestBtn = document.getElementById('unmastered-sort-oldest-btn');
-    
-    if (sortNewestBtn && sortOldestBtn) {
-      sortNewestBtn.addEventListener('click', function() {
-        if (window.unmasteredTracks) {
-          renderUnmasteredTracks(window.unmasteredTracks, 'newest');
-          sortNewestBtn.classList.add('bg-gray-700');
-          sortOldestBtn.classList.remove('bg-gray-700');
-        }
-      });
-      
-      sortOldestBtn.addEventListener('click', function() {
-        if (window.unmasteredTracks) {
-          renderUnmasteredTracks(window.unmasteredTracks, 'oldest');
-          sortOldestBtn.classList.add('bg-gray-700');
-          sortNewestBtn.classList.remove('bg-gray-700');
-        }
-      });
-    }
-    
     // Find the untitled unmastered tab link
     const tabLinks = document.querySelectorAll('a[href="#unmastered"]');
     if (tabLinks.length > 0) {

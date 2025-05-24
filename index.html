@@ -31,46 +31,6 @@
   
   <div id="root" class="min-h-screen p-6 vinyl-bg">
     <!-- App content will be injected here by app-simplified.js -->
-    
-    <!-- LIFE@24 Section -->
-    <div class="mb-10">
-      <h2 class="text-3xl font-bold mb-4 text-green-500">LIFE@24</h2>
-      
-      <div class="flex justify-end mb-4">
-        <div class="inline-flex rounded-md shadow-sm" role="group">
-          <button id="sort-newest-btn" class="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-l-lg border border-gray-600 hover:bg-gray-700 focus:z-10 focus:ring-2 focus:ring-green-500 bg-gray-700">
-            Newest First
-          </button>
-          <button id="sort-oldest-btn" class="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-r-lg border border-gray-600 hover:bg-gray-700 focus:z-10 focus:ring-2 focus:ring-green-500">
-            Oldest First
-          </button>
-        </div>
-      </div>
-      
-      <div id="life-at-24-container" class="mb-6">
-        <!-- LIFE@24 content will be loaded here by life24.js -->
-      </div>
-    </div>
-    
-    <!-- untitled unmastered Section -->
-    <div class="mb-10">
-      <h2 class="text-3xl font-bold mb-4 text-green-500">untitled unmastered</h2>
-      
-      <div class="flex justify-end mb-4">
-        <div class="inline-flex rounded-md shadow-sm" role="group">
-          <button id="unmastered-sort-newest-btn" class="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-l-lg border border-gray-600 hover:bg-gray-700 focus:z-10 focus:ring-2 focus:ring-green-500 bg-gray-700">
-            Newest First
-          </button>
-          <button id="unmastered-sort-oldest-btn" class="px-4 py-2 text-sm font-medium text-white bg-gray-800 rounded-r-lg border border-gray-600 hover:bg-gray-700 focus:z-10 focus:ring-2 focus:ring-green-500">
-            Oldest First
-          </button>
-        </div>
-      </div>
-      
-      <div id="untitled-unmastered-container" class="mb-6">
-        <!-- untitled unmastered content will be loaded here by unmastered.js -->
-      </div>
-    </div>
   </div>
   
   <!-- Application Code -->
@@ -81,20 +41,5 @@
   
   <!-- untitled unmastered Script -->
   <script src="js/unmastered.js"></script>
-  
-  <!-- Initialize both sections on page load -->
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Initialize LIFE@24 section
-      if (window.life24 && window.life24.initialize) {
-        window.life24.initialize('newest');
-      }
-      
-      // Initialize untitled unmastered section
-      if (window.unmastered && window.unmastered.initialize) {
-        window.unmastered.initialize('newest');
-      }
-    });
-  </script>
 </body>
 </html>
