@@ -31,6 +31,23 @@ const life24Config = {
   };
   
   /**
+   * Format date to [DD].[MMM].[YYYY] format
+   * @param {string} dateString - ISO date string
+   * @returns {string} Formatted date
+   */
+  function formatDisplayDate(dateString) {
+    if (!dateString) return '[Date unavailable]';
+    
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    
+    return `[${day}].[${month}].[${year}]`;
+  }
+  
+  /**
    * Fetch the list of magazines from Google Drive
    * @returns {Promise<Array>} Array of magazine objects
    */
@@ -75,7 +92,7 @@ const life24Config = {
             createdTime: file.createdTime
           };
         })
-        .sort((a, b) => new Date(b.date || b.createdTime) - new Date(a.date || a.createdTime));
+        .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
     } catch (error) {
       console.error('Error fetching magazines:', error);
       return [];
@@ -150,6 +167,33 @@ const life24Config = {
   }
   
   /**
+   * Create the dropdown for sorting
+   */
+  function createSortDropdown() {
+    const container = document.getElementById('life24-dropdown-container');
+    if (!container) return;
+    
+    const dropdown = document.createElement('select');
+    dropdown.className = 'bg-gray-800 border-2 border-accent text-white py-2 px-4 rounded retro-btn';
+    dropdown.style.borderColor = '#00a651';
+    dropdown.innerHTML = `
+      <option value="newest">Newest</option>
+      <option value="oldest">Oldest</option>
+    `;
+    
+    dropdown.addEventListener('change', (e) => {
+      if (window.life24Magazines) {
+        renderLife24Magazines(window.life24Magazines, e.target.value);
+      }
+    });
+    
+    container.innerHTML = '';
+    container.appendChild(dropdown);
+    
+    return dropdown;
+  }
+  
+  /**
    * Render the magazine buttons in the container
    * @param {Array} magazines - Array of magazine objects
    * @param {string} sort - Sort order ('newest' or 'oldest')
@@ -165,12 +209,12 @@ const life24Config = {
     // Clear any existing content
     container.innerHTML = '';
     
-    // Sort magazines by date
+    // Sort magazines by createdTime (last modified date)
     const sortedMagazines = [...magazines];
     if (sort === 'newest') {
-      sortedMagazines.sort((a, b) => new Date(b.date || b.createdTime) - new Date(a.date || a.createdTime));
+      sortedMagazines.sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
     } else {
-      sortedMagazines.sort((a, b) => new Date(a.date || a.createdTime) - new Date(b.date || b.createdTime));
+      sortedMagazines.sort((a, b) => new Date(a.createdTime) - new Date(b.createdTime));
     }
     
     if (sortedMagazines.length === 0) {
@@ -194,7 +238,7 @@ const life24Config = {
       // Add click handler to open the PDF viewer
       card.addEventListener('click', () => openMagazineViewer(magazine));
       
-      // Create card content
+      // Create card content with file name in center and formatted date below
       card.innerHTML = `
         <div class="relative mb-2" style="padding-bottom: 120%">
           <img 
@@ -202,14 +246,14 @@ const life24Config = {
             alt="${magazine.displayName || magazine.name}"
             class="absolute top-0 left-0 w-full h-full object-cover rounded"
           />
-          <div class="absolute inset-0 flex items-center justify-center">
-            <div class="bg-black bg-opacity-70 text-white p-2 rounded">
-              ${magazine.displayName || magazine.name.replace('.pdf', '')}
+          <div class="absolute inset-0 flex items-center justify-center p-2">
+            <div class="bg-black bg-opacity-70 text-white p-2 rounded max-w-full">
+              <div class="break-words">${magazine.name.replace('.pdf', '')}</div>
             </div>
           </div>
         </div>
         <p class="text-sm text-gray-400">
-          ${magazine.date ? new Date(magazine.date).toLocaleDateString() : 'Date unavailable'}
+          ${formatDisplayDate(magazine.createdTime)}
         </p>
       `;
       
@@ -314,6 +358,12 @@ const life24Config = {
       return;
     }
     
+    // Create the dropdown
+    const dropdown = createSortDropdown();
+    if (dropdown) {
+      dropdown.value = sort;
+    }
+    
     // Show loading indicator
     container.innerHTML = `
       <div class="text-center py-8">
@@ -337,30 +387,8 @@ const life24Config = {
     }
   }
   
-  // Event handling for tab navigation and sort buttons
+  // Event handling for tab navigation
   document.addEventListener('DOMContentLoaded', function() {
-    // Initial setup for Life@24 section
-    const sortNewestBtn = document.getElementById('sort-newest-btn');
-    const sortOldestBtn = document.getElementById('sort-oldest-btn');
-    
-    if (sortNewestBtn && sortOldestBtn) {
-      sortNewestBtn.addEventListener('click', function() {
-        if (window.life24Magazines) {
-          renderLife24Magazines(window.life24Magazines, 'newest');
-          sortNewestBtn.classList.add('bg-gray-700');
-          sortOldestBtn.classList.remove('bg-gray-700');
-        }
-      });
-      
-      sortOldestBtn.addEventListener('click', function() {
-        if (window.life24Magazines) {
-          renderLife24Magazines(window.life24Magazines, 'oldest');
-          sortOldestBtn.classList.add('bg-gray-700');
-          sortNewestBtn.classList.remove('bg-gray-700');
-        }
-      });
-    }
-    
     // Find the Life@24 tab link
     const tabLinks = document.querySelectorAll('a[href="#life"]');
     if (tabLinks.length > 0) {
