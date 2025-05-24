@@ -31,6 +31,23 @@ const unmasteredConfig = {
   };
   
   /**
+   * Format date to [DD].[MMM].[YYYY] format
+   * @param {string} dateString - ISO date string
+   * @returns {string} Formatted date
+   */
+  function formatDisplayDate(dateString) {
+    if (!dateString) return '[Date unavailable]';
+    
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    
+    return `[${day}].[${month}].[${year}]`;
+  }
+  
+  /**
    * Fetch the list of tracks from Google Drive
    * @returns {Promise<Array>} Array of track objects
    */
@@ -75,7 +92,7 @@ const unmasteredConfig = {
             createdTime: file.createdTime
           };
         })
-        .sort((a, b) => new Date(b.date || b.createdTime) - new Date(a.date || a.createdTime));
+        .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
     } catch (error) {
       console.error('Error fetching tracks:', error);
       return [];
@@ -154,6 +171,33 @@ const unmasteredConfig = {
   }
   
   /**
+   * Create the dropdown for sorting
+   */
+  function createSortDropdown() {
+    const container = document.getElementById('unmastered-dropdown-container');
+    if (!container) return;
+    
+    const dropdown = document.createElement('select');
+    dropdown.className = 'bg-gray-800 border-2 border-accent text-white py-2 px-4 rounded retro-btn';
+    dropdown.style.borderColor = '#00a651';
+    dropdown.innerHTML = `
+      <option value="newest">Newest</option>
+      <option value="oldest">Oldest</option>
+    `;
+    
+    dropdown.addEventListener('change', (e) => {
+      if (window.unmasteredTracks) {
+        renderUnmasteredTracks(window.unmasteredTracks, e.target.value);
+      }
+    });
+    
+    container.innerHTML = '';
+    container.appendChild(dropdown);
+    
+    return dropdown;
+  }
+  
+  /**
    * Render the track buttons in the container
    * @param {Array} tracks - Array of track objects
    * @param {string} sort - Sort order ('newest' or 'oldest')
@@ -169,12 +213,12 @@ const unmasteredConfig = {
     // Clear any existing content
     container.innerHTML = '';
     
-    // Sort tracks by date
+    // Sort tracks by createdTime (last modified date)
     const sortedTracks = [...tracks];
     if (sort === 'newest') {
-      sortedTracks.sort((a, b) => new Date(b.date || b.createdTime) - new Date(a.date || a.createdTime));
+      sortedTracks.sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
     } else {
-      sortedTracks.sort((a, b) => new Date(a.date || a.createdTime) - new Date(b.date || b.createdTime));
+      sortedTracks.sort((a, b) => new Date(a.createdTime) - new Date(b.createdTime));
     }
     
     if (sortedTracks.length === 0) {
@@ -198,7 +242,7 @@ const unmasteredConfig = {
       // Add click handler to open the audio player
       card.addEventListener('click', () => openAudioPlayer(track));
       
-      // Create card content
+      // Create card content with file name in center and formatted date below
       card.innerHTML = `
         <div class="relative mb-2" style="padding-bottom: 120%">
           <img 
@@ -206,14 +250,14 @@ const unmasteredConfig = {
             alt="${track.displayName || track.name}"
             class="absolute top-0 left-0 w-full h-full object-cover rounded"
           />
-          <div class="absolute inset-0 flex items-center justify-center">
-            <div class="bg-black bg-opacity-70 text-white p-2 rounded">
-              ${track.displayName || track.name.replace('.mp3', '')}
+          <div class="absolute inset-0 flex items-center justify-center p-2">
+            <div class="bg-black bg-opacity-70 text-white p-2 rounded max-w-full">
+              <div class="break-words text-sm">${track.name.replace('.mp3', '')}</div>
             </div>
           </div>
         </div>
         <p class="text-sm text-gray-400">
-          ${track.date ? new Date(track.date).toLocaleDateString() : 'Date unavailable'}
+          ${formatDisplayDate(track.createdTime)}
         </p>
       `;
       
@@ -330,6 +374,12 @@ const unmasteredConfig = {
       return;
     }
     
+    // Create the dropdown
+    const dropdown = createSortDropdown();
+    if (dropdown) {
+      dropdown.value = sort;
+    }
+    
     // Show loading indicator
     container.innerHTML = `
       <div class="text-center py-8">
@@ -353,30 +403,8 @@ const unmasteredConfig = {
     }
   }
   
-  // Event handling for tab navigation and sort buttons
+  // Event handling for tab navigation
   document.addEventListener('DOMContentLoaded', function() {
-    // Initial setup for untitled unmastered section
-    const sortNewestBtn = document.getElementById('unmastered-sort-newest-btn');
-    const sortOldestBtn = document.getElementById('unmastered-sort-oldest-btn');
-    
-    if (sortNewestBtn && sortOldestBtn) {
-      sortNewestBtn.addEventListener('click', function() {
-        if (window.unmasteredTracks) {
-          renderUnmasteredTracks(window.unmasteredTracks, 'newest');
-          sortNewestBtn.classList.add('bg-gray-700');
-          sortOldestBtn.classList.remove('bg-gray-700');
-        }
-      });
-      
-      sortOldestBtn.addEventListener('click', function() {
-        if (window.unmasteredTracks) {
-          renderUnmasteredTracks(window.unmasteredTracks, 'oldest');
-          sortOldestBtn.classList.add('bg-gray-700');
-          sortNewestBtn.classList.remove('bg-gray-700');
-        }
-      });
-    }
-    
     // Find the untitled unmastered tab link
     const tabLinks = document.querySelectorAll('a[href="#unmastered"]');
     if (tabLinks.length > 0) {
