@@ -26,25 +26,25 @@ const life24Config = {
       // Maximum number of files to fetch
       pageSize: 50,
       // Fields to include in the response
-      fields: 'files(id,name,createdTime,webViewLink)'
+      fields: 'files(id,name,createdTime,webViewLink,modifiedTime)'
     }
   };
   
   /**
-   * Format date to [DD].[MMM].[YYYY] format
+   * Format date to D-MMM-YYYY format
    * @param {string} dateString - ISO date string
    * @returns {string} Formatted date
    */
   function formatDisplayDate(dateString) {
-    if (!dateString) return '[Date unavailable]';
+    if (!dateString) return 'Date unavailable';
     
     const date = new Date(dateString);
-    const day = date.getDate().toString().padStart(2, '0');
+    const day = date.getDate();
     const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
     const month = months[date.getMonth()];
     const year = date.getFullYear();
     
-    return `[${day}].[${month}].[${year}]`;
+    return `${day}-${month}-${year}`;
   }
   
   /**
@@ -89,10 +89,11 @@ const life24Config = {
             displayName: datePart.displayName,
             previewUrl: `https://drive.google.com/file/d/${file.id}/preview`,
             downloadUrl: `https://drive.google.com/uc?export=download&id=${file.id}`,
-            createdTime: file.createdTime
+            createdTime: file.createdTime,
+            modifiedTime: file.modifiedTime || file.createdTime
           };
         })
-        .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
+        .sort((a, b) => new Date(b.modifiedTime) - new Date(a.modifiedTime));
     } catch (error) {
       console.error('Error fetching magazines:', error);
       return [];
@@ -171,7 +172,10 @@ const life24Config = {
    */
   function createSortDropdown() {
     const container = document.getElementById('life24-dropdown-container');
-    if (!container) return;
+    if (!container) {
+      console.log('Dropdown container not found, waiting for React to render...');
+      return null;
+    }
     
     const dropdown = document.createElement('select');
     dropdown.className = 'bg-gray-800 border-2 border-accent text-white py-2 px-4 rounded retro-btn';
@@ -209,12 +213,12 @@ const life24Config = {
     // Clear any existing content
     container.innerHTML = '';
     
-    // Sort magazines by createdTime (last modified date)
+    // Sort magazines by modifiedTime (last modified date)
     const sortedMagazines = [...magazines];
     if (sort === 'newest') {
-      sortedMagazines.sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
+      sortedMagazines.sort((a, b) => new Date(b.modifiedTime) - new Date(a.modifiedTime));
     } else {
-      sortedMagazines.sort((a, b) => new Date(a.createdTime) - new Date(b.createdTime));
+      sortedMagazines.sort((a, b) => new Date(a.modifiedTime) - new Date(b.modifiedTime));
     }
     
     if (sortedMagazines.length === 0) {
@@ -253,7 +257,7 @@ const life24Config = {
           </div>
         </div>
         <p class="text-sm text-gray-400">
-          ${formatDisplayDate(magazine.createdTime)}
+          ${formatDisplayDate(magazine.modifiedTime)}
         </p>
       `;
       
@@ -358,12 +362,6 @@ const life24Config = {
       return;
     }
     
-    // Create the dropdown
-    const dropdown = createSortDropdown();
-    if (dropdown) {
-      dropdown.value = sort;
-    }
-    
     // Show loading indicator
     container.innerHTML = `
       <div class="text-center py-8">
@@ -378,6 +376,14 @@ const life24Config = {
       
       // Save magazines in a global variable for sorting
       window.life24Magazines = magazines;
+      
+      // Create the dropdown after we have the data
+      setTimeout(() => {
+        const dropdown = createSortDropdown();
+        if (dropdown) {
+          dropdown.value = sort;
+        }
+      }, 100);
       
       // Render magazines
       renderLife24Magazines(magazines, sort);
