@@ -26,25 +26,25 @@ const unmasteredConfig = {
       // Maximum number of files to fetch
       pageSize: 50,
       // Fields to include in the response
-      fields: 'files(id,name,createdTime,webViewLink)'
+      fields: 'files(id,name,createdTime,webViewLink,modifiedTime)'
     }
   };
   
   /**
-   * Format date to [DD].[MMM].[YYYY] format
+   * Format date to D-MMM-YYYY format
    * @param {string} dateString - ISO date string
    * @returns {string} Formatted date
    */
   function formatDisplayDate(dateString) {
-    if (!dateString) return '[Date unavailable]';
+    if (!dateString) return 'Date unavailable';
     
     const date = new Date(dateString);
-    const day = date.getDate().toString().padStart(2, '0');
+    const day = date.getDate();
     const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
     const month = months[date.getMonth()];
     const year = date.getFullYear();
     
-    return `[${day}].[${month}].[${year}]`;
+    return `${day}-${month}-${year}`;
   }
   
   /**
@@ -89,10 +89,11 @@ const unmasteredConfig = {
             audioUrl: `https://drive.google.com/a/ui/v1/m?id=${file.id}`,
             previewUrl: `https://drive.google.com/file/d/${file.id}/preview`,
             downloadUrl: `https://drive.google.com/uc?export=download&id=${file.id}`,
-            createdTime: file.createdTime
+            createdTime: file.createdTime,
+            modifiedTime: file.modifiedTime || file.createdTime
           };
         })
-        .sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
+        .sort((a, b) => new Date(b.modifiedTime) - new Date(a.modifiedTime));
     } catch (error) {
       console.error('Error fetching tracks:', error);
       return [];
@@ -175,7 +176,10 @@ const unmasteredConfig = {
    */
   function createSortDropdown() {
     const container = document.getElementById('unmastered-dropdown-container');
-    if (!container) return;
+    if (!container) {
+      console.log('Dropdown container not found, waiting for React to render...');
+      return null;
+    }
     
     const dropdown = document.createElement('select');
     dropdown.className = 'bg-gray-800 border-2 border-accent text-white py-2 px-4 rounded retro-btn';
@@ -213,12 +217,12 @@ const unmasteredConfig = {
     // Clear any existing content
     container.innerHTML = '';
     
-    // Sort tracks by createdTime (last modified date)
+    // Sort tracks by modifiedTime (last modified date)
     const sortedTracks = [...tracks];
     if (sort === 'newest') {
-      sortedTracks.sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));
+      sortedTracks.sort((a, b) => new Date(b.modifiedTime) - new Date(a.modifiedTime));
     } else {
-      sortedTracks.sort((a, b) => new Date(a.createdTime) - new Date(b.createdTime));
+      sortedTracks.sort((a, b) => new Date(a.modifiedTime) - new Date(b.modifiedTime));
     }
     
     if (sortedTracks.length === 0) {
@@ -257,7 +261,7 @@ const unmasteredConfig = {
           </div>
         </div>
         <p class="text-sm text-gray-400">
-          ${formatDisplayDate(track.createdTime)}
+          ${formatDisplayDate(track.modifiedTime)}
         </p>
       `;
       
@@ -374,12 +378,6 @@ const unmasteredConfig = {
       return;
     }
     
-    // Create the dropdown
-    const dropdown = createSortDropdown();
-    if (dropdown) {
-      dropdown.value = sort;
-    }
-    
     // Show loading indicator
     container.innerHTML = `
       <div class="text-center py-8">
@@ -394,6 +392,14 @@ const unmasteredConfig = {
       
       // Save tracks in a global variable for sorting
       window.unmasteredTracks = tracks;
+      
+      // Create the dropdown after we have the data
+      setTimeout(() => {
+        const dropdown = createSortDropdown();
+        if (dropdown) {
+          dropdown.value = sort;
+        }
+      }, 100);
       
       // Render tracks
       renderUnmasteredTracks(tracks, sort);
