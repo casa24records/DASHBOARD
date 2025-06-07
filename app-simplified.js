@@ -5,12 +5,23 @@ const { useState, useEffect } = React;
 
 // Helper function to format large numbers
 const formatNumber = (num) => {
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + 'M';
-  } else if (num >= 1000) {
-    return (num / 1000).toFixed(1) + 'K';
+  if (num === "N/A" || num === null || num === undefined) {
+    return "N/A";
   }
-  return num;
+  
+  // Convert string numbers to integers
+  const numValue = typeof num === 'string' ? parseInt(num.replace(/,/g, '')) : num;
+  
+  if (isNaN(numValue)) {
+    return "N/A";
+  }
+  
+  if (numValue >= 1000000) {
+    return (numValue / 1000000).toFixed(1) + 'M';
+  } else if (numValue >= 1000) {
+    return (numValue / 1000).toFixed(1) + 'K';
+  }
+  return numValue.toLocaleString();
 };
 
 function App() {
@@ -84,12 +95,23 @@ function App() {
   const collectiveTotals = data.artists.reduce((acc, artist) => {
     acc.spotify.followers += artist.spotify.followers || 0;
     acc.spotify.popularity_score += artist.spotify.popularity_score || 0;
+    
+    // Handle monthly listeners - convert to number if it's a valid string
+    const monthlyListeners = artist.spotify.monthly_listeners;
+    if (monthlyListeners && monthlyListeners !== "N/A") {
+      const numValue = typeof monthlyListeners === 'string' ? 
+        parseInt(monthlyListeners.replace(/,/g, '')) : monthlyListeners;
+      if (!isNaN(numValue)) {
+        acc.spotify.monthly_listeners += numValue;
+      }
+    }
+    
     acc.youtube.subscribers += artist.youtube.subscribers || 0;
     acc.youtube.total_views += artist.youtube.total_views || 0;
     acc.youtube.video_count += artist.youtube.video_count || 0;
     return acc;
   }, {
-    spotify: { followers: 0, popularity_score: 0 },
+    spotify: { followers: 0, popularity_score: 0, monthly_listeners: 0 },
     youtube: { subscribers: 0, total_views: 0, video_count: 0 }
   });
 
@@ -166,13 +188,22 @@ function App() {
             </select>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             {/* Spotify Followers Card */}
             <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
               <h3 className="text-lg text-gray-400 mb-1">Spotify Followers</h3>
               <div className="flex items-center">
                 <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
                 <div className="text-3xl font-bold">{formatNumber(currentArtistData.spotify.followers || 0)}</div>
+              </div>
+            </div>
+
+            {/* Monthly Listeners Card */}
+            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+              <h3 className="text-lg text-gray-400 mb-1">Monthly Listeners</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
+                <div className="text-3xl font-bold">{formatNumber(currentArtistData.spotify.monthly_listeners || "N/A")}</div>
               </div>
             </div>
 
@@ -273,7 +304,7 @@ function App() {
         <div>
           <h2 className="text-3xl font-bold mb-8" style={{color: "#00a651"}}>Collective Overview</h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             {/* Total Artists Card */}
             <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
               <h3 className="text-lg text-gray-400 mb-1">Total Artists</h3>
@@ -286,6 +317,15 @@ function App() {
               <div className="flex items-center">
                 <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
                 <div className="text-3xl font-bold">{formatNumber(collectiveTotals.spotify.followers)}</div>
+              </div>
+            </div>
+
+            {/* Total Monthly Listeners Card */}
+            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+              <h3 className="text-lg text-gray-400 mb-1">Total Monthly Listeners</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
+                <div className="text-3xl font-bold">{formatNumber(collectiveTotals.spotify.monthly_listeners)}</div>
               </div>
             </div>
 
@@ -317,6 +357,7 @@ function App() {
                   <tr className="border-b border-gray-700">
                     <th className="text-left pb-2">Artist</th>
                     <th className="text-right pb-2">Spotify Followers</th>
+                    <th className="text-right pb-2">Monthly Listeners</th>
                     <th className="text-right pb-2">Spotify Popularity</th>
                     <th className="text-right pb-2">YouTube Subscribers</th>
                     <th className="text-right pb-2">YouTube Views</th>
@@ -327,6 +368,7 @@ function App() {
                     <tr key={index} className="border-b border-gray-700">
                       <td className="py-3 font-medium">{artist.name}</td>
                       <td className="text-right">{formatNumber(artist.spotify.followers || 0)}</td>
+                      <td className="text-right">{formatNumber(artist.spotify.monthly_listeners || "N/A")}</td>
                       <td className="text-right">{artist.spotify.popularity_score || 0}/100</td>
                       <td className="text-right">{formatNumber(artist.youtube.subscribers || 0)}</td>
                       <td className="text-right">{formatNumber(artist.youtube.total_views || 0)}</td>
