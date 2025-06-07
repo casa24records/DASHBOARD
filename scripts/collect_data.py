@@ -9,21 +9,6 @@ from bs4 import BeautifulSoup
 import time
 import traceback
 
-# Try to import Selenium components
-try:
-    from selenium import webdriver
-    from selenium.webdriver.chrome.options import Options
-    from selenium.webdriver.common.by import By
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
-    from selenium.common.exceptions import TimeoutException, NoSuchElementException
-    from webdriver_manager.chrome import ChromeDriverManager
-    from selenium.webdriver.chrome.service import Service
-    SELENIUM_AVAILABLE = True
-except ImportError:
-    SELENIUM_AVAILABLE = False
-    print("⚠️  Selenium not available. Will use requests-only approach.")
-
 # ------------------ CONFIGURATION ------------------
 
 # Spotify API Credentials
@@ -116,173 +101,160 @@ def clean_number_string(number_str):
     except ValueError:
         return 0
 
-def scrape_monthly_listeners_selenium(artist_id, artist_name):
-    """Use Selenium to scrape monthly listeners from Spotify's dynamic page."""
-    if not SELENIUM_AVAILABLE:
-        return None
-    
-    print(f"    🤖 Using Selenium WebDriver for {artist_name}")
-    
-    driver = None
-    try:
-        # Setup Chrome options
-        chrome_options = Options()
-        chrome_options.add_argument('--headless')  # Run in background
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.add_argument('--disable-gpu')
-        chrome_options.add_argument('--window-size=1920,1080')
-        chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-        
-        # Initialize the driver
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-        
-        # Navigate to the artist page
-        url = f"https://open.spotify.com/artist/{artist_id}"
-        print(f"    📡 Loading {url}")
-        driver.get(url)
-        
-        # Wait for page to load and try multiple strategies
-        time.sleep(5)
-        
-        # Strategy 1: Look for monthly listeners text directly
-        monthly_listeners_selectors = [
-            "[data-testid*='monthly']",
-            "[class*='monthly']",
-            "span:contains('monthly listeners')",
-            "div:contains('monthly listeners')",
-            "*[contains(text(), 'monthly listeners')]",
-            "*[contains(text(), 'monthly')]"
-        ]
-        
-        for selector in monthly_listeners_selectors:
-            try:
-                elements = driver.find_elements(By.CSS_SELECTOR, selector)
-                for element in elements:
-                    text = element.text.strip()
-                    if 'monthly' in text.lower() and 'listener' in text.lower():
-                        print(f"    🎯 Found element with text: '{text}'")
-                        numbers = re.findall(r'\d{1,3}(?:,\d{3})*', text)
-                        for num in numbers:
-                            listeners = clean_number_string(num)
-                            if listeners > 100:
-                                print(f"    ✅ Found monthly listeners via Selenium: {listeners:,}")
-                                return listeners
-            except Exception as e:
-                continue
-        
-        # Strategy 2: Get all text and search for patterns
-        page_text = driver.page_source
-        soup = BeautifulSoup(page_text, 'html.parser')
-        
-        # Look for monthly listeners patterns
-        text_patterns = [
-            r'(\d{1,3}(?:,\d{3})*)\s*monthly\s*listeners',
-            r'(\d+)\s*monthly\s*listeners',
-            r'monthly\s*listeners[:\s]*(\d{1,3}(?:,\d{3})*)',
-        ]
-        
-        for pattern in text_patterns:
-            matches = re.findall(pattern, page_text, re.IGNORECASE)
-            if matches:
-                for match in matches:
-                    listeners = clean_number_string(match)
-                    if listeners > 0:
-                        print(f"    ✅ Found monthly listeners in page source: {listeners:,}")
-                        return listeners
-        
-        # Strategy 3: Look for JSON data in script tags
-        scripts = soup.find_all('script')
-        for script in scripts:
-            if script.string:
-                patterns = [
-                    r'"monthlyListeners":\s*(\d+)',
-                    r'"monthly_listeners":\s*(\d+)',
-                    r'monthlyListeners["\']:\s*["\']?(\d+)',
-                ]
-                
-                for pattern in patterns:
-                    match = re.search(pattern, script.string, re.IGNORECASE)
-                    if match:
-                        listeners = clean_number_string(match.group(1))
-                        if listeners > 0:
-                            print(f"    ✅ Found monthly listeners in JSON: {listeners:,}")
-                            return listeners
-        
-        print(f"    ❌ Selenium couldn't find monthly listeners for {artist_name}")
-        return None
-        
-    except Exception as e:
-        print(f"    ❌ Selenium error for {artist_name}: {e}")
-        return None
-    finally:
-        if driver:
-            driver.quit()
-
-def scrape_monthly_listeners_requests(artist_id, artist_name):
-    """Fallback method using requests + BeautifulSoup."""
-    try:
-        url = f"https://open.spotify.com/artist/{artist_id}"
-        
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Connection': 'keep-alive',
-        }
-        
-        response = requests.get(url, headers=headers, timeout=15)
-        response.raise_for_status()
-        
-        content = response.text
-        print(f"    📄 Page fetched ({len(content)} characters)")
-        
-        # Look for monthly listeners patterns
-        patterns = [
-            r'(\d{1,3}(?:,\d{3})*)\s*monthly\s*listeners',
-            r'"monthlyListeners":\s*(\d+)',
-            r'monthly\s*listeners[:\s]*(\d{1,3}(?:,\d{3})*)',
-        ]
-        
-        for pattern in patterns:
-            matches = re.findall(pattern, content, re.IGNORECASE)
-            if matches:
-                for match in matches:
-                    listeners = clean_number_string(match)
-                    if listeners > 0:
-                        print(f"    ✅ Found monthly listeners via requests: {listeners:,}")
-                        return listeners
-        
-        return None
-        
-    except Exception as e:
-        print(f"    ❌ Requests error: {e}")
-        return None
-
 def scrape_monthly_listeners(artist_id, artist_name):
-    """Scrapes monthly listeners using multiple methods."""
+    """Scrapes monthly listeners from Spotify's public artist page using multiple methods."""
     if not artist_id:
         print(f"No Spotify ID provided for {artist_name}")
         return "N/A"
     
     print(f"  → Scraping monthly listeners for {artist_name} (ID: {artist_id})")
     
-    # Method 1: Try Selenium if available
-    if SELENIUM_AVAILABLE:
-        result = scrape_monthly_listeners_selenium(artist_id, artist_name)
-        if result is not None:
-            return result
-        print(f"    ⚠️  Selenium failed, trying requests fallback...")
-    
-    # Method 2: Fallback to requests
-    result = scrape_monthly_listeners_requests(artist_id, artist_name)
-    if result is not None:
-        return result
-    
-    print(f"    ❌ All methods failed for {artist_name}")
-    return "N/A"
+    try:
+        url = f"https://open.spotify.com/artist/{artist_id}"
+        
+        # Multiple user agents to try
+        user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0'
+        ]
+        
+        for attempt, user_agent in enumerate(user_agents, 1):
+            print(f"    Attempt {attempt}: Trying to fetch page...")
+            
+            headers = {
+                'User-Agent': user_agent,
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Sec-Fetch-User': '?1',
+                'Cache-Control': 'max-age=0'
+            }
+            
+            try:
+                response = requests.get(url, headers=headers, timeout=15)
+                response.raise_for_status()
+                
+                content = response.text
+                print(f"    Page fetched successfully ({len(content)} characters)")
+                
+                # Method 1: Look for JSON data in script tags
+                script_pattern = r'<script[^>]*>(.*?)</script>'
+                scripts = re.findall(script_pattern, content, re.DOTALL)
+                
+                for script_content in scripts:
+                    # Look for monthly listeners in various JSON formats
+                    patterns = [
+                        r'"monthlyListeners":\s*(\d+)',
+                        r'"monthly_listeners":\s*(\d+)',
+                        r'"stats":\s*{[^}]*"monthlyListeners":\s*(\d+)',
+                        r'monthlyListeners["\']:\s*["\']?(\d+)',
+                        r'monthly.listeners["\']?\s*:\s*["\']?(\d+)'
+                    ]
+                    
+                    for pattern in patterns:
+                        match = re.search(pattern, script_content, re.IGNORECASE)
+                        if match:
+                            listeners = clean_number_string(match.group(1))
+                            if listeners > 0:
+                                print(f"    ✓ Found monthly listeners in JSON: {listeners:,}")
+                                return listeners
+                
+                # Method 2: Look for text patterns
+                text_patterns = [
+                    r'(\d{1,3}(?:,\d{3})*)\s*monthly\s*listeners',
+                    r'(\d+)\s*monthly\s*listeners',
+                    r'monthly\s*listeners[:\s]*(\d{1,3}(?:,\d{3})*)',
+                    r'(\d{1,3}(?:,\d{3})*)\s*listeners\s*monthly'
+                ]
+                
+                for pattern in text_patterns:
+                    matches = re.findall(pattern, content, re.IGNORECASE)
+                    if matches:
+                        for match in matches:
+                            listeners = clean_number_string(match)
+                            if listeners > 0:
+                                print(f"    ✓ Found monthly listeners in text: {listeners:,}")
+                                return listeners
+                
+                # Method 3: BeautifulSoup parsing for structured content
+                soup = BeautifulSoup(content, 'html.parser')
+                
+                # Look for elements that might contain monthly listeners
+                possible_selectors = [
+                    '[data-testid*="monthly"]',
+                    '[class*="monthly"]',
+                    '[class*="listener"]',
+                    'span:contains("monthly")',
+                    'div:contains("monthly")',
+                    'p:contains("monthly")'
+                ]
+                
+                for selector in possible_selectors:
+                    try:
+                        elements = soup.select(selector)
+                        for element in elements:
+                            text = element.get_text()
+                            if 'monthly' in text.lower() and 'listener' in text.lower():
+                                numbers = re.findall(r'\d{1,3}(?:,\d{3})*', text)
+                                for num in numbers:
+                                    listeners = clean_number_string(num)
+                                    if listeners > 100:  # Reasonable threshold
+                                        print(f"    ✓ Found monthly listeners in element: {listeners:,}")
+                                        return listeners
+                    except:
+                        continue
+                
+                # Method 4: Look for large numbers that could be monthly listeners
+                all_numbers = re.findall(r'\b(\d{1,3}(?:,\d{3})+)\b', content)
+                large_numbers = []
+                
+                for num_str in all_numbers:
+                    num = clean_number_string(num_str)
+                    if 1000 <= num <= 100000000:  # Reasonable range for monthly listeners
+                        large_numbers.append(num)
+                
+                if large_numbers:
+                    # Sort and take the most reasonable number
+                    large_numbers.sort(reverse=True)
+                    for num in large_numbers[:3]:  # Check top 3 largest numbers
+                        # Look for context around this number
+                        num_pattern = re.escape(f"{num:,}")
+                        context_match = re.search(f'.{{0,50}}{num_pattern}.{{0,50}}', content, re.IGNORECASE)
+                        if context_match:
+                            context = context_match.group()
+                            if any(word in context.lower() for word in ['monthly', 'listener', 'month']):
+                                print(f"    ✓ Found monthly listeners by context: {num:,}")
+                                return num
+                
+                print(f"    ⚠ No monthly listeners found in attempt {attempt}")
+                
+                # Wait before next attempt
+                if attempt < len(user_agents):
+                    time.sleep(2)
+                    
+            except requests.RequestException as e:
+                print(f"    ✗ Request failed in attempt {attempt}: {e}")
+                if attempt < len(user_agents):
+                    time.sleep(3)
+                continue
+            except Exception as e:
+                print(f"    ✗ Error in attempt {attempt}: {e}")
+                if attempt < len(user_agents):
+                    time.sleep(2)
+                continue
+        
+        print(f"    ✗ All attempts failed for {artist_name}")
+        return "N/A"
+        
+    except Exception as e:
+        print(f"    ✗ Fatal error scraping monthly listeners for {artist_name}: {e}")
+        return "N/A"
 
 def get_spotify_artist_data(artist_id, token, artist_name):
     """Gets name, popularity, followers, and monthly listeners for a Spotify artist."""
@@ -332,16 +304,17 @@ def get_spotify_artist_data(artist_id, token, artist_name):
             'top_tracks': top_tracks
         }
         
-        print(f"  ✅ Spotify data collected: Popularity: {result['popularity_score']}, "
+        print(f"  ✓ Spotify data collected: Popularity: {result['popularity_score']}, "
               f"Followers: {result['followers']:,}, Monthly Listeners: {result['monthly_listeners']}")
         
         # Add a delay to be respectful to servers
-        time.sleep(3)
+        time.sleep(2)
         
         return result
     
     except Exception as e:
-        print(f"  ❌ Error getting Spotify data for {artist_name}: {e}")
+        print(f"  ✗ Error getting Spotify data for {artist_name}: {e}")
+        traceback.print_exc()
         return {
             'popularity_score': 0,
             'followers': 0,
@@ -371,15 +344,15 @@ def get_youtube_channel_data(channel_id, artist_name):
                 'total_views': int(stats.get('viewCount', 0)),        
                 'video_count': int(stats.get('videoCount', 0))        
             }
-            print(f"  ✅ YouTube data collected: Subscribers: {result['subscribers']:,}, "
+            print(f"  ✓ YouTube data collected: Subscribers: {result['subscribers']:,}, "
                   f"Views: {result['total_views']:,}, Videos: {result['video_count']}")
             return result
         else:
-            print(f"  ⚠️  No YouTube data found for {artist_name}")
+            print(f"  ⚠ No YouTube data found for {artist_name}")
             return {'subscribers': 0, 'total_views': 0, 'video_count': 0}
     
     except Exception as e:
-        print(f"  ❌ Error getting YouTube data for {artist_name}: {e}")
+        print(f"  ✗ Error getting YouTube data for {artist_name}: {e}")
         return {'subscribers': 0, 'total_views': 0, 'video_count': 0}
 
 def collect_all_data():
@@ -388,12 +361,7 @@ def collect_all_data():
     
     print("Getting Spotify API token...")
     spotify_token = get_spotify_token()
-    print("✅ Spotify token obtained")
-    
-    if SELENIUM_AVAILABLE:
-        print("✅ Selenium WebDriver available for dynamic content")
-    else:
-        print("⚠️  Selenium not available - using requests only")
+    print("✓ Spotify token obtained")
     
     all_artists_data = {
         'date': today,
@@ -412,7 +380,7 @@ def collect_all_data():
         
         all_artists_data['artists'].append(artist_data)
         
-        print(f"✅ Completed data collection for {artist['name']}")
+        print(f"✓ Completed data collection for {artist['name']}")
     
     return all_artists_data
 
@@ -421,9 +389,9 @@ def save_data_as_json(data, filename):
     try:
         with open(filename, 'w') as f:
             json.dump(data, f, indent=2)
-        print(f"✅ Data saved to {filename}")
+        print(f"✓ Data saved to {filename}")
     except Exception as e:
-        print(f"❌ Error saving JSON to {filename}: {e}")
+        print(f"✗ Error saving JSON to {filename}: {e}")
 
 def update_historical_data(data):
     """Updates the historical data files."""
@@ -468,9 +436,9 @@ def update_historical_data(data):
         file_exists = os.path.exists(csv_file)
         df.to_csv(csv_file, mode='a', header=not file_exists, index=False)
         
-        print(f"✅ CSV data saved to {csv_file}")
+        print(f"✓ CSV data saved to {csv_file}")
     except Exception as e:
-        print(f"❌ Error saving CSV: {e}")
+        print(f"✗ Error saving CSV: {e}")
 
 # ------------------ MAIN PROCESS ------------------
 
@@ -512,8 +480,3 @@ if __name__ == "__main__":
         print(f"\n💥 Error during data collection: {e}")
         traceback.print_exc()
         print("\nPlease check your internet connection and API credentials.")
-        
-        if not SELENIUM_AVAILABLE:
-            print("\n💡 Tip: Install Selenium for better monthly listeners scraping:")
-            print("   pip install selenium")
-            print("   Also install ChromeDriver or use webdriver-manager")
