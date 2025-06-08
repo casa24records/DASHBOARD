@@ -6,6 +6,7 @@
       "spotify": {
         "popularity_score": 5,
         "followers": 370,
+        "monthly_listeners": "N/A",
         "genres": [],
         "top_tracks": [
           {
@@ -37,7 +38,7 @@
       },
       "youtube": {
         "subscribers": 621,
-        "total_views": 28765,
+        "total_views": 28770,
         "video_count": 94
       }
     },
@@ -46,6 +47,7 @@
       "spotify": {
         "popularity_score": 4,
         "followers": 251,
+        "monthly_listeners": "375",
         "genres": [
           "latin hip hop"
         ],
@@ -88,6 +90,7 @@
       "spotify": {
         "popularity_score": 1,
         "followers": 191,
+        "monthly_listeners": "98",
         "genres": [],
         "top_tracks": [
           {
@@ -128,6 +131,7 @@
       "spotify": {
         "popularity_score": 0,
         "followers": 87,
+        "monthly_listeners": "19",
         "genres": [],
         "top_tracks": [
           {
@@ -158,6 +162,7 @@
       "spotify": {
         "popularity_score": 1,
         "followers": 169,
+        "monthly_listeners": "140",
         "genres": [],
         "top_tracks": [
           {
@@ -198,6 +203,7 @@
       "spotify": {
         "popularity_score": 0,
         "followers": 7,
+        "monthly_listeners": "0",
         "genres": [],
         "top_tracks": []
       },
@@ -212,6 +218,7 @@
       "spotify": {
         "popularity_score": 0,
         "followers": 5,
+        "monthly_listeners": "3",
         "genres": [
           "shoegaze",
           "post-punk"
@@ -236,7 +243,7 @@
       },
       "youtube": {
         "subscribers": 502,
-        "total_views": 67803,
+        "total_views": 67848,
         "video_count": 111
       }
     },
@@ -245,6 +252,7 @@
       "spotify": {
         "popularity_score": 0,
         "followers": 100,
+        "monthly_listeners": "20",
         "genres": [],
         "top_tracks": [
           {
