@@ -5,7 +5,6 @@ import pandas as pd
 from datetime import datetime
 import os
 import re
-from bs4 import BeautifulSoup
 import time
 
 # ------------------ CONFIGURATION ------------------
@@ -17,7 +16,7 @@ CLIENT_SECRET = '2257b35c9acb46ea817f4a99cf833a8c'
 # YouTube API Key
 YOUTUBE_API_KEY = 'AIzaSyCgffLM7bMJ2vqw-VBGaNNJWkMQPEfNfgk'
 
-# List of artists with their platform IDs - matching your original list exactly
+# List of artists with their platform IDs
 artists = [
     {
         'name': 'Casa 24',
@@ -76,6 +75,89 @@ def get_spotify_token():
     
     return response_data['access_token']
 
+def extract_monthly_listeners(html_content):
+    """Extract monthly listeners from various patterns in the HTML."""
+    
+    # Pattern 1: Look for JSON-LD structured data
+    json_ld_pattern = r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>'
+    json_matches = re.findall(json_ld_pattern, html_content, re.DOTALL)
+    
+    for match in json_matches:
+        try:
+            data = json.loads(match.strip())
+            # Sometimes the data is nested
+            if isinstance(data, dict):
+                # Look for any numeric value that could be monthly listeners
+                if 'interactionStatistic' in data:
+                    for stat in data.get('interactionStatistic', []):
+                        if 'userInteractionCount' in stat:
+                            return str(stat['userInteractionCount'])
+        except:
+            continue
+    
+    # Pattern 2: Look for Spotify's internal data in script tags
+    # Spotify often includes data in window.Spotify or similar objects
+    script_pattern = r'<script[^>]*>(.*?)</script>'
+    script_matches = re.findall(script_pattern, html_content, re.DOTALL)
+    
+    for script in script_matches:
+        # Look for patterns like "monthly_listeners":12345 or similar
+        listeners_patterns = [
+            r'"monthly_listeners"\s*:\s*(\d+)',
+            r'"monthlyListeners"\s*:\s*(\d+)',
+            r'"listeners"\s*:\s*{\s*"monthly"\s*:\s*(\d+)',
+            r'monthlyListeners["\']?\s*:\s*(\d+)',
+            r'"stats"\s*:.*?"monthlyListeners"\s*:\s*(\d+)'
+        ]
+        
+        for pattern in listeners_patterns:
+            match = re.search(pattern, script)
+            if match:
+                return match.group(1)
+    
+    # Pattern 3: Look in meta tags
+    meta_patterns = [
+        r'<meta[^>]*property="music:monthly_listeners"[^>]*content="(\d+)"',
+        r'<meta[^>]*name="monthly_listeners"[^>]*content="(\d+)"',
+        r'<meta[^>]*content="(\d+)"[^>]*property="music:monthly_listeners"',
+        r'<meta[^>]*content="(\d+)"[^>]*name="monthly_listeners"'
+    ]
+    
+    for pattern in meta_patterns:
+        match = re.search(pattern, html_content)
+        if match:
+            return match.group(1)
+    
+    # Pattern 4: Look for the number near "monthly listeners" text
+    # This is less reliable but can work
+    text_patterns = [
+        r'(\d{1,3}(?:,\d{3})*|\d+)\s*monthly\s*listeners',
+        r'monthly\s*listeners[:\s]*(\d{1,3}(?:,\d{3})*|\d+)',
+        r'(\d{1,3}(?:\.\d{3})*|\d+)\s*monthly\s*listeners',  # For dot-separated numbers
+        r'(\d{1,3}(?:\s\d{3})*|\d+)\s*monthly\s*listeners'   # For space-separated numbers
+    ]
+    
+    for pattern in text_patterns:
+        match = re.search(pattern, html_content, re.IGNORECASE)
+        if match:
+            # Clean the number (remove commas, dots, spaces)
+            number = match.group(1).replace(',', '').replace('.', '').replace(' ', '')
+            return number
+    
+    # Pattern 5: Look for data attributes
+    data_attr_patterns = [
+        r'data-monthly-listeners="(\d+)"',
+        r'data-listeners="(\d+)"',
+        r'data-stats=\'[^\']*"monthlyListeners"\s*:\s*(\d+)'
+    ]
+    
+    for pattern in data_attr_patterns:
+        match = re.search(pattern, html_content)
+        if match:
+            return match.group(1)
+    
+    return None
+
 def scrape_monthly_listeners(artist_id):
     """Scrapes monthly listeners from Spotify's public artist page."""
     if not artist_id:
@@ -84,55 +166,47 @@ def scrape_monthly_listeners(artist_id):
     try:
         url = f"https://open.spotify.com/artist/{artist_id}"
         
-        # Use headers to mimic a real browser
+        # Headers to mimic a real browser
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
             'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+            'Cache-Control': 'max-age=0'
         }
         
-        response = requests.get(url, headers=headers, timeout=10)
+        # Create a session to maintain cookies
+        session = requests.Session()
+        response = session.get(url, headers=headers, timeout=15)
         response.raise_for_status()
         
-        soup = BeautifulSoup(response.content, 'html.parser')
+        # Try to extract monthly listeners
+        monthly_listeners = extract_monthly_listeners(response.text)
         
-        # Look for monthly listeners in various possible locations
-        # Pattern 1: Look for text containing "monthly listeners"
-        monthly_listeners_text = soup.find(string=re.compile(r'monthly listeners', re.IGNORECASE))
+        if monthly_listeners:
+            print(f"Found monthly listeners: {monthly_listeners}")
+            return monthly_listeners
         
-        if monthly_listeners_text:
-            # Extract number from the text
-            parent = monthly_listeners_text.parent
-            if parent:
-                # Look for numbers in the same element or nearby elements
-                text_content = parent.get_text()
-                numbers = re.findall(r'[\d,]+', text_content)
-                if numbers:
-                    # Get the largest number (likely the monthly listeners count)
-                    monthly_listeners = max(numbers, key=lambda x: int(x.replace(',', '')))
-                    return monthly_listeners.replace(',', '')
+        # If first attempt fails, try with different approach
+        # Sometimes Spotify requires specific headers or cookies
+        headers['Referer'] = 'https://open.spotify.com/'
+        headers['Sec-Ch-Ua'] = '"Not_A Brand";v="8", "Chromium";v="120"'
+        headers['Sec-Ch-Ua-Mobile'] = '?0'
+        headers['Sec-Ch-Ua-Platform'] = '"macOS"'
         
-        # Pattern 2: Look in meta tags or JSON-LD data
-        scripts = soup.find_all('script', type='application/ld+json')
-        for script in scripts:
-            try:
-                data = json.loads(script.string)
-                if isinstance(data, dict) and 'aggregateRating' in data:
-                    # Sometimes monthly listeners are in structured data
-                    if 'ratingCount' in data['aggregateRating']:
-                        return str(data['aggregateRating']['ratingCount'])
-            except:
-                continue
+        # Small delay and retry
+        time.sleep(2)
+        response = session.get(url, headers=headers, timeout=15)
+        monthly_listeners = extract_monthly_listeners(response.text)
         
-        # Pattern 3: Look for large numbers that could be monthly listeners
-        # This is a fallback - look for any large number on the page
-        all_text = soup.get_text()
-        large_numbers = re.findall(r'\b[\d,]{6,}\b', all_text)
-        if large_numbers:
-            # Return the first large number found (this is less reliable)
-            return large_numbers[0].replace(',', '')
+        if monthly_listeners:
+            print(f"Found monthly listeners on retry: {monthly_listeners}")
+            return monthly_listeners
         
         print(f"Could not find monthly listeners for artist {artist_id}")
         return "N/A"
@@ -158,37 +232,50 @@ def get_spotify_artist_data(artist_id, token):
     url = f"https://api.spotify.com/v1/artists/{artist_id}"
     headers = {'Authorization': f'Bearer {token}'}
     
-    response = requests.get(url, headers=headers)
-    artist_data = response.json()
+    try:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        artist_data = response.json()
 
-    # Get artist's top tracks
-    tracks_url = f"https://api.spotify.com/v1/artists/{artist_id}/top-tracks?market=US"
-    tracks_response = requests.get(tracks_url, headers=headers)
-    tracks_data = tracks_response.json()
-    
-    top_tracks = []
-    if 'tracks' in tracks_data:
-        for track in tracks_data['tracks'][:5]:  # Get top 5 tracks
-            top_tracks.append({
-                'name': track['name'],
-                'popularity': track['popularity'],
-                'preview_url': track.get('preview_url', '')
-            })
+        # Get artist's top tracks
+        tracks_url = f"https://api.spotify.com/v1/artists/{artist_id}/top-tracks?market=US"
+        tracks_response = requests.get(tracks_url, headers=headers)
+        tracks_response.raise_for_status()
+        tracks_data = tracks_response.json()
+        
+        top_tracks = []
+        if 'tracks' in tracks_data:
+            for track in tracks_data['tracks'][:5]:  # Get top 5 tracks
+                top_tracks.append({
+                    'name': track['name'],
+                    'popularity': track['popularity'],
+                    'preview_url': track.get('preview_url', '')
+                })
 
-    # Scrape monthly listeners from the public page
-    print(f"Scraping monthly listeners for {artist_data.get('name', 'Unknown Artist')}...")
-    monthly_listeners = scrape_monthly_listeners(artist_id)
-    
-    # Add a small delay to be respectful to Spotify's servers
-    time.sleep(1)
+        # Scrape monthly listeners from the public page
+        artist_name = artist_data.get('name', 'Unknown Artist')
+        print(f"Scraping monthly listeners for {artist_name}...")
+        monthly_listeners = scrape_monthly_listeners(artist_id)
+        
+        # Add a delay to be respectful to Spotify's servers
+        time.sleep(2)
 
-    return {
-        'popularity_score': artist_data.get('popularity', 0),
-        'followers': artist_data.get('followers', {}).get('total', 0),
-        'monthly_listeners': monthly_listeners,
-        'genres': artist_data.get('genres', []),
-        'top_tracks': top_tracks
-    }
+        return {
+            'popularity_score': artist_data.get('popularity', 0),
+            'followers': artist_data.get('followers', {}).get('total', 0),
+            'monthly_listeners': monthly_listeners,
+            'genres': artist_data.get('genres', []),
+            'top_tracks': top_tracks
+        }
+    except Exception as e:
+        print(f"Error getting Spotify data for {artist_id}: {e}")
+        return {
+            'popularity_score': 0,
+            'followers': 0,
+            'monthly_listeners': "N/A",
+            'genres': [],
+            'top_tracks': []
+        }
 
 def get_youtube_channel_data(channel_id):
     """Gets YouTube channel stats: subscribers, views, video count."""
@@ -196,17 +283,24 @@ def get_youtube_channel_data(channel_id):
         return {'subscribers': 0, 'total_views': 0, 'video_count': 0}
 
     url = f"https://www.googleapis.com/youtube/v3/channels?part=statistics&id={channel_id}&key={YOUTUBE_API_KEY}"
-    response = requests.get(url)
-    data = response.json()
+    
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
 
-    if 'items' in data and len(data['items']) > 0:
-        stats = data['items'][0]['statistics']
-        return {
-            'subscribers': int(stats.get('subscriberCount', 0)),  
-            'total_views': int(stats.get('viewCount', 0)),        
-            'video_count': int(stats.get('videoCount', 0))        
-        }
-    else:
+        if 'items' in data and len(data['items']) > 0:
+            stats = data['items'][0]['statistics']
+            return {
+                'subscribers': int(stats.get('subscriberCount', 0)),  
+                'total_views': int(stats.get('viewCount', 0)),        
+                'video_count': int(stats.get('videoCount', 0))        
+            }
+        else:
+            print(f"No YouTube data found for channel {channel_id}")
+            return {'subscribers': 0, 'total_views': 0, 'video_count': 0}
+    except Exception as e:
+        print(f"Error getting YouTube data for {channel_id}: {e}")
         return {'subscribers': 0, 'total_views': 0, 'video_count': 0}
 
 def collect_all_data():
@@ -220,7 +314,7 @@ def collect_all_data():
     }
     
     for artist in artists:
-        print(f"Collecting data for {artist['name']}...")
+        print(f"\nCollecting data for {artist['name']}...")
         artist_data = {
             'name': artist['name'],
             'spotify': get_spotify_artist_data(artist.get('spotify_id'), spotify_token),
@@ -228,6 +322,9 @@ def collect_all_data():
         }
         
         all_artists_data['artists'].append(artist_data)
+        
+        # Add a small delay between artists
+        time.sleep(1)
     
     return all_artists_data
 
@@ -252,7 +349,7 @@ def update_historical_data(data):
     # Update latest data file
     save_data_as_json(data, 'data/latest.json')
     
-    # Also save as CSV for backward compatibility with your original script
+    # Also save as CSV for backward compatibility
     csv_file = 'data/popularity_scores.csv'
     artists_data = []
     
@@ -270,7 +367,10 @@ def update_historical_data(data):
         artists_data.append(artist_info)
     
     df = pd.DataFrame(artists_data)
-    df.to_csv(csv_file, mode='a', header=not os.path.exists(csv_file), index=False)
+    
+    # Check if file exists to determine if we need headers
+    file_exists = os.path.exists(csv_file)
+    df.to_csv(csv_file, mode='a', header=not file_exists, index=False)
     
     print(f"CSV data saved to {csv_file}")
 
@@ -278,14 +378,21 @@ def update_historical_data(data):
 
 if __name__ == "__main__":
     print("Starting data collection...")
+    print(f"Current date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # Ensure data directory exists
     os.makedirs('data', exist_ok=True)
     
-    # Collect all data
-    collected_data = collect_all_data()
-    
-    # Update historical records
-    update_historical_data(collected_data)
-    
-    print("Data collection complete!")
+    try:
+        # Collect all data
+        collected_data = collect_all_data()
+        
+        # Update historical records
+        update_historical_data(collected_data)
+        
+        print("\nData collection complete!")
+        print(f"Successfully collected data for {len(collected_data['artists'])} artists")
+        
+    except Exception as e:
+        print(f"\nError during data collection: {e}")
+        raise
