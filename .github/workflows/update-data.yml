@@ -1,39 +1,42 @@
 name: Update Dashboard Data
 
 on:
-  schedule:
-    # Run daily at midnight UTC
-    - cron: '0 0 * * *'
-  # Allow manual triggering
-  workflow_dispatch:
+schedule:
+# Run daily at midnight UTC
+- cron: ‘0 0 * * *’
+
+# Allow manual triggering
+
+workflow_dispatch:
 
 jobs:
-  update-data:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
+update-data:
+runs-on: ubuntu-latest
+permissions:
+contents: write
+
+
+steps:
+- name: Checkout repository
+  uses: actions/checkout@v2
+  
+- name: Set up Python
+  uses: actions/setup-python@v2
+  with:
+    python-version: '3.9'
     
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+- name: Install dependencies
+  run: |
+    python -m pip install --upgrade pip
+    pip install requests pandas beautifulsoup4
+    
+- name: Run data collection script
+  run: python scripts/collect_data.py
       
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.9'
-        
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests pandas
-        
-    - name: Run data collection script
-      run: python scripts/collect_data.py
-          
-    - name: Commit and push if changed
-      run: |
-        git config --global user.email "actions@github.com"
-        git config --global user.name "GitHub Actions"
-        git add data/
-        git commit -m "Update dashboard data" || exit 0
-        git push
+- name: Commit and push if changed
+  run: |
+    git config --global user.email "actions@github.com"
+    git config --global user.name "GitHub Actions"
+    git add data/
+    git commit -m "Update dashboard data" || exit 0
+    git push
