@@ -1,11 +1,12 @@
 /**
- * Life@24 Dynamic Magazine Viewer - Enhanced Version
+ * Life@24 Dynamic Magazine Viewer - Mobile Optimized Version
  * 
  * Features:
- * - Magazine thumbnail previews instead of folder icons
- * - Improved date filtering using subtitle dates
- * - Performance optimizations
- * - Better error handling
+ * - Magazine thumbnail previews
+ * - Fullscreen/expanded view
+ * - Mobile-first responsive design
+ * - Touch-friendly interface
+ * - Improved date filtering
  */
 
 // Configuration
@@ -21,31 +22,27 @@ const life24Config = {
   }
 };
 
-// Cache for thumbnails to improve performance
+// Cache for thumbnails
 const thumbnailCache = new Map();
 
+// Detect if user is on mobile
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+         window.innerWidth < 768;
+}
+
 /**
- * Generate a thumbnail URL for a Google Drive PDF
- * Uses multiple strategies to get the best quality thumbnail
+ * Generate thumbnail URL for Google Drive PDF
  */
 function getThumbnailUrl(fileId) {
-  // Check cache first
   if (thumbnailCache.has(fileId)) {
     return thumbnailCache.get(fileId);
   }
   
-  // Google Drive thumbnail URL patterns
-  const thumbnailUrls = [
-    // High quality thumbnail
-    `https://drive.google.com/thumbnail?id=${fileId}&sz=w400-h600`,
-    // Alternative thumbnail endpoint
-    `https://lh3.googleusercontent.com/d/${fileId}=w400-h600-p`,
-    // Fallback to standard thumbnail
-    `https://drive.google.com/thumbnail?id=${fileId}`
-  ];
+  // Use different sizes for mobile vs desktop
+  const size = isMobileDevice() ? 'w300-h450' : 'w400-h600';
+  const url = `https://drive.google.com/thumbnail?id=${fileId}&sz=${size}`;
   
-  // Use the first URL and cache it
-  const url = thumbnailUrls[0];
   thumbnailCache.set(fileId, url);
   return url;
 }
@@ -67,7 +64,6 @@ function formatDisplayDate(dateString) {
 
 /**
  * Extract and parse date from filename
- * Enhanced to better handle various date formats
  */
 function extractDateFromFilename(filename) {
   const result = {
@@ -83,7 +79,6 @@ function extractDateFromFilename(filename) {
       const dateText = bracketMatch[1].trim();
       result.displayName = dateText;
       
-      // Month name mappings (including Spanish)
       const monthMap = {
         'ENE': 1, 'JAN': 1, 'JANUARY': 1,
         'FEB': 2, 'FEBRUARY': 2,
@@ -99,7 +94,7 @@ function extractDateFromFilename(filename) {
         'DIC': 12, 'DEC': 12, 'DECEMBER': 12
       };
       
-      // Handle date ranges (e.g., "ENE 07 - ENE 12")
+      // Handle date ranges
       if (dateText.includes('-')) {
         const parts = dateText.split('-').map(p => p.trim());
         const firstPart = parts[0];
@@ -110,11 +105,9 @@ function extractDateFromFilename(filename) {
           const day = parseInt(monthMatch[2], 10);
           const month = monthMap[monthName] || 1;
           
-          // Determine year based on current date and month
           const currentDate = new Date();
           let year = currentDate.getFullYear();
           
-          // If the month is in the future, use previous year
           if (month > currentDate.getMonth() + 1) {
             year--;
           }
@@ -123,7 +116,7 @@ function extractDateFromFilename(filename) {
           result.date = result.dateObj.toISOString().split('T')[0];
         }
       }
-      // Handle full dates (e.g., "APRIL 04, 2025")
+      // Handle full dates
       else if (dateText.includes(',')) {
         const parsedDate = new Date(dateText);
         if (!isNaN(parsedDate.getTime())) {
@@ -131,7 +124,7 @@ function extractDateFromFilename(filename) {
           result.date = parsedDate.toISOString().split('T')[0];
         }
       }
-      // Handle month-day format (e.g., "MAY 5")
+      // Handle month-day format
       else {
         const monthMatch = dateText.match(/([A-Za-z]+)\s+(\d+)/);
         if (monthMatch) {
@@ -142,7 +135,6 @@ function extractDateFromFilename(filename) {
           const currentDate = new Date();
           let year = currentDate.getFullYear();
           
-          // If the month is in the future, use previous year
           if (month > currentDate.getMonth() + 1) {
             year--;
           }
@@ -156,7 +148,6 @@ function extractDateFromFilename(filename) {
     console.error('Error parsing date from filename:', filename, error);
   }
   
-  // Fallback to current date if parsing fails
   if (!result.dateObj) {
     result.dateObj = new Date();
   }
@@ -165,7 +156,7 @@ function extractDateFromFilename(filename) {
 }
 
 /**
- * Fetch magazines from Google Drive with improved error handling
+ * Fetch magazines from Google Drive
  */
 async function fetchLife24Magazines() {
   try {
@@ -190,7 +181,6 @@ async function fetchLife24Magazines() {
       throw new Error('Invalid response format from Google Drive API');
     }
     
-    // Process files into magazine objects
     const magazines = data.files
       .filter(file => {
         const name = file.name.toLowerCase();
@@ -208,12 +198,12 @@ async function fetchLife24Magazines() {
           thumbnailUrl: getThumbnailUrl(file.id),
           previewUrl: `https://drive.google.com/file/d/${file.id}/preview`,
           downloadUrl: `https://drive.google.com/uc?export=download&id=${file.id}`,
+          viewUrl: `https://drive.google.com/file/d/${file.id}/view`,
           createdTime: file.createdTime,
           modifiedTime: file.modifiedTime || file.createdTime
         };
       });
     
-    // Sort by the parsed date (newest first)
     magazines.sort((a, b) => b.dateObj - a.dateObj);
     
     return magazines;
@@ -224,7 +214,7 @@ async function fetchLife24Magazines() {
 }
 
 /**
- * Filter magazines based on the parsed subtitle dates
+ * Filter magazines by date
  */
 function filterMagazinesByDate(magazines, filterValue) {
   if (filterValue === 'all') {
@@ -235,14 +225,11 @@ function filterMagazinesByDate(magazines, filterValue) {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
   
-  return magazines.filter(magazine => {
-    // Use the parsed date object for accurate filtering
-    return magazine.dateObj >= cutoffDate;
-  });
+  return magazines.filter(magazine => magazine.dateObj >= cutoffDate);
 }
 
 /**
- * Create dropdown controls
+ * Create dropdown controls - mobile optimized
  */
 function createDropdownContainers() {
   const container = document.getElementById('life24-dropdown-container');
@@ -254,12 +241,12 @@ function createDropdownContainers() {
   container.innerHTML = '';
   
   const wrapper = document.createElement('div');
-  wrapper.className = 'flex flex-wrap gap-4 mb-6';
+  wrapper.className = 'flex flex-col sm:flex-row gap-3 mb-6 px-2 sm:px-0';
   
   // Filter dropdown
   const filterDropdown = document.createElement('select');
   filterDropdown.id = 'life24-filter-dropdown';
-  filterDropdown.className = 'bg-gray-800 border-2 border-accent text-white py-2 px-4 rounded retro-btn transition-all hover:bg-gray-700';
+  filterDropdown.className = 'bg-gray-800 border-2 border-accent text-white py-3 px-4 rounded retro-btn transition-all hover:bg-gray-700 text-sm sm:text-base';
   filterDropdown.style.borderColor = '#00a651';
   filterDropdown.innerHTML = `
     <option value="all">All time</option>
@@ -271,7 +258,7 @@ function createDropdownContainers() {
   // Sort dropdown
   const sortDropdown = document.createElement('select');
   sortDropdown.id = 'life24-sort-dropdown';
-  sortDropdown.className = 'bg-gray-800 border-2 border-accent text-white py-2 px-4 rounded retro-btn transition-all hover:bg-gray-700';
+  sortDropdown.className = 'bg-gray-800 border-2 border-accent text-white py-3 px-4 rounded retro-btn transition-all hover:bg-gray-700 text-sm sm:text-base';
   sortDropdown.style.borderColor = '#00a651';
   sortDropdown.innerHTML = `
     <option value="newest">Newest first</option>
@@ -300,32 +287,20 @@ function createDropdownContainers() {
 }
 
 /**
- * Preload images for better performance
- */
-function preloadImage(src) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
-    img.src = src;
-  });
-}
-
-/**
- * Create a magazine card element with thumbnail
+ * Create magazine card - mobile optimized
  */
 function createMagazineCard(magazine) {
   const card = document.createElement('div');
-  card.className = 'group relative p-4 rounded-lg text-center cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg';
+  card.className = 'group relative p-3 sm:p-4 rounded-lg text-center cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg';
   card.style.cssText = `
     border: 2px solid #00a651;
     box-shadow: 4px 4px 0px #00a651;
     background: rgba(26, 26, 26, 0.9);
   `;
   
-  // Create thumbnail container with loading state
+  // Thumbnail container
   const thumbnailContainer = document.createElement('div');
-  thumbnailContainer.className = 'relative mb-3 overflow-hidden rounded-lg bg-gray-800';
+  thumbnailContainer.className = 'relative mb-2 sm:mb-3 overflow-hidden rounded-lg bg-gray-800';
   thumbnailContainer.style.paddingBottom = '141.4%'; // A4 aspect ratio
   
   // Loading spinner
@@ -340,17 +315,16 @@ function createMagazineCard(magazine) {
   const thumbnail = document.createElement('img');
   thumbnail.className = 'absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300';
   thumbnail.alt = magazine.displayName || magazine.name;
+  thumbnail.loading = 'lazy'; // Lazy loading for performance
   
-  // Load thumbnail with fallback
   thumbnail.onload = () => {
     thumbnail.classList.add('opacity-100');
     loadingSpinner.remove();
   };
   
   thumbnail.onerror = () => {
-    // Fallback to a PDF icon if thumbnail fails
     loadingSpinner.innerHTML = `
-      <svg class="w-16 h-16 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+      <svg class="w-12 h-12 sm:w-16 sm:h-16 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
         <path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-5L9 2H4z"/>
       </svg>
     `;
@@ -359,9 +333,9 @@ function createMagazineCard(magazine) {
   thumbnail.src = magazine.thumbnailUrl;
   thumbnailContainer.appendChild(thumbnail);
   
-  // Hover overlay
+  // Hover overlay - hidden on mobile
   const hoverOverlay = document.createElement('div');
-  hoverOverlay.className = 'absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center';
+  hoverOverlay.className = 'hidden sm:flex absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 items-center justify-center';
   hoverOverlay.innerHTML = `
     <span class="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-semibold">
       View Magazine
@@ -373,7 +347,7 @@ function createMagazineCard(magazine) {
   const info = document.createElement('div');
   info.className = 'space-y-1';
   info.innerHTML = `
-    <h3 class="text-sm font-semibold text-white break-words line-clamp-2">
+    <h3 class="text-xs sm:text-sm font-semibold text-white break-words line-clamp-2">
       ${magazine.displayName || magazine.name.replace('.pdf', '')}
     </h3>
     <p class="text-xs text-gray-400">
@@ -384,14 +358,14 @@ function createMagazineCard(magazine) {
   card.appendChild(thumbnailContainer);
   card.appendChild(info);
   
-  // Click handler
+  // Touch-friendly click handler
   card.addEventListener('click', () => openMagazineViewer(magazine));
   
   return card;
 }
 
 /**
- * Render magazines with improved performance
+ * Render magazines - mobile optimized grid
  */
 async function renderLife24Magazines(magazines, sort = 'newest', filter = 'all') {
   const container = document.querySelector(life24Config.containerSelector);
@@ -403,10 +377,9 @@ async function renderLife24Magazines(magazines, sort = 'newest', filter = 'all')
   
   container.innerHTML = '';
   
-  // Filter magazines by date
+  // Filter and sort magazines
   let filteredMagazines = filterMagazinesByDate(magazines, filter);
   
-  // Sort magazines
   filteredMagazines.sort((a, b) => {
     const comparison = b.dateObj - a.dateObj;
     return sort === 'newest' ? comparison : -comparison;
@@ -414,36 +387,35 @@ async function renderLife24Magazines(magazines, sort = 'newest', filter = 'all')
   
   if (filteredMagazines.length === 0) {
     container.innerHTML = `
-      <div class="text-center py-12">
-        <p class="text-gray-400 text-lg">No magazine issues found for the selected time period.</p>
+      <div class="text-center py-8 sm:py-12 px-4">
+        <p class="text-gray-400 text-base sm:text-lg">No magazine issues found for the selected time period.</p>
       </div>
     `;
     return;
   }
   
-  // Create grid container
+  // Create responsive grid
   const grid = document.createElement('div');
-  grid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6';
+  grid.className = 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-6 px-2 sm:px-0';
   container.appendChild(grid);
   
-  // Render magazines with staggered animation
+  // Render with staggered animation
   filteredMagazines.forEach((magazine, index) => {
     const card = createMagazineCard(magazine);
     card.style.opacity = '0';
     card.style.transform = 'translateY(20px)';
     grid.appendChild(card);
     
-    // Staggered fade-in animation
     setTimeout(() => {
       card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
       card.style.opacity = '1';
       card.style.transform = 'translateY(0)';
-    }, index * 50);
+    }, Math.min(index * 30, 300)); // Cap animation delay on mobile
   });
 }
 
 /**
- * Open magazine viewer modal with improved UI
+ * Open magazine viewer - fullscreen optimized for mobile and desktop
  */
 function openMagazineViewer(magazine) {
   let modal = document.getElementById('magazine-modal');
@@ -451,24 +423,38 @@ function openMagazineViewer(magazine) {
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'magazine-modal';
-    modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center';
     document.body.appendChild(modal);
   }
   
+  const isMobile = isMobileDevice();
+  
   modal.innerHTML = `
-    <div class="absolute inset-0 bg-black bg-opacity-95 backdrop-blur-sm" id="modal-backdrop"></div>
-    <div class="relative bg-gray-900 rounded-lg w-full max-w-7xl h-[90vh] flex flex-col shadow-2xl" style="border: 3px solid #00a651">
-      <div class="flex justify-between items-center p-4 border-b border-gray-700">
-        <h3 class="text-xl font-bold text-white truncate pr-4">
+    <div class="absolute inset-0 bg-black ${isMobile ? 'bg-opacity-100' : 'bg-opacity-95 backdrop-blur-sm'}" id="modal-backdrop"></div>
+    <div class="relative bg-gray-900 ${isMobile ? 'w-full h-full' : 'rounded-lg w-full h-full max-w-[95vw] max-h-[95vh]'} flex flex-col shadow-2xl" style="border: ${isMobile ? 'none' : '3px solid #00a651'}">
+      
+      <!-- Header -->
+      <div class="flex items-center justify-between p-3 sm:p-4 border-b border-gray-700 bg-gray-900">
+        <h3 class="text-base sm:text-xl font-bold text-white truncate pr-4 max-w-[70%]">
           ${magazine.displayName || magazine.name.replace('.pdf', '')}
         </h3>
-        <button id="close-modal-btn" class="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-full">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
+        <div class="flex items-center gap-2">
+          <!-- Fullscreen button - desktop only -->
+          <button id="fullscreen-btn" class="hidden sm:block text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-full">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+            </svg>
+          </button>
+          <!-- Close button -->
+          <button id="close-modal-btn" class="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-full">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
       </div>
       
+      <!-- PDF Viewer -->
       <div class="flex-grow overflow-hidden bg-gray-950">
         <iframe 
           src="${magazine.previewUrl}" 
@@ -478,34 +464,32 @@ function openMagazineViewer(magazine) {
         ></iframe>
       </div>
       
-      <div class="flex justify-center gap-4 p-4 border-t border-gray-700">
+      <!-- Action buttons -->
+      <div class="flex justify-center gap-3 p-3 sm:p-4 border-t border-gray-700 bg-gray-900">
         <a 
-          href="https://drive.google.com/file/d/${magazine.id}/view" 
+          href="${magazine.viewUrl}" 
           target="_blank" 
           rel="noopener noreferrer"
-          class="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-all hover:scale-105"
+          class="flex items-center gap-2 px-4 sm:px-6 py-2 bg-gray-800 text-white text-sm sm:text-base rounded-lg hover:bg-gray-700 transition-all hover:scale-105 touch-manipulation"
           style="border: 2px solid #00a651"
         >
-          <span class="flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-            </svg>
-            Open in Drive
-          </span>
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+          </svg>
+          <span class="hidden sm:inline">Open in Drive</span>
+          <span class="sm:hidden">Drive</span>
         </a>
         <a 
           href="${magazine.downloadUrl}" 
           target="_blank" 
           rel="noopener noreferrer"
-          class="px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-all hover:scale-105"
+          class="flex items-center gap-2 px-4 sm:px-6 py-2 bg-gray-800 text-white text-sm sm:text-base rounded-lg hover:bg-gray-700 transition-all hover:scale-105 touch-manipulation"
           style="border: 2px solid #00a651"
         >
-          <span class="flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
-            Download
-          </span>
+          <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <span>Download</span>
         </a>
       </div>
     </div>
@@ -514,49 +498,88 @@ function openMagazineViewer(magazine) {
   // Event listeners
   const backdrop = document.getElementById('modal-backdrop');
   const closeBtn = document.getElementById('close-modal-btn');
+  const fullscreenBtn = document.getElementById('fullscreen-btn');
   
   backdrop.addEventListener('click', closeMagazineViewer);
   closeBtn.addEventListener('click', closeMagazineViewer);
   
+  // Fullscreen toggle
+  if (fullscreenBtn) {
+    fullscreenBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        modal.requestFullscreen().catch(err => {
+          console.log(`Error attempting fullscreen: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    });
+  }
+  
   // Keyboard support
-  const handleEscape = (e) => {
+  const handleKeydown = (e) => {
     if (e.key === 'Escape') {
       closeMagazineViewer();
     }
   };
-  document.addEventListener('keydown', handleEscape);
-  modal.dataset.escapeHandler = 'true';
+  document.addEventListener('keydown', handleKeydown);
+  modal.dataset.keyHandler = handleKeydown.toString();
   
   // Show modal with animation
   modal.style.display = 'flex';
+  modal.style.opacity = '0';
   requestAnimationFrame(() => {
-    modal.classList.add('opacity-100');
+    modal.style.transition = 'opacity 0.3s ease';
+    modal.style.opacity = '1';
   });
   
   // Prevent body scroll
   document.body.style.overflow = 'hidden';
+  
+  // Add touch gestures for mobile (swipe down to close)
+  if (isMobile) {
+    let touchStartY = 0;
+    let touchEndY = 0;
+    
+    const modalContent = modal.querySelector('.relative');
+    
+    modalContent.addEventListener('touchstart', (e) => {
+      touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+    
+    modalContent.addEventListener('touchend', (e) => {
+      touchEndY = e.changedTouches[0].screenY;
+      if (touchStartY < touchEndY - 50) { // Swipe down
+        closeMagazineViewer();
+      }
+    }, { passive: true });
+  }
 }
 
 /**
- * Close magazine viewer modal
+ * Close magazine viewer
  */
 function closeMagazineViewer() {
   const modal = document.getElementById('magazine-modal');
   if (modal) {
-    modal.style.display = 'none';
+    modal.style.opacity = '0';
+    setTimeout(() => {
+      modal.style.display = 'none';
+      modal.remove();
+    }, 300);
+    
     document.body.style.overflow = '';
     
-    // Remove escape handler
-    if (modal.dataset.escapeHandler) {
-      document.removeEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeMagazineViewer();
-      });
+    // Remove event listeners
+    const handleKeydown = modal.dataset.keyHandler;
+    if (handleKeydown) {
+      document.removeEventListener('keydown', eval(`(${handleKeydown})`));
     }
   }
 }
 
 /**
- * Initialize the Life@24 section with loading states
+ * Initialize Life@24 section
  */
 async function initializeLife24Section(sort = 'newest', filter = 'all') {
   const container = document.querySelector(life24Config.containerSelector);
@@ -566,14 +589,14 @@ async function initializeLife24Section(sort = 'newest', filter = 'all') {
     return;
   }
   
-  // Improved loading UI
+  // Mobile-friendly loading UI
   container.innerHTML = `
-    <div class="flex flex-col items-center justify-center py-16 space-y-4">
+    <div class="flex flex-col items-center justify-center py-12 sm:py-16 space-y-4 px-4">
       <div class="relative">
-        <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-700"></div>
-        <div class="animate-spin rounded-full h-12 w-12 border-4 border-t-green-500 border-r-transparent border-b-transparent border-l-transparent absolute inset-0"></div>
+        <div class="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-4 border-gray-700"></div>
+        <div class="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-4 border-t-green-500 border-r-transparent border-b-transparent border-l-transparent absolute inset-0"></div>
       </div>
-      <p class="text-gray-400 text-lg animate-pulse">Loading Life@24 magazines...</p>
+      <p class="text-gray-400 text-base sm:text-lg animate-pulse text-center">Loading Life@24 magazines...</p>
     </div>
   `;
   
@@ -581,10 +604,10 @@ async function initializeLife24Section(sort = 'newest', filter = 'all') {
     // Fetch magazines
     const magazines = await fetchLife24Magazines();
     
-    // Store globally for filtering/sorting
+    // Store globally
     window.life24Magazines = magazines;
     
-    // Create dropdowns after data loads
+    // Create dropdowns
     setTimeout(() => {
       const dropdowns = createDropdownContainers();
       if (dropdowns) {
@@ -598,17 +621,17 @@ async function initializeLife24Section(sort = 'newest', filter = 'all') {
   } catch (error) {
     console.error('Error initializing Life@24 section:', error);
     container.innerHTML = `
-      <div class="text-center py-16">
+      <div class="text-center py-12 sm:py-16 px-4">
         <div class="text-red-500 mb-4">
-          <svg class="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-12 h-12 sm:w-16 sm:h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
           </svg>
         </div>
-        <p class="text-red-500 text-lg mb-2">Error loading magazines</p>
-        <p class="text-gray-400">Please check your connection and try again.</p>
+        <p class="text-red-500 text-base sm:text-lg mb-2">Error loading magazines</p>
+        <p class="text-gray-400 text-sm sm:text-base">Please check your connection and try again.</p>
         <button 
           onclick="window.life24.initialize()"
-          class="mt-4 px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          class="mt-4 px-6 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm sm:text-base touch-manipulation"
           style="border: 2px solid #00a651"
         >
           Retry
@@ -618,13 +641,12 @@ async function initializeLife24Section(sort = 'newest', filter = 'all') {
   }
 }
 
-// Event handling for tab navigation
+// Event handling
 document.addEventListener('DOMContentLoaded', function() {
-  // Set up tab click handlers
+  // Tab click handlers
   const tabLinks = document.querySelectorAll('a[href="#life"]');
   tabLinks.forEach(link => {
     link.addEventListener('click', (e) => {
-      // Small delay to ensure tab content is rendered
       setTimeout(() => {
         initializeLife24Section('newest', 'all');
       }, 100);
@@ -638,6 +660,23 @@ document.addEventListener('DOMContentLoaded', function() {
       initializeLife24Section('newest', 'all');
     }, 100);
   }
+  
+  // Handle orientation changes on mobile
+  if (window.matchMedia) {
+    const orientationQuery = window.matchMedia('(orientation: portrait)');
+    orientationQuery.addListener(() => {
+      // Clear thumbnail cache on orientation change
+      thumbnailCache.clear();
+      // Re-render if magazines are loaded
+      if (window.life24Magazines) {
+        const filterDropdown = document.getElementById('life24-filter-dropdown');
+        const sortDropdown = document.getElementById('life24-sort-dropdown');
+        if (filterDropdown && sortDropdown) {
+          renderLife24Magazines(window.life24Magazines, sortDropdown.value, filterDropdown.value);
+        }
+      }
+    });
+  }
 });
 
 // Export functions for global access
@@ -647,7 +686,7 @@ window.life24 = {
   renderMagazines: renderLife24Magazines,
   openViewer: openMagazineViewer,
   closeViewer: closeMagazineViewer,
-  // Utility functions
   getThumbnailUrl: getThumbnailUrl,
-  clearCache: () => thumbnailCache.clear()
+  clearCache: () => thumbnailCache.clear(),
+  isMobile: isMobileDevice
 };
