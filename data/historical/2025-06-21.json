@@ -6,7 +6,7 @@
       "spotify": {
         "popularity_score": 5,
         "followers": 362,
-        "monthly_listeners": "664",
+        "monthly_listeners": "674",
         "genres": [],
         "top_tracks": [
           {
@@ -38,7 +38,7 @@
       },
       "youtube": {
         "subscribers": 621,
-        "total_views": 28835,
+        "total_views": 28838,
         "video_count": 94
       }
     },
@@ -47,7 +47,7 @@
       "spotify": {
         "popularity_score": 4,
         "followers": 250,
-        "monthly_listeners": "379",
+        "monthly_listeners": "382",
         "genres": [
           "latin hip hop"
         ],
@@ -74,7 +74,7 @@
           },
           {
             "name": "Presidente Extraterrestre",
-            "popularity": 4,
+            "popularity": 3,
             "preview_url": null
           }
         ]
@@ -90,7 +90,7 @@
       "spotify": {
         "popularity_score": 1,
         "followers": 176,
-        "monthly_listeners": "133",
+        "monthly_listeners": "135",
         "genres": [],
         "top_tracks": [
           {
@@ -131,7 +131,7 @@
       "spotify": {
         "popularity_score": 0,
         "followers": 87,
-        "monthly_listeners": "13",
+        "monthly_listeners": "14",
         "genres": [],
         "top_tracks": [
           {
@@ -162,7 +162,7 @@
       "spotify": {
         "popularity_score": 1,
         "followers": 155,
-        "monthly_listeners": "147",
+        "monthly_listeners": "148",
         "genres": [],
         "top_tracks": [
           {
@@ -243,7 +243,7 @@
       },
       "youtube": {
         "subscribers": 501,
-        "total_views": 67885,
+        "total_views": 67913,
         "video_count": 110
       }
     },
@@ -252,7 +252,7 @@
       "spotify": {
         "popularity_score": 0,
         "followers": 101,
-        "monthly_listeners": "20",
+        "monthly_listeners": "21",
         "genres": [],
         "top_tracks": [
           {
