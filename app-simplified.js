@@ -1,4 +1,4 @@
-// Casa 24 Records Dashboard - Simplified App
+// Casa 24 Records Dashboard - Fixed Artist Selection
 const { useState, useEffect } = React;
 
 // Helper function to format large numbers
@@ -89,7 +89,7 @@ const styles = `
 
 function App() {
   const [data, setData] = useState(null);
-  const [selectedArtist, setSelectedArtist] = useState('Casa 24');
+  const [selectedArtist, setSelectedArtist] = useState(null); // Start with null
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('collective');
@@ -120,6 +120,12 @@ function App() {
       })
       .then(jsonData => {
         setData(jsonData);
+        // Set the first artist as selected by default
+        if (jsonData.artists && jsonData.artists.length > 0) {
+          // Find Casa 24 if it exists, otherwise use the first artist
+          const casa24 = jsonData.artists.find(artist => artist.name === 'Casa 24');
+          setSelectedArtist(casa24 ? casa24.name : jsonData.artists[0].name);
+        }
         setLoading(false);
       })
       .catch(error => {
@@ -141,6 +147,18 @@ function App() {
     }
   }, [activeTab]);
 
+  // Handle artist selection change
+  const handleArtistChange = (event) => {
+    const newArtist = event.target.value;
+    console.log('Changing artist to:', newArtist); // Debug log
+    
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setSelectedArtist(newArtist);
+      setIsTransitioning(false);
+    }, 150);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -160,8 +178,17 @@ function App() {
     return <div className="p-4">No artist data available.</div>;
   }
 
-  // Get current artist data
-  const currentArtistData = data.artists.find(artist => artist.name === selectedArtist) || data.artists[0];
+  // Get current artist data - ensure we're finding the right artist
+  const currentArtistData = data.artists.find(artist => artist.name === selectedArtist);
+  
+  // Fallback if artist not found
+  if (!currentArtistData) {
+    console.error('Artist not found:', selectedArtist);
+    console.log('Available artists:', data.artists.map(a => a.name));
+  }
+
+  // Use fallback data if current artist not found
+  const artistData = currentArtistData || data.artists[0];
 
   // Calculate collective totals
   const collectiveTotals = data.artists.reduce((acc, artist) => {
@@ -288,16 +315,10 @@ function App() {
               className="artist-dropdown bg-gray-800 border-2 text-white py-2 px-4 rounded retro-btn"
               style={{borderColor: "#00a651"}}
               value={selectedArtist || ''}
-              onChange={(e) => {
-                setIsTransitioning(true);
-                setTimeout(() => {
-                  setSelectedArtist(e.target.value);
-                  setIsTransitioning(false);
-                }, 150);
-              }}
+              onChange={handleArtistChange}
             >
-              {data.artists.map((artist, index) => (
-                <option key={index} value={artist.name}>
+              {data.artists.map((artist) => (
+                <option key={artist.name} value={artist.name}>
                   {artist.name}
                 </option>
               ))}
@@ -306,13 +327,20 @@ function App() {
 
           {/* Individual Artist Stats */}
           <div className={`transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+            {/* Debug info - remove in production */}
+            {!currentArtistData && (
+              <div className="bg-red-900 p-4 mb-4 rounded">
+                <p>Warning: Artist "{selectedArtist}" not found. Showing fallback data.</p>
+              </div>
+            )}
+
             <div className="stat-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
               <div className="stat-box p-6 rounded-lg" 
                    style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
                 <h3 className="text-lg text-gray-400 mb-1">Spotify Followers</h3>
                 <div className="flex items-center">
                   <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
-                  <div className="stat-value text-3xl font-bold">{formatNumber(currentArtistData.spotify.followers || 0)}</div>
+                  <div className="stat-value text-3xl font-bold">{formatNumber(artistData.spotify?.followers || 0)}</div>
                 </div>
               </div>
 
@@ -321,7 +349,7 @@ function App() {
                 <h3 className="text-lg text-gray-400 mb-1">Monthly Listeners</h3>
                 <div className="flex items-center">
                   <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
-                  <div className="stat-value text-3xl font-bold">{formatNumber(currentArtistData.spotify.monthly_listeners || "N/A")}</div>
+                  <div className="stat-value text-3xl font-bold">{formatNumber(artistData.spotify?.monthly_listeners || "N/A")}</div>
                 </div>
               </div>
 
@@ -330,7 +358,7 @@ function App() {
                 <h3 className="text-lg text-gray-400 mb-1">Spotify Popularity</h3>
                 <div className="flex items-center">
                   <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
-                  <div className="stat-value text-3xl font-bold">{currentArtistData.spotify.popularity_score || 0}</div>
+                  <div className="stat-value text-3xl font-bold">{artistData.spotify?.popularity_score || 0}</div>
                   <div className="text-xl ml-1">/100</div>
                 </div>
               </div>
@@ -340,7 +368,7 @@ function App() {
                 <h3 className="text-lg text-gray-400 mb-1">YouTube Subscribers</h3>
                 <div className="flex items-center">
                   <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
-                  <div className="stat-value text-3xl font-bold">{formatNumber(currentArtistData.youtube.subscribers || 0)}</div>
+                  <div className="stat-value text-3xl font-bold">{formatNumber(artistData.youtube?.subscribers || 0)}</div>
                 </div>
               </div>
 
@@ -349,7 +377,7 @@ function App() {
                 <h3 className="text-lg text-gray-400 mb-1">YouTube Views</h3>
                 <div className="flex items-center">
                   <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
-                  <div className="stat-value text-3xl font-bold">{formatNumber(currentArtistData.youtube.total_views || 0)}</div>
+                  <div className="stat-value text-3xl font-bold">{formatNumber(artistData.youtube?.total_views || 0)}</div>
                 </div>
               </div>
             </div>
@@ -368,13 +396,14 @@ function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {currentArtistData.spotify.top_tracks && currentArtistData.spotify.top_tracks.map((track, index) => (
-                        <tr key={index} className="border-t border-gray-700">
-                          <td className="py-2">{track.name}</td>
-                          <td className="text-right py-2">{track.popularity}/100</td>
-                        </tr>
-                      ))}
-                      {(!currentArtistData.spotify.top_tracks || currentArtistData.spotify.top_tracks.length === 0) && (
+                      {artistData.spotify?.top_tracks && artistData.spotify.top_tracks.length > 0 ? (
+                        artistData.spotify.top_tracks.map((track, index) => (
+                          <tr key={index} className="border-t border-gray-700">
+                            <td className="py-2">{track.name}</td>
+                            <td className="text-right py-2">{track.popularity}/100</td>
+                          </tr>
+                        ))
+                      ) : (
                         <tr>
                           <td colSpan="2" className="py-2 text-center text-gray-500">No top tracks found</td>
                         </tr>
@@ -390,9 +419,9 @@ function App() {
                 <h3 className="text-2xl font-bold mb-4">Artist Info</h3>
                 <div>
                   <h4 className="text-lg font-semibold mb-2">Genres:</h4>
-                  {currentArtistData.spotify.genres && currentArtistData.spotify.genres.length > 0 ? (
+                  {artistData.spotify?.genres && artistData.spotify.genres.length > 0 ? (
                     <ul className="list-disc pl-5">
-                      {currentArtistData.spotify.genres.map((genre, index) => (
+                      {artistData.spotify.genres.map((genre, index) => (
                         <li key={index} className="mb-1 capitalize">{genre}</li>
                       ))}
                     </ul>
@@ -400,15 +429,15 @@ function App() {
                     <p className="text-gray-500">No genres listed</p>
                   )}
                   
-                  {currentArtistData.youtube.video_count > 0 && (
+                  {artistData.youtube?.video_count > 0 && (
                     <div className="mt-6">
                       <h4 className="text-lg font-semibold mb-2">YouTube Stats:</h4>
                       <ul className="list-disc pl-5">
-                        <li className="mb-1">Videos: {currentArtistData.youtube.video_count}</li>
-                        <li className="mb-1">Views: {formatNumber(currentArtistData.youtube.total_views)}</li>
+                        <li className="mb-1">Videos: {artistData.youtube.video_count}</li>
+                        <li className="mb-1">Views: {formatNumber(artistData.youtube.total_views)}</li>
                         <li className="mb-1">Avg. Views/Video: {formatNumber(
                           Math.round(
-                            currentArtistData.youtube.total_views / currentArtistData.youtube.video_count
+                            artistData.youtube.total_views / artistData.youtube.video_count
                           ) || 0
                         )}</li>
                       </ul>
