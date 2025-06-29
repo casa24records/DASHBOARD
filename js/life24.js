@@ -6,7 +6,7 @@
  * - Fullscreen/expanded view
  * - Mobile-first responsive design
  * - Touch-friendly interface
- * - Improved date filtering
+ * - Date-based sorting (Newest/Oldest first)
  */
 
 // Configuration
@@ -214,21 +214,6 @@ async function fetchLife24Magazines() {
 }
 
 /**
- * Filter magazines by date
- */
-function filterMagazinesByDate(magazines, filterValue) {
-  if (filterValue === 'all') {
-    return magazines;
-  }
-  
-  const days = parseInt(filterValue, 10);
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - days);
-  
-  return magazines.filter(magazine => magazine.dateObj >= cutoffDate);
-}
-
-/**
  * Create dropdown controls - mobile optimized
  */
 function createDropdownContainers() {
@@ -241,21 +226,9 @@ function createDropdownContainers() {
   container.innerHTML = '';
   
   const wrapper = document.createElement('div');
-  wrapper.className = 'flex flex-col sm:flex-row gap-3 mb-6 px-2 sm:px-0';
+  wrapper.className = 'flex justify-center mb-6 px-2 sm:px-0';
   
-  // Filter dropdown
-  const filterDropdown = document.createElement('select');
-  filterDropdown.id = 'life24-filter-dropdown';
-  filterDropdown.className = 'bg-gray-800 border-2 border-accent text-white py-3 px-4 rounded retro-btn transition-all hover:bg-gray-700 text-sm sm:text-base';
-  filterDropdown.style.borderColor = '#00a651';
-  filterDropdown.innerHTML = `
-    <option value="all">All time</option>
-    <option value="7">Last 7 days</option>
-    <option value="30">Last 30 days</option>
-    <option value="90">Last 90 days</option>
-  `;
-  
-  // Sort dropdown
+  // Sort dropdown only
   const sortDropdown = document.createElement('select');
   sortDropdown.id = 'life24-sort-dropdown';
   sortDropdown.className = 'bg-gray-800 border-2 border-accent text-white py-3 px-4 rounded retro-btn transition-all hover:bg-gray-700 text-sm sm:text-base';
@@ -265,25 +238,23 @@ function createDropdownContainers() {
     <option value="oldest">Oldest first</option>
   `;
   
-  // Add event listeners with debouncing
+  // Add event listener with debouncing
   let updateTimeout;
   const updateMagazines = () => {
     clearTimeout(updateTimeout);
     updateTimeout = setTimeout(() => {
       if (window.life24Magazines) {
-        renderLife24Magazines(window.life24Magazines, sortDropdown.value, filterDropdown.value);
+        renderLife24Magazines(window.life24Magazines, sortDropdown.value);
       }
     }, 150);
   };
   
-  filterDropdown.addEventListener('change', updateMagazines);
   sortDropdown.addEventListener('change', updateMagazines);
   
-  wrapper.appendChild(filterDropdown);
   wrapper.appendChild(sortDropdown);
   container.appendChild(wrapper);
   
-  return { filterDropdown, sortDropdown };
+  return { sortDropdown };
 }
 
 /**
@@ -367,7 +338,7 @@ function createMagazineCard(magazine) {
 /**
  * Render magazines - mobile optimized grid
  */
-async function renderLife24Magazines(magazines, sort = 'newest', filter = 'all') {
+async function renderLife24Magazines(magazines, sort = 'newest') {
   const container = document.querySelector(life24Config.containerSelector);
   
   if (!container) {
@@ -377,18 +348,17 @@ async function renderLife24Magazines(magazines, sort = 'newest', filter = 'all')
   
   container.innerHTML = '';
   
-  // Filter and sort magazines
-  let filteredMagazines = filterMagazinesByDate(magazines, filter);
-  
-  filteredMagazines.sort((a, b) => {
+  // Sort magazines
+  const sortedMagazines = [...magazines];
+  sortedMagazines.sort((a, b) => {
     const comparison = b.dateObj - a.dateObj;
     return sort === 'newest' ? comparison : -comparison;
   });
   
-  if (filteredMagazines.length === 0) {
+  if (sortedMagazines.length === 0) {
     container.innerHTML = `
       <div class="text-center py-8 sm:py-12 px-4">
-        <p class="text-gray-400 text-base sm:text-lg">No magazine issues found for the selected time period.</p>
+        <p class="text-gray-400 text-base sm:text-lg">No magazine issues found.</p>
       </div>
     `;
     return;
@@ -400,7 +370,7 @@ async function renderLife24Magazines(magazines, sort = 'newest', filter = 'all')
   container.appendChild(grid);
   
   // Render with staggered animation
-  filteredMagazines.forEach((magazine, index) => {
+  sortedMagazines.forEach((magazine, index) => {
     const card = createMagazineCard(magazine);
     card.style.opacity = '0';
     card.style.transform = 'translateY(20px)';
@@ -581,7 +551,7 @@ function closeMagazineViewer() {
 /**
  * Initialize Life@24 section
  */
-async function initializeLife24Section(sort = 'newest', filter = 'all') {
+async function initializeLife24Section(sort = 'newest') {
   const container = document.querySelector(life24Config.containerSelector);
   
   if (!container) {
@@ -612,12 +582,11 @@ async function initializeLife24Section(sort = 'newest', filter = 'all') {
       const dropdowns = createDropdownContainers();
       if (dropdowns) {
         dropdowns.sortDropdown.value = sort;
-        dropdowns.filterDropdown.value = filter;
       }
     }, 100);
     
     // Render magazines
-    await renderLife24Magazines(magazines, sort, filter);
+    await renderLife24Magazines(magazines, sort);
   } catch (error) {
     console.error('Error initializing Life@24 section:', error);
     container.innerHTML = `
@@ -648,7 +617,7 @@ document.addEventListener('DOMContentLoaded', function() {
   tabLinks.forEach(link => {
     link.addEventListener('click', (e) => {
       setTimeout(() => {
-        initializeLife24Section('newest', 'all');
+        initializeLife24Section('newest');
       }, 100);
     });
   });
@@ -657,7 +626,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const activeTab = document.querySelector('a.active[href="#life"], a[style*="color: #00a651"][href="#life"]');
   if (activeTab) {
     setTimeout(() => {
-      initializeLife24Section('newest', 'all');
+      initializeLife24Section('newest');
     }, 100);
   }
   
@@ -669,10 +638,9 @@ document.addEventListener('DOMContentLoaded', function() {
       thumbnailCache.clear();
       // Re-render if magazines are loaded
       if (window.life24Magazines) {
-        const filterDropdown = document.getElementById('life24-filter-dropdown');
         const sortDropdown = document.getElementById('life24-sort-dropdown');
-        if (filterDropdown && sortDropdown) {
-          renderLife24Magazines(window.life24Magazines, sortDropdown.value, filterDropdown.value);
+        if (sortDropdown) {
+          renderLife24Magazines(window.life24Magazines, sortDropdown.value);
         }
       }
     });
