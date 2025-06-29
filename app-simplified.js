@@ -1,6 +1,4 @@
-// Simplified version of app.js without Recharts dependency
-// This will display your artist data without charts
-
+// Casa 24 Records Dashboard - Simplified App
 const { useState, useEffect } = React;
 
 // Helper function to format large numbers
@@ -24,12 +22,92 @@ const formatNumber = (num) => {
   return numValue.toLocaleString();
 };
 
+// Add custom styles for transitions and consistency
+const styles = `
+  <style>
+    /* Smooth transitions for all interactive elements */
+    .stat-box {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .stat-box:hover {
+      transform: translateY(-2px);
+      box-shadow: 6px 6px 0px #00a651 !important;
+    }
+    
+    /* Consistent stat value styling */
+    .stat-value {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+    
+    /* Dropdown styling improvements */
+    .artist-dropdown {
+      transition: all 0.2s ease;
+    }
+    
+    .artist-dropdown:hover {
+      box-shadow: 3px 3px 0px #00a651;
+      transform: translateY(-1px);
+    }
+    
+    .artist-dropdown:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.3), 3px 3px 0px #00a651;
+    }
+    
+    /* Section transitions */
+    .fade-in {
+      animation: fadeIn 0.4s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* Responsive grid improvements */
+    @media (max-width: 1024px) {
+      .stat-grid {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+      }
+    }
+    
+    @media (max-width: 640px) {
+      .stat-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+  </style>
+`;
+
 function App() {
   const [data, setData] = useState(null);
-  const [selectedArtist, setSelectedArtist] = useState(null);
+  const [selectedArtist, setSelectedArtist] = useState('Casa 24');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('artist');
+  const [activeTab, setActiveTab] = useState('collective');
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  
+  // Inject custom styles
+  useEffect(() => {
+    const styleElement = document.createElement('div');
+    styleElement.innerHTML = styles;
+    document.head.appendChild(styleElement.firstChild);
+    
+    return () => {
+      const style = document.querySelector('style');
+      if (style && style.innerHTML.includes('stat-box')) {
+        style.remove();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // Fetch the artist data from the JSON file
@@ -42,10 +120,6 @@ function App() {
       })
       .then(jsonData => {
         setData(jsonData);
-        // Set the first artist as selected by default
-        if (jsonData.artists && jsonData.artists.length > 0) {
-          setSelectedArtist(jsonData.artists[0].name);
-        }
         setLoading(false);
       })
       .catch(error => {
@@ -57,12 +131,10 @@ function App() {
   // Initialize Life@24 section when the tab changes
   useEffect(() => {
     if (activeTab === 'life' && window.life24 && typeof window.life24.initialize === 'function') {
-      // Small delay to ensure DOM is updated
       setTimeout(() => {
         window.life24.initialize('newest');
       }, 100);
     } else if (activeTab === 'unmastered' && window.unmastered && typeof window.unmastered.initialize === 'function') {
-      // Initialize untitled unmastered section when tab is selected
       setTimeout(() => {
         window.unmastered.initialize('newest');
       }, 100);
@@ -96,7 +168,7 @@ function App() {
     acc.spotify.followers += artist.spotify.followers || 0;
     acc.spotify.popularity_score += artist.spotify.popularity_score || 0;
     
-    // Handle monthly listeners - convert to number if it's a valid string
+    // Handle monthly listeners
     const monthlyListeners = artist.spotify.monthly_listeners;
     if (monthlyListeners && monthlyListeners !== "N/A") {
       const numValue = typeof monthlyListeners === 'string' ? 
@@ -126,16 +198,6 @@ function App() {
       <div className="mb-8">
         <div className="border-b border-gray-700">
           <nav className="flex space-x-8 justify-center">
-            <a 
-              href="#artist"
-              className={`py-4 px-1 font-medium text-lg ${
-                activeTab === 'artist' ? 'text-accent' : 'text-gray-400'
-              }`}
-              style={{color: activeTab === 'artist' ? "#00a651" : ""}}
-              onClick={(e) => { e.preventDefault(); setActiveTab('artist'); }}
-            >
-              Artist Analytics
-            </a>
             <a 
               href="#collective"
               className={`py-4 px-1 font-medium text-lg ${
@@ -170,15 +232,69 @@ function App() {
         </div>
       </div>
 
-      {activeTab === 'artist' && (
-        <div>
-          <div className="mb-8 flex justify-between items-center">
-            <h2 className="text-3xl font-bold" style={{color: "#00a651"}}>Artist Performance</h2>
+      {activeTab === 'collective' && (
+        <div className="fade-in">
+          <h2 className="text-3xl font-bold mb-8" style={{color: "#00a651"}}>Collective Overview</h2>
+
+          {/* Collective Totals */}
+          <div className="stat-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            <div className="stat-box p-6 rounded-lg" 
+                 style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+              <h3 className="text-lg text-gray-400 mb-1">Total Artists</h3>
+              <div className="stat-value text-3xl font-bold">{data.artists.length}</div>
+            </div>
+
+            <div className="stat-box p-6 rounded-lg" 
+                 style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+              <h3 className="text-lg text-gray-400 mb-1">Total Spotify Followers</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
+                <div className="stat-value text-3xl font-bold">{formatNumber(collectiveTotals.spotify.followers)}</div>
+              </div>
+            </div>
+
+            <div className="stat-box p-6 rounded-lg" 
+                 style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+              <h3 className="text-lg text-gray-400 mb-1">Total Monthly Listeners</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
+                <div className="stat-value text-3xl font-bold">{formatNumber(collectiveTotals.spotify.monthly_listeners)}</div>
+              </div>
+            </div>
+
+            <div className="stat-box p-6 rounded-lg" 
+                 style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+              <h3 className="text-lg text-gray-400 mb-1">Total YouTube Subscribers</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
+                <div className="stat-value text-3xl font-bold">{formatNumber(collectiveTotals.youtube.subscribers)}</div>
+              </div>
+            </div>
+
+            <div className="stat-box p-6 rounded-lg" 
+                 style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+              <h3 className="text-lg text-gray-400 mb-1">Total YouTube Views</h3>
+              <div className="flex items-center">
+                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
+                <div className="stat-value text-3xl font-bold">{formatNumber(collectiveTotals.youtube.total_views)}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Artist Performance Section */}
+          <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <h3 className="text-2xl font-bold">Artist Performance</h3>
             <select 
-              className="bg-gray-800 border-2 border-accent text-white py-2 px-4 rounded retro-btn"
+              className="artist-dropdown bg-gray-800 border-2 text-white py-2 px-4 rounded retro-btn"
               style={{borderColor: "#00a651"}}
               value={selectedArtist || ''}
-              onChange={(e) => setSelectedArtist(e.target.value)}
+              onChange={(e) => {
+                setIsTransitioning(true);
+                setTimeout(() => {
+                  setSelectedArtist(e.target.value);
+                  setIsTransitioning(false);
+                }, 150);
+              }}
             >
               {data.artists.map((artist, index) => (
                 <option key={index} value={artist.name}>
@@ -188,194 +304,118 @@ function App() {
             </select>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-            {/* Spotify Followers Card */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-lg text-gray-400 mb-1">Spotify Followers</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
-                <div className="text-3xl font-bold">{formatNumber(currentArtistData.spotify.followers || 0)}</div>
+          {/* Individual Artist Stats */}
+          <div className={`transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+            <div className="stat-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+              <div className="stat-box p-6 rounded-lg" 
+                   style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+                <h3 className="text-lg text-gray-400 mb-1">Spotify Followers</h3>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
+                  <div className="stat-value text-3xl font-bold">{formatNumber(currentArtistData.spotify.followers || 0)}</div>
+                </div>
+              </div>
+
+              <div className="stat-box p-6 rounded-lg" 
+                   style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+                <h3 className="text-lg text-gray-400 mb-1">Monthly Listeners</h3>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
+                  <div className="stat-value text-3xl font-bold">{formatNumber(currentArtistData.spotify.monthly_listeners || "N/A")}</div>
+                </div>
+              </div>
+
+              <div className="stat-box p-6 rounded-lg" 
+                   style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+                <h3 className="text-lg text-gray-400 mb-1">Spotify Popularity</h3>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
+                  <div className="stat-value text-3xl font-bold">{currentArtistData.spotify.popularity_score || 0}</div>
+                  <div className="text-xl ml-1">/100</div>
+                </div>
+              </div>
+
+              <div className="stat-box p-6 rounded-lg" 
+                   style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+                <h3 className="text-lg text-gray-400 mb-1">YouTube Subscribers</h3>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
+                  <div className="stat-value text-3xl font-bold">{formatNumber(currentArtistData.youtube.subscribers || 0)}</div>
+                </div>
+              </div>
+
+              <div className="stat-box p-6 rounded-lg" 
+                   style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+                <h3 className="text-lg text-gray-400 mb-1">YouTube Views</h3>
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
+                  <div className="stat-value text-3xl font-bold">{formatNumber(currentArtistData.youtube.total_views || 0)}</div>
+                </div>
               </div>
             </div>
 
-            {/* Monthly Listeners Card */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-lg text-gray-400 mb-1">Monthly Listeners</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
-                <div className="text-3xl font-bold">{formatNumber(currentArtistData.spotify.monthly_listeners || "N/A")}</div>
-              </div>
-            </div>
-
-            {/* Spotify Popularity Card */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-lg text-gray-400 mb-1">Spotify Popularity</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
-                <div className="text-3xl font-bold">{currentArtistData.spotify.popularity_score || 0}</div>
-                <div className="text-xl ml-1">/100</div>
-              </div>
-            </div>
-
-            {/* YouTube Subscribers Card */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-lg text-gray-400 mb-1">YouTube Subscribers</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
-                <div className="text-3xl font-bold">{formatNumber(currentArtistData.youtube.subscribers || 0)}</div>
-              </div>
-            </div>
-
-            {/* YouTube Views Card */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-lg text-gray-400 mb-1">YouTube Views</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
-                <div className="text-3xl font-bold">{formatNumber(currentArtistData.youtube.total_views || 0)}</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            {/* Top Tracks List - Without Chart */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-2xl font-bold mb-4">Top Tracks</h3>
-              <div className="overflow-y-auto" style={{maxHeight: "300px"}}>
-                <table className="w-full">
-                  <thead>
-                    <tr>
-                      <th className="text-left pb-2">Track Name</th>
-                      <th className="text-right pb-2">Popularity</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentArtistData.spotify.top_tracks && currentArtistData.spotify.top_tracks.map((track, index) => (
-                      <tr key={index} className="border-t border-gray-700">
-                        <td className="py-2">{track.name}</td>
-                        <td className="text-right py-2">{track.popularity}/100</td>
-                      </tr>
-                    ))}
-                    {(!currentArtistData.spotify.top_tracks || currentArtistData.spotify.top_tracks.length === 0) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Top Tracks */}
+              <div className="stat-box p-6 rounded-lg" 
+                   style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+                <h3 className="text-2xl font-bold mb-4">Top Tracks</h3>
+                <div>
+                  <table className="w-full">
+                    <thead>
                       <tr>
-                        <td colSpan="2" className="py-2 text-center text-gray-500">No top tracks found</td>
+                        <th className="text-left pb-2">Track Name</th>
+                        <th className="text-right pb-2">Popularity</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {currentArtistData.spotify.top_tracks && currentArtistData.spotify.top_tracks.map((track, index) => (
+                        <tr key={index} className="border-t border-gray-700">
+                          <td className="py-2">{track.name}</td>
+                          <td className="text-right py-2">{track.popularity}/100</td>
+                        </tr>
+                      ))}
+                      {(!currentArtistData.spotify.top_tracks || currentArtistData.spotify.top_tracks.length === 0) && (
+                        <tr>
+                          <td colSpan="2" className="py-2 text-center text-gray-500">No top tracks found</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
 
-            {/* Genres List */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-2xl font-bold mb-4">Artist Info</h3>
-              <div>
-                <h4 className="text-lg font-semibold mb-2">Genres:</h4>
-                {currentArtistData.spotify.genres && currentArtistData.spotify.genres.length > 0 ? (
-                  <ul className="list-disc pl-5">
-                    {currentArtistData.spotify.genres.map((genre, index) => (
-                      <li key={index} className="mb-1 capitalize">{genre}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-gray-500">No genres listed</p>
-                )}
-                
-                {currentArtistData.youtube.video_count > 0 && (
-                  <div className="mt-6">
-                    <h4 className="text-lg font-semibold mb-2">YouTube Stats:</h4>
+              {/* Artist Info */}
+              <div className="stat-box p-6 rounded-lg" 
+                   style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+                <h3 className="text-2xl font-bold mb-4">Artist Info</h3>
+                <div>
+                  <h4 className="text-lg font-semibold mb-2">Genres:</h4>
+                  {currentArtistData.spotify.genres && currentArtistData.spotify.genres.length > 0 ? (
                     <ul className="list-disc pl-5">
-                      <li className="mb-1">Videos: {currentArtistData.youtube.video_count}</li>
-                      <li className="mb-1">Views: {formatNumber(currentArtistData.youtube.total_views)}</li>
-                      <li className="mb-1">Avg. Views/Video: {formatNumber(
-                        Math.round(
-                          currentArtistData.youtube.total_views / currentArtistData.youtube.video_count
-                        ) || 0
-                      )}</li>
+                      {currentArtistData.spotify.genres.map((genre, index) => (
+                        <li key={index} className="mb-1 capitalize">{genre}</li>
+                      ))}
                     </ul>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-gray-500">No genres listed</p>
+                  )}
+                  
+                  {currentArtistData.youtube.video_count > 0 && (
+                    <div className="mt-6">
+                      <h4 className="text-lg font-semibold mb-2">YouTube Stats:</h4>
+                      <ul className="list-disc pl-5">
+                        <li className="mb-1">Videos: {currentArtistData.youtube.video_count}</li>
+                        <li className="mb-1">Views: {formatNumber(currentArtistData.youtube.total_views)}</li>
+                        <li className="mb-1">Avg. Views/Video: {formatNumber(
+                          Math.round(
+                            currentArtistData.youtube.total_views / currentArtistData.youtube.video_count
+                          ) || 0
+                        )}</li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'collective' && (
-        <div>
-          <h2 className="text-3xl font-bold mb-8" style={{color: "#00a651"}}>Collective Overview</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-            {/* Total Artists Card */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-lg text-gray-400 mb-1">Total Artists</h3>
-              <div className="text-3xl font-bold">{data.artists.length}</div>
-            </div>
-
-            {/* Total Spotify Followers Card */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-lg text-gray-400 mb-1">Total Spotify Followers</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
-                <div className="text-3xl font-bold">{formatNumber(collectiveTotals.spotify.followers)}</div>
-              </div>
-            </div>
-
-            {/* Total Monthly Listeners Card */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-lg text-gray-400 mb-1">Total Monthly Listeners</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
-                <div className="text-3xl font-bold">{formatNumber(collectiveTotals.spotify.monthly_listeners)}</div>
-              </div>
-            </div>
-
-            {/* Total YouTube Subscribers Card */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-lg text-gray-400 mb-1">Total YouTube Subscribers</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
-                <div className="text-3xl font-bold">{formatNumber(collectiveTotals.youtube.subscribers)}</div>
-              </div>
-            </div>
-
-            {/* Total YouTube Views Card */}
-            <div className="p-6 rounded-lg" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-lg text-gray-400 mb-1">Total YouTube Views</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
-                <div className="text-3xl font-bold">{formatNumber(collectiveTotals.youtube.total_views)}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Artist Comparison Table */}
-          <div className="p-6 rounded-lg mb-8" style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-            <h3 className="text-2xl font-bold mb-4">Artist Comparison</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="text-left pb-2">Artist</th>
-                    <th className="text-right pb-2">Spotify Followers</th>
-                    <th className="text-right pb-2">Monthly Listeners</th>
-                    <th className="text-right pb-2">Spotify Popularity</th>
-                    <th className="text-right pb-2">YouTube Subscribers</th>
-                    <th className="text-right pb-2">YouTube Views</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.artists.map((artist, index) => (
-                    <tr key={index} className="border-b border-gray-700">
-                      <td className="py-3 font-medium">{artist.name}</td>
-                      <td className="text-right">{formatNumber(artist.spotify.followers || 0)}</td>
-                      <td className="text-right">{formatNumber(artist.spotify.monthly_listeners || "N/A")}</td>
-                      <td className="text-right">{artist.spotify.popularity_score || 0}/100</td>
-                      <td className="text-right">{formatNumber(artist.youtube.subscribers || 0)}</td>
-                      <td className="text-right">{formatNumber(artist.youtube.total_views || 0)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
         </div>
@@ -390,7 +430,6 @@ function App() {
             </div>
           </div>
 
-          {/* Container for magazine buttons - will be populated by life24.js */}
           <div id="life-at-24-container">
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mb-2"></div>
@@ -409,7 +448,6 @@ function App() {
             </div>
           </div>
 
-          {/* Container for track buttons - will be populated by unmastered.js */}
           <div id="untitled-unmastered-container">
             <div className="text-center py-8">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mb-2"></div>
