@@ -204,8 +204,7 @@ async function fetchLife24Magazines() {
         };
       });
     
-    magazines.sort((a, b) => b.dateObj - a.dateObj);
-    
+    // Don't sort here - let the render function handle sorting
     return magazines;
   } catch (error) {
     console.error('Error fetching magazines:', error);
@@ -244,7 +243,9 @@ function createDropdownContainers() {
     clearTimeout(updateTimeout);
     updateTimeout = setTimeout(() => {
       if (window.life24Magazines) {
-        renderLife24Magazines(window.life24Magazines, sortDropdown.value);
+        const selectedValue = sortDropdown.value;
+        console.log('Sort changed to:', selectedValue); // Debug log
+        renderLife24Magazines(window.life24Magazines, selectedValue);
       }
     }, 150);
   };
@@ -348,12 +349,23 @@ async function renderLife24Magazines(magazines, sort = 'newest') {
   
   container.innerHTML = '';
   
-  // Sort magazines
+  // Sort magazines - Fixed logic
   const sortedMagazines = [...magazines];
   sortedMagazines.sort((a, b) => {
-    const comparison = b.dateObj - a.dateObj;
-    return sort === 'newest' ? comparison : -comparison;
+    // Convert date objects to timestamps for comparison
+    const aTime = a.dateObj ? a.dateObj.getTime() : 0;
+    const bTime = b.dateObj ? b.dateObj.getTime() : 0;
+    
+    if (sort === 'oldest') {
+      // Oldest first: smaller timestamps come first
+      return aTime - bTime;
+    } else {
+      // Newest first (default): larger timestamps come first
+      return bTime - aTime;
+    }
   });
+  
+  console.log(`Rendering ${sortedMagazines.length} magazines sorted by: ${sort}`); // Debug log
   
   if (sortedMagazines.length === 0) {
     container.innerHTML = `
