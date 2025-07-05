@@ -121,6 +121,13 @@ function App() {
       .then(jsonData => {
         setData(jsonData);
         setLoading(false);
+        // Set the initial artist to the first one in the list if Casa 24 doesn't exist
+        if (jsonData.artists && jsonData.artists.length > 0) {
+          const casa24Exists = jsonData.artists.find(artist => artist.name === 'Casa 24');
+          if (!casa24Exists) {
+            setSelectedArtist(jsonData.artists[0].name);
+          }
+        }
       })
       .catch(error => {
         setError(error.message);
@@ -160,7 +167,7 @@ function App() {
     return <div className="p-4">No artist data available.</div>;
   }
 
-  // Get current artist data
+  // Get current artist data - FIXED: Now properly updates when dropdown changes
   const currentArtistData = data.artists.find(artist => artist.name === selectedArtist) || data.artists[0];
 
   // Calculate collective totals
@@ -289,11 +296,8 @@ function App() {
               style={{borderColor: "#00a651"}}
               value={selectedArtist || ''}
               onChange={(e) => {
-                setIsTransitioning(true);
-                setTimeout(() => {
-                  setSelectedArtist(e.target.value);
-                  setIsTransitioning(false);
-                }, 150);
+                console.log('Dropdown changed to:', e.target.value); // Debug log
+                setSelectedArtist(e.target.value);
               }}
             >
               {data.artists.map((artist, index) => (
@@ -305,7 +309,7 @@ function App() {
           </div>
 
           {/* Individual Artist Stats */}
-          <div className={`transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+          <div>
             <div className="stat-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
               <div className="stat-box p-6 rounded-lg" 
                    style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
