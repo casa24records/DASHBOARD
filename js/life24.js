@@ -148,8 +148,10 @@ function extractDateFromFilename(filename) {
     console.error('Error parsing date from filename:', filename, error);
   }
   
-  if (!result.dateObj) {
-    result.dateObj = new Date();
+  // FIXED: Don't default to current date - use null instead
+  if (!result.dateObj || isNaN(result.dateObj.getTime())) {
+    result.dateObj = null;
+    result.date = null;
   }
   
   return result;
@@ -204,7 +206,17 @@ async function fetchLife24Magazines() {
         };
       });
     
-    // Don't sort here - let the render function handle sorting
+    // FIXED: Robust initial sort with null handling
+    magazines.sort((a, b) => {
+      // Handle null/invalid dates
+      if (!a.dateObj && !b.dateObj) return 0;
+      if (!a.dateObj) return 1;  // Push nulls to end
+      if (!b.dateObj) return -1;
+      
+      // Sort by newest first (descending)
+      return b.dateObj.getTime() - a.dateObj.getTime();
+    });
+    
     return magazines;
   } catch (error) {
     console.error('Error fetching magazines:', error);
@@ -243,9 +255,9 @@ function createDropdownContainers() {
     clearTimeout(updateTimeout);
     updateTimeout = setTimeout(() => {
       if (window.life24Magazines) {
-        const selectedValue = sortDropdown.value;
-        console.log('Sort changed to:', selectedValue); // Debug log
-        renderLife24Magazines(window.life24Magazines, selectedValue);
+        // Debug logging
+        console.log('Sort dropdown changed to:', sortDropdown.value);
+        renderLife24Magazines(window.life24Magazines, sortDropdown.value);
       }
     }, 150);
   };
@@ -349,23 +361,48 @@ async function renderLife24Magazines(magazines, sort = 'newest') {
   
   container.innerHTML = '';
   
-  // Sort magazines - Fixed logic
+  // FIXED: Create a copy and implement robust sorting with null handling
   const sortedMagazines = [...magazines];
+  
+  // Debug logging
+  console.log(`Sorting magazines by: ${sort}`);
+  console.log('Before sort - first 3 items:', sortedMagazines.slice(0, 3).map(m => ({
+    name: m.displayName,
+    dateObj: m.dateObj,
+    timestamp: m.dateObj ? m.dateObj.getTime() : 'null'
+  })));
+  
   sortedMagazines.sort((a, b) => {
-    // Convert date objects to timestamps for comparison
-    const aTime = a.dateObj ? a.dateObj.getTime() : 0;
-    const bTime = b.dateObj ? b.dateObj.getTime() : 0;
+    // Handle null/invalid dates first
+    if (!a.dateObj && !b.dateObj) return 0;
+    if (!a.dateObj) return 1;  // Push nulls to end
+    if (!b.dateObj) return -1;
     
-    if (sort === 'oldest') {
-      // Oldest first: smaller timestamps come first
-      return aTime - bTime;
-    } else {
-      // Newest first (default): larger timestamps come first
+    // Get timestamps for comparison
+    const aTime = a.dateObj.getTime();
+    const bTime = b.dateObj.getTime();
+    
+    // Check for invalid dates (NaN)
+    if (isNaN(aTime) && isNaN(bTime)) return 0;
+    if (isNaN(aTime)) return 1;
+    if (isNaN(bTime)) return -1;
+    
+    // FIXED: Correct sorting logic
+    if (sort === 'newest') {
+      // Newest first: larger dates come first
       return bTime - aTime;
+    } else {
+      // Oldest first: smaller dates come first
+      return aTime - bTime;
     }
   });
   
-  console.log(`Rendering ${sortedMagazines.length} magazines sorted by: ${sort}`); // Debug log
+  // Debug logging
+  console.log('After sort - first 3 items:', sortedMagazines.slice(0, 3).map(m => ({
+    name: m.displayName,
+    dateObj: m.dateObj,
+    timestamp: m.dateObj ? m.dateObj.getTime() : 'null'
+  })));
   
   if (sortedMagazines.length === 0) {
     container.innerHTML = `
