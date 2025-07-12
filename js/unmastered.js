@@ -12,7 +12,7 @@ const UnmasteredPlayer = (() => {
     folderId: '12JmF908-4lELxUroNiUtycvicatw1J2X',
     containerSelector: '#untitled-unmastered-container',
     dropdownSelector: '#unmastered-dropdown-container',
-    loreBasePath: '/songs/', // Path to the songs folder in your repo
+    loreBasePath: './songs/', // Fixed: relative path from the HTML file
     defaultImage: 'images/RetroTrack.png',
     accentColor: '#00a651',
     queryParams: {
@@ -97,9 +97,15 @@ const UnmasteredPlayer = (() => {
       // Remove .mp3 extension and create the exact filename match
       const baseFileName = trackName.replace('.mp3', '');
       const loreFileName = `${baseFileName}.md`;
-      const loreUrl = `${config.loreBasePath}${loreFileName}`;
+      
+      // Encode special characters in the filename
+      const encodedFileName = encodeURIComponent(loreFileName);
+      
+      // Build the full URL - relative to the HTML page location
+      const loreUrl = `${config.loreBasePath}${encodedFileName}`;
       
       console.log('Attempting to fetch lore from:', loreUrl);
+      console.log('Decoded URL would be:', decodeURIComponent(loreUrl));
       
       const response = await fetch(loreUrl);
       
@@ -308,6 +314,20 @@ const UnmasteredPlayer = (() => {
       @keyframes shimmer {
         0% { background-position: 200% 0; }
         100% { background-position: -200% 0; }
+      }
+      
+      .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(0, 166, 81, 0.3);
+        border-radius: 50%;
+        border-top-color: ${config.accentColor};
+        animation: spin 0.8s linear infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
       }
     `;
     
