@@ -94,15 +94,23 @@ const UnmasteredPlayer = (() => {
   // Fetch lore content for a track
   const fetchLore = async (trackName) => {
     try {
+      // Remove .mp3 extension and clean the filename
       const loreFileName = trackName.replace('.mp3', '.md');
-      const response = await fetch(`${config.loreBasePath}${loreFileName}`);
+      const loreUrl = `${config.loreBasePath}${loreFileName}`;
+      
+      console.log('Fetching lore from:', loreUrl);
+      
+      const response = await fetch(loreUrl);
       
       if (response.ok) {
         const content = await response.text();
+        console.log('Lore content fetched successfully');
         return content;
+      } else {
+        console.log(`No lore found for ${trackName} (status: ${response.status})`);
       }
     } catch (error) {
-      console.log(`No lore found for ${trackName}`);
+      console.log(`Error fetching lore for ${trackName}:`, error);
     }
     return null;
   };
@@ -191,6 +199,20 @@ const UnmasteredPlayer = (() => {
       .unmastered-card:hover {
         transform: translateY(-8px) scale(1.02);
         box-shadow: 0 20px 40px rgba(0, 166, 81, 0.3);
+      }
+      
+      .unmastered-card .track-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: white;
+        text-align: center;
+        margin-bottom: 0.75rem;
+        padding: 0 0.5rem;
+        line-height: 1.2;
+        min-height: 2.4rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       
       .lore-section {
@@ -305,20 +327,15 @@ const UnmasteredPlayer = (() => {
     container.innerHTML = `
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
         ${sorted.map(track => `
-          <div class="unmastered-card p-4 rounded-lg text-center cursor-pointer border-2 border-accent bg-gray-900/70"
+          <div class="unmastered-card p-4 rounded-lg cursor-pointer border-2 border-accent bg-gray-900/70"
                data-track-id="${track.id}">
-            <div class="relative mb-3 overflow-hidden rounded-lg" style="padding-bottom: 120%">
+            <div class="track-title">${track.name.replace('.mp3', '')}</div>
+            <div class="relative mb-3 overflow-hidden rounded-lg" style="padding-bottom: 100%">
               <img src="${config.defaultImage}" 
                    alt="${track.displayName}"
                    class="absolute top-0 left-0 w-full h-full object-cover" />
-              <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-              <div class="absolute bottom-0 left-0 right-0 p-3">
-                <div class="text-white text-sm font-medium drop-shadow-lg">
-                  ${track.name.replace('.mp3', '')}
-                </div>
-              </div>
             </div>
-            <p class="text-sm text-gray-400">${formatDate(track.modifiedTime)}</p>
+            <p class="text-sm text-gray-400 text-center">${formatDate(track.modifiedTime)}</p>
           </div>
         `).join('')}
       </div>
@@ -338,15 +355,24 @@ const UnmasteredPlayer = (() => {
   const openPlayer = async (track) => {
     currentTrack = track;
     
+    // Show loading modal first
+    const loadingModal = document.createElement('div');
+    loadingModal.id = 'audio-modal';
+    loadingModal.className = 'fixed inset-0 flex items-center justify-center z-50 p-4';
+    loadingModal.innerHTML = `
+      <div class="modal-overlay absolute inset-0 bg-black/90 backdrop-blur-sm"></div>
+      <div class="relative bg-gray-900 rounded-xl p-8">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent"></div>
+      </div>
+    `;
+    document.body.appendChild(loadingModal);
+    document.body.style.overflow = 'hidden';
+    
     // Fetch lore content
     const loreContent = await fetchLore(track.name);
     
-    // Create modal
-    const modal = document.createElement('div');
-    modal.id = 'audio-modal';
-    modal.className = 'fixed inset-0 flex items-center justify-center z-50 p-4';
-    
-    modal.innerHTML = `
+    // Update modal with content
+    loadingModal.innerHTML = `
       <div class="modal-overlay absolute inset-0 bg-black/90 backdrop-blur-sm"></div>
       <div class="relative bg-gray-900 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden border-2 border-accent shadow-2xl">
         <!-- Header -->
@@ -392,7 +418,7 @@ const UnmasteredPlayer = (() => {
           <!-- Lore Section -->
           ${loreContent ? `
             <div class="lore-section px-6 pb-6">
-              <div class="lore-content bg-gray-800/50 rounded-lg p-6 border border-gray-700 shimmer">
+              <div class="lore-content bg-gray-800/50 rounded-lg p-6 border border-gray-700">
                 <div class="prose prose-invert max-w-none">
                   ${parseMarkdown(loreContent)}
                 </div>
@@ -419,22 +445,19 @@ const UnmasteredPlayer = (() => {
       </div>
     `;
     
-    document.body.appendChild(modal);
-    document.body.style.overflow = 'hidden';
-    
     // Event handlers
     const closeModal = () => {
-      modal.remove();
+      loadingModal.remove();
       document.body.style.overflow = '';
       currentTrack = null;
     };
     
-    modal.querySelector('.modal-overlay').addEventListener('click', closeModal);
-    modal.querySelector('.close-btn').addEventListener('click', closeModal);
+    loadingModal.querySelector('.modal-overlay').addEventListener('click', closeModal);
+    loadingModal.querySelector('.close-btn').addEventListener('click', closeModal);
     
     // Lore toggle
-    const loreToggle = modal.querySelector('.lore-toggle');
-    const loreSection = modal.querySelector('.lore-section');
+    const loreToggle = loadingModal.querySelector('.lore-toggle');
+    const loreSection = loadingModal.querySelector('.lore-section');
     
     if (loreToggle && loreSection) {
       loreToggle.addEventListener('click', () => {
