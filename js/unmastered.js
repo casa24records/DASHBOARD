@@ -2,7 +2,7 @@
  * Untitled Unmastered - Modern Audio Player with Lore Support
  * 
  * A dynamic audio player that fetches MP3s from Google Drive and displays
- * associated lore/lyrics from local markdown files
+ * associated lore/lyrics from markdown files in the GitHub repository
  */
 
 const UnmasteredPlayer = (() => {
@@ -94,50 +94,67 @@ const UnmasteredPlayer = (() => {
   // Fetch lore content for a track
   const fetchLore = async (trackName) => {
     try {
-      // Remove .mp3 extension and clean the filename
-      const loreFileName = trackName.replace('.mp3', '.md');
+      // Remove .mp3 extension and create the exact filename match
+      const baseFileName = trackName.replace('.mp3', '');
+      const loreFileName = `${baseFileName}.md`;
       const loreUrl = `${config.loreBasePath}${loreFileName}`;
       
-      console.log('Fetching lore from:', loreUrl);
+      console.log('Attempting to fetch lore from:', loreUrl);
       
       const response = await fetch(loreUrl);
       
       if (response.ok) {
         const content = await response.text();
-        console.log('Lore content fetched successfully');
+        console.log('Lore content fetched successfully for:', trackName);
         return content;
       } else {
-        console.log(`No lore found for ${trackName} (status: ${response.status})`);
+        console.log(`No lore file found for ${trackName} (${response.status})`);
+        return null;
       }
     } catch (error) {
-      console.log(`Error fetching lore for ${trackName}:`, error);
+      console.log(`Error fetching lore for ${trackName}:`, error.message);
+      return null;
     }
-    return null;
   };
 
-  // Parse markdown to HTML (basic implementation)
+  // Enhanced Markdown parser
   const parseMarkdown = (markdown) => {
     if (!markdown) return '';
     
-    // Basic markdown parsing
     let html = markdown
       // Headers
+      .replace(/^#### (.*$)/gim, '<h4 class="text-lg font-semibold mb-2 text-accent">$1</h4>')
       .replace(/^### (.*$)/gim, '<h3 class="text-xl font-bold mb-3 text-accent">$1</h3>')
       .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold mb-4 text-accent">$1</h2>')
       .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold mb-5 text-accent">$1</h1>')
-      // Bold
+      // Bold and Italic
+      .replace(/\*\*\*(.+?)\*\*\*/g, '<strong class="font-bold italic">$1</strong>')
       .replace(/\*\*(.+?)\*\*/g, '<strong class="font-bold">$1</strong>')
-      // Italic
       .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
-      // Line breaks
-      .replace(/\n\n/g, '</p><p class="mb-4">')
+      .replace(/_(.+?)_/g, '<em class="italic">$1</em>')
+      // Links
+      .replace(/\[([^\[]+)\]\(([^\)]+)\)/g, '<a href="$2" class="text-accent hover:underline" target="_blank" rel="noopener noreferrer">$1</a>')
+      // Code blocks
+      .replace(/```([^`]+)```/g, '<pre class="bg-gray-800 p-4 rounded-lg overflow-x-auto mb-4"><code>$1</code></pre>')
+      .replace(/`([^`]+)`/g, '<code class="bg-gray-800 px-2 py-1 rounded text-sm">$1</code>')
+      // Blockquotes
+      .replace(/^> (.*$)/gim, '<blockquote class="border-l-4 border-accent pl-4 italic mb-4">$1</blockquote>')
+      // Horizontal rules
+      .replace(/^---$/gim, '<hr class="border-gray-700 my-6">')
       // Lists
       .replace(/^\* (.+)$/gim, '<li class="ml-6 mb-1">• $1</li>')
-      .replace(/(<li.*<\/li>)/s, '<ul class="mb-4">$1</ul>');
+      .replace(/^- (.+)$/gim, '<li class="ml-6 mb-1">• $1</li>')
+      .replace(/^\d+\. (.+)$/gim, '<li class="ml-6 mb-1 list-decimal">$1</li>')
+      // Line breaks
+      .replace(/\n\n/g, '</p><p class="mb-4 text-gray-300 leading-relaxed">');
+    
+    // Wrap lists
+    html = html.replace(/(<li class="ml-6[^>]*>.*<\/li>)(?=\s*(?!<li))/gs, '<ul class="mb-4 text-gray-300">$1</ul>');
+    html = html.replace(/(<li class="ml-6[^>]*list-decimal[^>]*>.*<\/li>)(?=\s*(?!<li))/gs, '<ol class="mb-4 list-decimal list-inside text-gray-300">$1</ol>');
     
     // Wrap in paragraph tags if needed
-    if (!html.includes('<p>') && !html.includes('<h')) {
-      html = `<p class="mb-4">${html}</p>`;
+    if (!html.match(/^<[hp]/)) {
+      html = `<p class="mb-4 text-gray-300 leading-relaxed">${html}</p>`;
     }
     
     return html;
@@ -218,15 +235,32 @@ const UnmasteredPlayer = (() => {
       .lore-section {
         max-height: 0;
         overflow: hidden;
-        transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        opacity: 0;
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       }
       
       .lore-section.active {
-        max-height: 800px;
+        max-height: 600px;
+        opacity: 1;
+        overflow-y: auto;
       }
       
       .lore-content {
         animation: fadeInUp 0.6s ease-out;
+      }
+      
+      .lore-section::-webkit-scrollbar {
+        width: 8px;
+      }
+      
+      .lore-section::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+      }
+      
+      .lore-section::-webkit-scrollbar-thumb {
+        background: ${config.accentColor};
+        border-radius: 4px;
       }
       
       @keyframes fadeInUp {
@@ -329,7 +363,7 @@ const UnmasteredPlayer = (() => {
         ${sorted.map(track => `
           <div class="unmastered-card p-4 rounded-lg cursor-pointer border-2 border-accent bg-gray-900/70"
                data-track-id="${track.id}">
-            <div class="track-title">${track.name.replace('.mp3', '')}</div>
+            <div class="track-title">${track.displayName}</div>
             <div class="relative mb-3 overflow-hidden rounded-lg" style="padding-bottom: 100%">
               <img src="${config.defaultImage}" 
                    alt="${track.displayName}"
@@ -370,6 +404,7 @@ const UnmasteredPlayer = (() => {
     
     // Fetch lore content
     const loreContent = await fetchLore(track.name);
+    const hasLore = loreContent && loreContent.trim().length > 0;
     
     // Update modal with content
     loadingModal.innerHTML = `
@@ -377,7 +412,7 @@ const UnmasteredPlayer = (() => {
       <div class="relative bg-gray-900 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden border-2 border-accent shadow-2xl">
         <!-- Header -->
         <div class="flex justify-between items-center p-4 border-b border-gray-700">
-          <h3 class="text-xl font-bold text-white">${track.displayName || track.name.replace('.mp3', '')}</h3>
+          <h3 class="text-xl font-bold text-white">${track.displayName}</h3>
           <button class="close-btn text-gray-400 hover:text-white transition-colors p-2">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -399,14 +434,12 @@ const UnmasteredPlayer = (() => {
                     allow="autoplay"
                     class="mb-4 rounded-lg overflow-hidden"></iframe>
             
-            ${loreContent ? `
-              <button class="lore-toggle mt-4 px-6 py-2 bg-accent text-white rounded-lg hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-lg">
-                <span class="inline-flex items-center">
-                  <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  View Lore
-                </span>
+            ${hasLore ? `
+              <button class="lore-toggle mt-4 px-6 py-2 bg-accent text-white rounded-lg hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-lg inline-flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+                <span>View Lore</span>
               </button>
             ` : `
               <p class="text-sm text-gray-400 mt-4">
@@ -415,8 +448,8 @@ const UnmasteredPlayer = (() => {
             `}
           </div>
           
-          <!-- Lore Section -->
-          ${loreContent ? `
+          <!-- Lore Section - Only rendered if lore exists -->
+          ${hasLore ? `
             <div class="lore-section px-6 pb-6">
               <div class="lore-content bg-gray-800/50 rounded-lg p-6 border border-gray-700">
                 <div class="prose prose-invert max-w-none">
@@ -455,27 +488,26 @@ const UnmasteredPlayer = (() => {
     loadingModal.querySelector('.modal-overlay').addEventListener('click', closeModal);
     loadingModal.querySelector('.close-btn').addEventListener('click', closeModal);
     
-    // Lore toggle
+    // Lore toggle functionality
     const loreToggle = loadingModal.querySelector('.lore-toggle');
     const loreSection = loadingModal.querySelector('.lore-section');
     
     if (loreToggle && loreSection) {
       loreToggle.addEventListener('click', () => {
+        const isActive = loreSection.classList.contains('active');
         loreSection.classList.toggle('active');
-        loreToggle.innerHTML = loreSection.classList.contains('active') ? `
-          <span class="inline-flex items-center">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-            </svg>
-            Hide Lore
-          </span>
+        
+        // Update button text and icon
+        loreToggle.innerHTML = isActive ? `
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+          <span>View Lore</span>
         ` : `
-          <span class="inline-flex items-center">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            View Lore
-          </span>
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+          </svg>
+          <span>Hide Lore</span>
         `;
       });
     }
