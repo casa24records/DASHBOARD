@@ -1,443 +1,600 @@
 /**
- * untitled unmastered Dynamic Audio Player
+ * Untitled Unmastered - Modern Audio Player with Lore Support
  * 
- * This script fetches MP3 audio files directly from a public Google Drive folder
- * and displays them in the website, without requiring any file downloads,
- * credentials, or secrets.
+ * A dynamic audio player that fetches MP3s from Google Drive and displays
+ * associated lore/lyrics from markdown files in the GitHub repository
  */
 
-// Configuration object
-const unmasteredConfig = {
-    // Google Drive API key (no OAuth required) 
+const UnmasteredPlayer = (() => {
+  // Configuration
+  const config = {
     apiKey: 'AIzaSyCgffLM7bMJ2vqw-VBGaNNJWkMQPEfNfgk',
-    
-    // Your public Google Drive folder ID
     folderId: '12JmF908-4lELxUroNiUtycvicatw1J2X',
-    
-    // CSS selector for the container where the audio tracks will be displayed
-    containerSelector: '#untitled-unmastered-container', 
-    
-    // Query parameters for the Google Drive API
+    containerSelector: '#untitled-unmastered-container',
+    dropdownSelector: '#unmastered-dropdown-container',
+    loreBasePath: './songs/', // Fixed: relative path from the HTML file
+    defaultImage: 'images/RetroTrack.png',
+    accentColor: '#00a651',
     queryParams: {
-      // Only fetch MP3 files
-      q: "mimeType='audio/mpeg'",
-      // Sort by created time, newest first
+      mimeType: "mimeType='audio/mpeg'",
       orderBy: 'createdTime desc',
-      // Maximum number of files to fetch
       pageSize: 50,
-      // Fields to include in the response
       fields: 'files(id,name,createdTime,webViewLink,modifiedTime)'
     }
   };
-  
-  /**
-   * Format date to D-MMM-YYYY format
-   * @param {string} dateString - ISO date string
-   * @returns {string} Formatted date
-   */
-  function formatDisplayDate(dateString) {
+
+  // State
+  let tracks = [];
+  let currentTrack = null;
+  let currentSort = 'newest';
+
+  // Utility functions
+  const formatDate = (dateString) => {
     if (!dateString) return 'Date unavailable';
     
     const date = new Date(dateString);
-    const day = date.getDate();
     const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
     
-    return `${day}-${month}-${year}`;
-  }
-  
-  /**
-   * Fetch the list of tracks from Google Drive
-   * @returns {Promise<Array>} Array of track objects
-   */
-  async function fetchUnmasteredTracks() {
-    try {
-      // Build the URL to fetch files from the folder
-      let url = `https://www.googleapis.com/drive/v3/files?key=${unmasteredConfig.apiKey}`;
-      
-      // Add folder query parameter
-      url += `&q='${unmasteredConfig.folderId}'+in+parents and ${unmasteredConfig.queryParams.q}`;
-      
-      // Add other query parameters
-      url += `&orderBy=${unmasteredConfig.queryParams.orderBy}`;
-      url += `&pageSize=${unmasteredConfig.queryParams.pageSize}`;
-      url += `&fields=${unmasteredConfig.queryParams.fields}`;
-      
-      console.log('Fetching tracks from Google Drive...');
-      
-      // Fetch the file list
-      const response = await fetch(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch tracks: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      // Process the files into track objects
-      return data.files.map(file => {
-          // Extract the date part from filenames if available
-          const datePart = extractDateFromFilename(file.name);
-          
-          return {
-            id: file.id,
-            name: file.name,
-            date: datePart.date,
-            displayName: datePart.displayName,
-            // Use a direct embedding URL that should work better for audio playback
-            audioUrl: `https://drive.google.com/a/ui/v1/m?id=${file.id}`,
-            previewUrl: `https://drive.google.com/file/d/${file.id}/preview`,
-            downloadUrl: `https://drive.google.com/uc?export=download&id=${file.id}`,
-            createdTime: file.createdTime,
-            modifiedTime: file.modifiedTime || file.createdTime
-          };
-        })
-        .sort((a, b) => new Date(b.modifiedTime) - new Date(a.modifiedTime));
-    } catch (error) {
-      console.error('Error fetching tracks:', error);
-      return [];
-    }
-  }
-  
-  /**
-   * Extract the date part from a filename
-   * @param {string} filename - Format: "Track Name [DATE].mp3"
-   * @returns {Object} Object with date and displayName properties
-   */
-  function extractDateFromFilename(filename) {
-    // Default return values
+    return `${date.getDate()}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  };
+
+  const extractDateFromFilename = (filename) => {
     const result = {
       date: null,
       displayName: filename.replace('.mp3', '')
     };
     
     try {
-      // Check if filename contains date in square brackets
       const bracketMatch = filename.match(/\[(.*?)\]/);
       
-      if (bracketMatch && bracketMatch[1]) {
+      if (bracketMatch?.[1]) {
         const dateText = bracketMatch[1].trim();
         result.displayName = result.displayName.replace(`[${dateText}]`, '').trim();
         
-        // Handle different date formats
-        
-        // Format: ENE 07 - ENE 12 (month range)
+        // Handle date range format
         if (dateText.includes('-')) {
-          const parts = dateText.split('-').map(p => p.trim());
-          const firstPart = parts[0];
-          
-          // Extract the month abbreviation and day
+          const firstPart = dateText.split('-')[0].trim();
           const monthMatch = firstPart.match(/([A-Za-z]+)\s+(\d+)/);
           
           if (monthMatch) {
-            const monthAbbr = monthMatch[1].toUpperCase();
-            const day = parseInt(monthMatch[2], 10);
-            
-            // Convert month abbreviation to number
-            const months = {
-              'ENE': 1, 'FEB': 2, 'MAR': 3, 'ABR': 4, 'APR': 4, 
+            const monthMap = {
+              'ENE': 1, 'FEB': 2, 'MAR': 3, 'ABR': 4, 'APR': 4,
               'MAY': 5, 'JUN': 6, 'JUL': 7, 'AGO': 8, 'AUG': 8,
               'SEP': 9, 'OCT': 10, 'NOV': 11, 'DIC': 12, 'DEC': 12
             };
             
-            const month = months[monthAbbr] || 1;
-            
-            // Use current year as default, adjust for December (previous year)
+            const month = monthMap[monthMatch[1].toUpperCase()] || 1;
+            const day = parseInt(monthMatch[2], 10);
             let year = new Date().getFullYear();
-            if (month === 12 && new Date().getMonth() < 11) {
-              year--;
-            }
+            
+            if (month === 12 && new Date().getMonth() < 11) year--;
             
             result.date = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
           }
         }
-        // Format: APRIL 04, 2025 (direct date)
+        // Handle full date format
         else if (dateText.includes(',')) {
           const date = new Date(dateText);
           if (!isNaN(date.getTime())) {
             result.date = date.toISOString().split('T')[0];
           }
         }
-        // Format: 2023-05-01 (ISO date)
+        // Handle ISO date format
         else if (/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
           result.date = dateText;
         }
       }
     } catch (error) {
-      console.error('Error parsing filename date:', error);
+      console.error('Error parsing date:', error);
     }
     
     return result;
-  }
-  
-  /**
-   * Create the dropdown for sorting
-   */
-  function createSortDropdown() {
-    const container = document.getElementById('unmastered-dropdown-container');
-    if (!container) {
-      console.log('Dropdown container not found, waiting for React to render...');
+  };
+
+  // Fetch lore content for a track
+  const fetchLore = async (trackName) => {
+    try {
+      // Remove .mp3 extension and create the exact filename match
+      const baseFileName = trackName.replace('.mp3', '');
+      const loreFileName = `${baseFileName}.md`;
+      
+      // Encode special characters in the filename
+      const encodedFileName = encodeURIComponent(loreFileName);
+      
+      // Build the full URL - relative to the HTML page location
+      const loreUrl = `${config.loreBasePath}${encodedFileName}`;
+      
+      console.log('Attempting to fetch lore from:', loreUrl);
+      console.log('Decoded URL would be:', decodeURIComponent(loreUrl));
+      
+      const response = await fetch(loreUrl);
+      
+      if (response.ok) {
+        const content = await response.text();
+        console.log('Lore content fetched successfully for:', trackName);
+        return content;
+      } else {
+        console.log(`No lore file found for ${trackName} (${response.status})`);
+        return null;
+      }
+    } catch (error) {
+      console.log(`Error fetching lore for ${trackName}:`, error.message);
       return null;
     }
+  };
+
+  // Enhanced Markdown parser
+  const parseMarkdown = (markdown) => {
+    if (!markdown) return '';
     
-    const dropdown = document.createElement('select');
-    dropdown.className = 'bg-gray-800 border-2 border-accent text-white py-2 px-4 rounded retro-btn';
-    dropdown.style.borderColor = '#00a651';
-    dropdown.innerHTML = `
-      <option value="newest">Newest</option>
-      <option value="oldest">Oldest</option>
+    let html = markdown
+      // Headers
+      .replace(/^#### (.*$)/gim, '<h4 class="text-lg font-semibold mb-2 text-accent">$1</h4>')
+      .replace(/^### (.*$)/gim, '<h3 class="text-xl font-bold mb-3 text-accent">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-2xl font-bold mb-4 text-accent">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-3xl font-bold mb-5 text-accent">$1</h1>')
+      // Bold and Italic
+      .replace(/\*\*\*(.+?)\*\*\*/g, '<strong class="font-bold italic">$1</strong>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong class="font-bold">$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em class="italic">$1</em>')
+      .replace(/_(.+?)_/g, '<em class="italic">$1</em>')
+      // Links
+      .replace(/\[([^\[]+)\]\(([^\)]+)\)/g, '<a href="$2" class="text-accent hover:underline" target="_blank" rel="noopener noreferrer">$1</a>')
+      // Code blocks
+      .replace(/```([^`]+)```/g, '<pre class="bg-gray-800 p-4 rounded-lg overflow-x-auto mb-4"><code>$1</code></pre>')
+      .replace(/`([^`]+)`/g, '<code class="bg-gray-800 px-2 py-1 rounded text-sm">$1</code>')
+      // Blockquotes
+      .replace(/^> (.*$)/gim, '<blockquote class="border-l-4 border-accent pl-4 italic mb-4">$1</blockquote>')
+      // Horizontal rules
+      .replace(/^---$/gim, '<hr class="border-gray-700 my-6">')
+      // Lists
+      .replace(/^\* (.+)$/gim, '<li class="ml-6 mb-1">• $1</li>')
+      .replace(/^- (.+)$/gim, '<li class="ml-6 mb-1">• $1</li>')
+      .replace(/^\d+\. (.+)$/gim, '<li class="ml-6 mb-1 list-decimal">$1</li>')
+      // Line breaks
+      .replace(/\n\n/g, '</p><p class="mb-4 text-gray-300 leading-relaxed">');
+    
+    // Wrap lists
+    html = html.replace(/(<li class="ml-6[^>]*>.*<\/li>)(?=\s*(?!<li))/gs, '<ul class="mb-4 text-gray-300">$1</ul>');
+    html = html.replace(/(<li class="ml-6[^>]*list-decimal[^>]*>.*<\/li>)(?=\s*(?!<li))/gs, '<ol class="mb-4 list-decimal list-inside text-gray-300">$1</ol>');
+    
+    // Wrap in paragraph tags if needed
+    if (!html.match(/^<[hp]/)) {
+      html = `<p class="mb-4 text-gray-300 leading-relaxed">${html}</p>`;
+    }
+    
+    return html;
+  };
+
+  // Fetch tracks from Google Drive
+  const fetchTracks = async () => {
+    try {
+      const params = new URLSearchParams({
+        key: config.apiKey,
+        q: `'${config.folderId}' in parents and ${config.queryParams.mimeType}`,
+        orderBy: config.queryParams.orderBy,
+        pageSize: config.queryParams.pageSize,
+        fields: config.queryParams.fields
+      });
+      
+      const response = await fetch(`https://www.googleapis.com/drive/v3/files?${params}`);
+      
+      if (!response.ok) throw new Error(`Failed to fetch: ${response.statusText}`);
+      
+      const data = await response.json();
+      
+      tracks = data.files.map(file => {
+        const { date, displayName } = extractDateFromFilename(file.name);
+        
+        return {
+          id: file.id,
+          name: file.name,
+          date,
+          displayName,
+          audioUrl: `https://drive.google.com/a/ui/v1/m?id=${file.id}`,
+          previewUrl: `https://drive.google.com/file/d/${file.id}/preview`,
+          downloadUrl: `https://drive.google.com/uc?export=download&id=${file.id}`,
+          viewUrl: `https://drive.google.com/file/d/${file.id}/view`,
+          createdTime: file.createdTime,
+          modifiedTime: file.modifiedTime || file.createdTime
+        };
+      });
+      
+      return tracks;
+    } catch (error) {
+      console.error('Error fetching tracks:', error);
+      return [];
+    }
+  };
+
+  // Create and inject styles
+  const injectStyles = () => {
+    if (document.getElementById('unmastered-styles')) return;
+    
+    const styles = document.createElement('style');
+    styles.id = 'unmastered-styles';
+    styles.textContent = `
+      .unmastered-card {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(10px);
+      }
+      
+      .unmastered-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(0, 166, 81, 0.3);
+      }
+      
+      .unmastered-card .track-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: white;
+        text-align: center;
+        margin-bottom: 0.75rem;
+        padding: 0 0.5rem;
+        line-height: 1.2;
+        min-height: 2.4rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .lore-section {
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      .lore-section.active {
+        max-height: 600px;
+        opacity: 1;
+        overflow-y: auto;
+      }
+      
+      .lore-content {
+        animation: fadeInUp 0.6s ease-out;
+      }
+      
+      .lore-section::-webkit-scrollbar {
+        width: 8px;
+      }
+      
+      .lore-section::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+      }
+      
+      .lore-section::-webkit-scrollbar-thumb {
+        background: ${config.accentColor};
+        border-radius: 4px;
+      }
+      
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      .modal-overlay {
+        animation: fadeIn 0.3s ease-out;
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      
+      .text-accent {
+        color: ${config.accentColor};
+      }
+      
+      .border-accent {
+        border-color: ${config.accentColor};
+      }
+      
+      .bg-accent {
+        background-color: ${config.accentColor};
+      }
+      
+      .shimmer {
+        background: linear-gradient(90deg, 
+          transparent 0%, 
+          rgba(0, 166, 81, 0.1) 50%, 
+          transparent 100%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 2s infinite;
+      }
+      
+      @keyframes shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+      
+      .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(0, 166, 81, 0.3);
+        border-radius: 50%;
+        border-top-color: ${config.accentColor};
+        animation: spin 0.8s linear infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
     `;
     
-    dropdown.addEventListener('change', (e) => {
-      if (window.unmasteredTracks) {
-        renderUnmasteredTracks(window.unmasteredTracks, e.target.value);
-      }
-    });
+    document.head.appendChild(styles);
+  };
+
+  // Create sort dropdown
+  const createDropdown = () => {
+    const container = document.querySelector(config.dropdownSelector);
+    if (!container) return null;
     
-    container.innerHTML = '';
-    container.appendChild(dropdown);
+    container.innerHTML = `
+      <select class="bg-gray-800 border-2 border-accent text-white py-2 px-4 rounded cursor-pointer hover:bg-gray-700 transition-colors">
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+      </select>
+    `;
+    
+    const dropdown = container.querySelector('select');
+    dropdown.value = currentSort;
+    
+    dropdown.addEventListener('change', (e) => {
+      currentSort = e.target.value;
+      renderTracks();
+    });
     
     return dropdown;
-  }
-  
-  /**
-   * Render the track buttons in the container
-   * @param {Array} tracks - Array of track objects
-   * @param {string} sort - Sort order ('newest' or 'oldest')
-   */
-  function renderUnmasteredTracks(tracks, sort = 'newest') {
-    const container = document.querySelector(unmasteredConfig.containerSelector);
+  };
+
+  // Render track grid
+  const renderTracks = () => {
+    const container = document.querySelector(config.containerSelector);
+    if (!container) return;
     
-    if (!container) {
-      console.error(`Container not found: ${unmasteredConfig.containerSelector}`);
-      return;
-    }
+    // Sort tracks
+    const sorted = [...tracks].sort((a, b) => {
+      const dateA = new Date(a.modifiedTime);
+      const dateB = new Date(b.modifiedTime);
+      return currentSort === 'newest' ? dateB - dateA : dateA - dateB;
+    });
     
-    // Clear any existing content
-    container.innerHTML = '';
-    
-    // Sort tracks by modifiedTime (last modified date)
-    const sortedTracks = [...tracks];
-    if (sort === 'newest') {
-      sortedTracks.sort((a, b) => new Date(b.modifiedTime) - new Date(a.modifiedTime));
-    } else {
-      sortedTracks.sort((a, b) => new Date(a.modifiedTime) - new Date(b.modifiedTime));
-    }
-    
-    if (sortedTracks.length === 0) {
-      container.innerHTML = '<p class="text-center py-8 text-gray-400">No audio tracks are currently available.</p>';
-      return;
-    }
-    
-    // Create grid container
-    const grid = document.createElement('div');
-    grid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8';
-    container.appendChild(grid);
-    
-    // Create a button for each track
-    sortedTracks.forEach(track => {
-      const card = document.createElement('div');
-      card.className = 'p-4 rounded-lg text-center cursor-pointer transition-transform hover:scale-105';
-      card.style.border = '2px solid #00a651';
-      card.style.boxShadow = '4px 4px 0px #00a651';
-      card.style.background = 'rgba(26, 26, 26, 0.7)';
-      
-      // Add click handler to open the audio player
-      card.addEventListener('click', () => openAudioPlayer(track));
-      
-      // Create card content with file name in center and formatted date below
-      card.innerHTML = `
-        <div class="relative mb-2" style="padding-bottom: 120%">
-          <img 
-            src="images/RetroTrack.png" 
-            alt="${track.displayName || track.name}"
-            class="absolute top-0 left-0 w-full h-full object-cover rounded"
-          />
-          <div class="absolute inset-0 flex items-center justify-center p-2">
-            <div class="bg-black bg-opacity-70 text-white p-2 rounded max-w-full">
-              <div class="break-words text-sm">${track.name.replace('.mp3', '')}</div>
-            </div>
-          </div>
-        </div>
-        <p class="text-sm text-gray-400">
-          ${formatDisplayDate(track.modifiedTime)}
+    if (sorted.length === 0) {
+      container.innerHTML = `
+        <p class="text-center py-16 text-gray-400 text-lg">
+          No audio tracks are currently available.
         </p>
       `;
-      
-      grid.appendChild(card);
-    });
-  }
-  
-  /**
-   * Open the audio player modal
-   * @param {Object} track - Track object
-   */
-  function openAudioPlayer(track) {
-    // Create modal container if it doesn't exist
-    let modal = document.getElementById('audio-modal');
-    
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'audio-modal';
-      modal.className = 'fixed inset-0 flex items-center justify-center z-50';
-      document.body.appendChild(modal);
+      return;
     }
     
-    // Set modal content with an iframe for better audio playback
-    modal.innerHTML = `
-      <div class="absolute inset-0 bg-black bg-opacity-90" id="modal-backdrop"></div>
-      <div class="relative bg-gray-900 rounded-lg w-full max-w-2xl mx-4 flex flex-col" style="border: 2px solid #00a651">
-        <div class="flex justify-between items-center p-3 border-b border-gray-700">
-          <h3 class="text-xl font-bold">${track.displayName || track.name.replace('.mp3', '')}</h3>
-          <button id="close-modal-btn" class="text-gray-400 hover:text-white focus:outline-none">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+    container.innerHTML = `
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-8">
+        ${sorted.map(track => `
+          <div class="unmastered-card p-4 rounded-lg cursor-pointer border-2 border-accent bg-gray-900/70"
+               data-track-id="${track.id}">
+            <div class="track-title">${track.displayName}</div>
+            <div class="relative mb-3 overflow-hidden rounded-lg" style="padding-bottom: 100%">
+              <img src="${config.defaultImage}" 
+                   alt="${track.displayName}"
+                   class="absolute top-0 left-0 w-full h-full object-cover" />
+            </div>
+            <p class="text-sm text-gray-400 text-center">${formatDate(track.modifiedTime)}</p>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    
+    // Add click handlers
+    container.querySelectorAll('.unmastered-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const trackId = card.dataset.trackId;
+        const track = tracks.find(t => t.id === trackId);
+        if (track) openPlayer(track);
+      });
+    });
+  };
+
+  // Open audio player modal
+  const openPlayer = async (track) => {
+    currentTrack = track;
+    
+    // Show loading modal first
+    const loadingModal = document.createElement('div');
+    loadingModal.id = 'audio-modal';
+    loadingModal.className = 'fixed inset-0 flex items-center justify-center z-50 p-4';
+    loadingModal.innerHTML = `
+      <div class="modal-overlay absolute inset-0 bg-black/90 backdrop-blur-sm"></div>
+      <div class="relative bg-gray-900 rounded-xl p-8">
+        <div class="animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent"></div>
+      </div>
+    `;
+    document.body.appendChild(loadingModal);
+    document.body.style.overflow = 'hidden';
+    
+    // Fetch lore content
+    const loreContent = await fetchLore(track.name);
+    const hasLore = loreContent && loreContent.trim().length > 0;
+    
+    // Update modal with content
+    loadingModal.innerHTML = `
+      <div class="modal-overlay absolute inset-0 bg-black/90 backdrop-blur-sm"></div>
+      <div class="relative bg-gray-900 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden border-2 border-accent shadow-2xl">
+        <!-- Header -->
+        <div class="flex justify-between items-center p-4 border-b border-gray-700">
+          <h3 class="text-xl font-bold text-white">${track.displayName}</h3>
+          <button class="close-btn text-gray-400 hover:text-white transition-colors p-2">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         
-        <div class="flex-grow p-4 flex flex-col items-center justify-center">
-          <img 
-            src="images/RetroTrack.png" 
-            alt="${track.displayName || track.name}"
-            class="w-48 h-48 mb-4 rounded"
-          />
-          
-          <iframe 
-            src="https://drive.google.com/file/d/${track.id}/preview" 
-            width="100%" 
-            height="80" 
-            allow="autoplay"
-            class="mb-4"
-          ></iframe>
-          
-          <div class="text-center mt-2">
-            <p class="text-sm text-gray-400">
-              If the audio doesn't play automatically, you can also:
-            </p>
+        <!-- Content -->
+        <div class="overflow-y-auto max-h-[calc(90vh-200px)]">
+          <!-- Player Section -->
+          <div class="p-6 text-center">
+            <img src="${config.defaultImage}" 
+                 alt="${track.displayName}"
+                 class="w-48 h-48 mx-auto mb-6 rounded-lg shadow-xl" />
+            
+            <iframe src="${track.previewUrl}" 
+                    width="100%" 
+                    height="80" 
+                    allow="autoplay"
+                    class="mb-4 rounded-lg overflow-hidden"></iframe>
+            
+            ${hasLore ? `
+              <button class="lore-toggle mt-4 px-6 py-2 bg-accent text-white rounded-lg hover:bg-opacity-90 transition-all transform hover:scale-105 shadow-lg inline-flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+                <span>View Lore</span>
+              </button>
+            ` : `
+              <p class="text-sm text-gray-400 mt-4">
+                If the audio doesn't play automatically, use the buttons below
+              </p>
+            `}
           </div>
+          
+          <!-- Lore Section - Only rendered if lore exists -->
+          ${hasLore ? `
+            <div class="lore-section px-6 pb-6">
+              <div class="lore-content bg-gray-800/50 rounded-lg p-6 border border-gray-700">
+                <div class="prose prose-invert max-w-none">
+                  ${parseMarkdown(loreContent)}
+                </div>
+              </div>
+            </div>
+          ` : ''}
         </div>
         
-        <div class="flex justify-center p-2 border-t border-gray-700">
-          <a 
-            href="https://drive.google.com/file/d/${track.id}/view" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            class="px-4 py-2 bg-gray-800 text-white rounded mx-2 hover:bg-gray-700 transition-colors"
-            style="border: 1px solid #00a651"
-          >
+        <!-- Footer -->
+        <div class="flex justify-center gap-4 p-4 border-t border-gray-700 bg-gray-900/80">
+          <a href="${track.viewUrl}" 
+             target="_blank" 
+             rel="noopener noreferrer"
+             class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-all transform hover:scale-105 border border-accent">
             Open in Drive
           </a>
-          <a 
-            href="${track.downloadUrl}" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            class="px-4 py-2 bg-gray-800 text-white rounded mx-2 hover:bg-gray-700 transition-colors"
-            style="border: 1px solid #00a651"
-          >
+          <a href="${track.downloadUrl}" 
+             target="_blank" 
+             rel="noopener noreferrer"
+             class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-all transform hover:scale-105 border border-accent">
             Download
           </a>
         </div>
       </div>
     `;
     
-    // Add event listeners
-    document.getElementById('modal-backdrop').addEventListener('click', closeAudioPlayer);
-    document.getElementById('close-modal-btn').addEventListener('click', closeAudioPlayer);
-    
-    // Show modal
-    modal.style.display = 'flex';
-    
-    // Prevent scrolling on the body
-    document.body.style.overflow = 'hidden';
-  }
-  
-  /**
-   * Close the audio player modal
-   */
-  function closeAudioPlayer() {
-    const modal = document.getElementById('audio-modal');
-    if (modal) {
-      modal.style.display = 'none';
-      
-      // Re-enable scrolling
+    // Event handlers
+    const closeModal = () => {
+      loadingModal.remove();
       document.body.style.overflow = '';
+      currentTrack = null;
+    };
+    
+    loadingModal.querySelector('.modal-overlay').addEventListener('click', closeModal);
+    loadingModal.querySelector('.close-btn').addEventListener('click', closeModal);
+    
+    // Lore toggle functionality
+    const loreToggle = loadingModal.querySelector('.lore-toggle');
+    const loreSection = loadingModal.querySelector('.lore-section');
+    
+    if (loreToggle && loreSection) {
+      loreToggle.addEventListener('click', () => {
+        const isActive = loreSection.classList.contains('active');
+        loreSection.classList.toggle('active');
+        
+        // Update button text and icon
+        loreToggle.innerHTML = isActive ? `
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+          <span>View Lore</span>
+        ` : `
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+          </svg>
+          <span>Hide Lore</span>
+        `;
+      });
     }
-  }
-  
-  /**
-   * Initialize the untitled unmastered section when the tab is activated
-   * @param {string} sort - Sort order ('newest' or 'oldest')
-   */
-  async function initializeUnmasteredSection(sort = 'newest') {
-    const container = document.querySelector(unmasteredConfig.containerSelector);
+  };
+
+  // Initialize the player
+  const initialize = async (sort = 'newest') => {
+    currentSort = sort;
+    const container = document.querySelector(config.containerSelector);
     
     if (!container) {
-      console.error(`Container not found: ${unmasteredConfig.containerSelector}`);
+      console.error(`Container not found: ${config.containerSelector}`);
       return;
     }
     
-    // Show loading indicator
+    // Inject styles
+    injectStyles();
+    
+    // Show loading
     container.innerHTML = `
-      <div class="text-center py-8">
-        <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mb-2"></div>
-        <p class="text-gray-400">Loading tracks...</p>
+      <div class="text-center py-16">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-accent border-t-transparent mb-4"></div>
+        <p class="text-gray-400 text-lg">Loading tracks...</p>
       </div>
     `;
     
     try {
-      // Fetch tracks from Google Drive
-      const tracks = await fetchUnmasteredTracks();
+      await fetchTracks();
       
-      // Save tracks in a global variable for sorting
-      window.unmasteredTracks = tracks;
+      // Create dropdown after delay to ensure React render
+      setTimeout(() => createDropdown(), 100);
       
-      // Create the dropdown after we have the data
-      setTimeout(() => {
-        const dropdown = createSortDropdown();
-        if (dropdown) {
-          dropdown.value = sort;
-        }
-      }, 100);
-      
-      // Render tracks
-      renderUnmasteredTracks(tracks, sort);
+      renderTracks();
     } catch (error) {
-      console.error('Error initializing untitled unmastered section:', error);
-      container.innerHTML = '<p class="text-center py-8 text-red-500">Error loading tracks. Please try again later.</p>';
+      console.error('Error initializing:', error);
+      container.innerHTML = `
+        <p class="text-center py-16 text-red-400 text-lg">
+          Error loading tracks. Please try again later.
+        </p>
+      `;
     }
-  }
-  
-  // Event handling for tab navigation
-  document.addEventListener('DOMContentLoaded', function() {
-    // Find the untitled unmastered tab link
-    const tabLinks = document.querySelectorAll('a[href="#unmastered"]');
-    if (tabLinks.length > 0) {
-      tabLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-          // Initialize untitled unmastered section when tab is clicked
-          setTimeout(() => {
-            initializeUnmasteredSection('newest');
-          }, 100);
-        });
+  };
+
+  // Set up event listeners
+  document.addEventListener('DOMContentLoaded', () => {
+    // Tab click handlers
+    document.querySelectorAll('a[href="#unmastered"]').forEach(link => {
+      link.addEventListener('click', () => {
+        setTimeout(() => initialize(currentSort), 100);
       });
-    }
+    });
     
-    // Check if the untitled unmastered tab is active on page load
+    // Check if tab is active on load
     const activeTab = document.querySelector('a.active[href="#unmastered"], a[style*="color: #00a651"][href="#unmastered"]');
     if (activeTab) {
-      setTimeout(() => {
-        initializeUnmasteredSection('newest');
-      }, 100);
+      setTimeout(() => initialize(), 100);
     }
   });
-  
-  // Export functions for global access
-  window.unmastered = {
-    initialize: initializeUnmasteredSection,
-    fetchTracks: fetchUnmasteredTracks,
-    renderTracks: renderUnmasteredTracks,
-    openPlayer: openAudioPlayer,
-    closePlayer: closeAudioPlayer
+
+  // Public API
+  return {
+    initialize,
+    fetchTracks,
+    renderTracks,
+    openPlayer
   };
+})();
+
+// Export for global access
+window.unmastered = UnmasteredPlayer;
