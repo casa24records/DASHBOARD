@@ -238,33 +238,40 @@ const UnmasteredPlayer = (() => {
         justify-content: center;
       }
       
+      .modal-scroll-wrapper {
+        -webkit-overflow-scrolling: touch;
+        overflow-y: auto;
+        overflow-x: hidden;
+        touch-action: pan-y;
+      }
+      
       .lore-section {
         max-height: 0;
         overflow: hidden;
         opacity: 0;
-        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       }
       
       .lore-section.active {
-        max-height: 600px;
+        max-height: none;
         opacity: 1;
-        overflow-y: auto;
+        overflow: visible;
       }
       
       .lore-content {
         animation: fadeInUp 0.6s ease-out;
       }
       
-      .lore-section::-webkit-scrollbar {
+      .modal-scroll-wrapper::-webkit-scrollbar {
         width: 8px;
       }
       
-      .lore-section::-webkit-scrollbar-track {
+      .modal-scroll-wrapper::-webkit-scrollbar-track {
         background: rgba(0, 0, 0, 0.2);
         border-radius: 4px;
       }
       
-      .lore-section::-webkit-scrollbar-thumb {
+      .modal-scroll-wrapper::-webkit-scrollbar-thumb {
         background: ${config.accentColor};
         border-radius: 4px;
       }
@@ -328,6 +335,13 @@ const UnmasteredPlayer = (() => {
       
       @keyframes spin {
         to { transform: rotate(360deg); }
+      }
+      
+      /* Mobile-specific fixes for iOS */
+      @supports (-webkit-touch-callout: none) {
+        .modal-scroll-wrapper {
+          -webkit-transform: translateZ(0);
+        }
       }
     `;
     
@@ -429,9 +443,9 @@ const UnmasteredPlayer = (() => {
     // Update modal with content
     loadingModal.innerHTML = `
       <div class="modal-overlay absolute inset-0 bg-black/90 backdrop-blur-sm"></div>
-      <div class="relative bg-gray-900 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden border-2 border-accent shadow-2xl">
+      <div class="relative bg-gray-900 rounded-xl w-full max-w-2xl border-2 border-accent shadow-2xl flex flex-col" style="max-height: 90vh; max-height: 90dvh;">
         <!-- Header -->
-        <div class="flex justify-between items-center p-4 border-b border-gray-700">
+        <div class="flex justify-between items-center p-4 border-b border-gray-700 flex-shrink-0">
           <h3 class="text-xl font-bold text-white">${track.displayName}</h3>
           <button class="close-btn text-gray-400 hover:text-white transition-colors p-2">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -440,8 +454,8 @@ const UnmasteredPlayer = (() => {
           </button>
         </div>
         
-        <!-- Content -->
-        <div class="overflow-y-auto max-h-[calc(90vh-200px)]">
+        <!-- Scrollable Content -->
+        <div class="modal-scroll-wrapper flex-grow" style="overflow-y: auto; -webkit-overflow-scrolling: touch;">
           <!-- Player Section -->
           <div class="p-6 text-center">
             <img src="${config.defaultImage}" 
@@ -481,7 +495,7 @@ const UnmasteredPlayer = (() => {
         </div>
         
         <!-- Footer -->
-        <div class="flex justify-center gap-4 p-4 border-t border-gray-700 bg-gray-900/80">
+        <div class="flex justify-center gap-4 p-4 border-t border-gray-700 bg-gray-900/80 flex-shrink-0">
           <a href="${track.viewUrl}" 
              target="_blank" 
              rel="noopener noreferrer"
@@ -529,6 +543,15 @@ const UnmasteredPlayer = (() => {
           </svg>
           <span>Hide Lore</span>
         `;
+        
+        // Force iOS to recalculate scroll
+        if (loreSection.classList.contains('active')) {
+          const scrollWrapper = loadingModal.querySelector('.modal-scroll-wrapper');
+          setTimeout(() => {
+            scrollWrapper.scrollTop = scrollWrapper.scrollTop + 1;
+            scrollWrapper.scrollTop = scrollWrapper.scrollTop - 1;
+          }, 100);
+        }
       });
     }
   };
