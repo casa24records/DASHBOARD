@@ -22,6 +22,15 @@ const formatNumber = (num) => {
   return numValue.toLocaleString();
 };
 
+// Helper function to format artist names with proper spacing
+const formatArtistName = (name) => {
+  // Special case for Casa 24Beats
+  if (name === 'Casa 24Beats') {
+    return 'Casa 24 Beats';
+  }
+  return name;
+};
+
 // Add custom styles for transitions and consistency
 const styles = `
   <style>
@@ -39,6 +48,21 @@ const styles = `
     .stat-value {
       font-variant-numeric: tabular-nums;
       letter-spacing: -0.02em;
+    }
+    
+    /* Fix alignment for all stat boxes */
+    .stat-content {
+      display: flex;
+      align-items: center;
+      height: 36px; /* Fixed height for consistency */
+    }
+    
+    .stat-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 8px;
+      flex-shrink: 0;
     }
     
     /* Dropdown styling improvements */
@@ -84,6 +108,23 @@ const styles = `
         grid-template-columns: 1fr !important;
       }
     }
+    
+    /* YouTube video styling in tracks table */
+    .youtube-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      color: #FF0000;
+      margin-left: 8px;
+    }
+    
+    .youtube-dot {
+      width: 8px;
+      height: 8px;
+      background: #FF0000;
+      border-radius: 50%;
+    }
   </style>
 `;
 
@@ -121,7 +162,7 @@ function App() {
       .then(jsonData => {
         setData(jsonData);
         setLoading(false);
-        // Set the initial artist to the first one in the list if Casa 24 doesn't exist
+        // Set the initial artist to Casa 24 if it exists
         if (jsonData.artists && jsonData.artists.length > 0) {
           const casa24Exists = jsonData.artists.find(artist => artist.name === 'Casa 24');
           if (!casa24Exists) {
@@ -167,8 +208,18 @@ function App() {
     return <div className="p-4">No artist data available.</div>;
   }
 
-  // Get current artist data - FIXED: Now properly updates when dropdown changes
+  // Get current artist data
   const currentArtistData = data.artists.find(artist => artist.name === selectedArtist) || data.artists[0];
+  
+  // Check if current artist has Spotify data
+  const hasSpotifyData = currentArtistData.spotify && (
+    currentArtistData.spotify.followers > 0 || 
+    currentArtistData.spotify.popularity_score > 0 ||
+    (currentArtistData.spotify.genres && currentArtistData.spotify.genres.length > 0)
+  );
+  
+  // Check if current artist is Casa 24Beats
+  const isCasa24Beats = currentArtistData.name === 'Casa 24Beats';
 
   // Calculate collective totals
   const collectiveTotals = data.artists.reduce((acc, artist) => {
@@ -248,14 +299,16 @@ function App() {
             <div className="stat-box p-6 rounded-lg" 
                  style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
               <h3 className="text-lg text-gray-400 mb-1">Total Artists</h3>
-              <div className="stat-value text-3xl font-bold">{data.artists.length}</div>
+              <div className="stat-content">
+                <div className="stat-value text-3xl font-bold">{data.artists.length}</div>
+              </div>
             </div>
 
             <div className="stat-box p-6 rounded-lg" 
                  style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
               <h3 className="text-lg text-gray-400 mb-1">Total Spotify Followers</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
+              <div className="stat-content">
+                <div className="stat-dot" style={{background: "#1DB954"}}></div>
                 <div className="stat-value text-3xl font-bold">{formatNumber(collectiveTotals.spotify.followers)}</div>
               </div>
             </div>
@@ -263,8 +316,8 @@ function App() {
             <div className="stat-box p-6 rounded-lg" 
                  style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
               <h3 className="text-lg text-gray-400 mb-1">Total Monthly Listeners</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
+              <div className="stat-content">
+                <div className="stat-dot" style={{background: "#1DB954"}}></div>
                 <div className="stat-value text-3xl font-bold">{formatNumber(collectiveTotals.spotify.monthly_listeners)}</div>
               </div>
             </div>
@@ -272,8 +325,8 @@ function App() {
             <div className="stat-box p-6 rounded-lg" 
                  style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
               <h3 className="text-lg text-gray-400 mb-1">Total YouTube Subscribers</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
+              <div className="stat-content">
+                <div className="stat-dot" style={{background: "#FF0000"}}></div>
                 <div className="stat-value text-3xl font-bold">{formatNumber(collectiveTotals.youtube.subscribers)}</div>
               </div>
             </div>
@@ -281,8 +334,8 @@ function App() {
             <div className="stat-box p-6 rounded-lg" 
                  style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
               <h3 className="text-lg text-gray-400 mb-1">Total YouTube Views</h3>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
+              <div className="stat-content">
+                <div className="stat-dot" style={{background: "#FF0000"}}></div>
                 <div className="stat-value text-3xl font-bold">{formatNumber(collectiveTotals.youtube.total_views)}</div>
               </div>
             </div>
@@ -296,13 +349,12 @@ function App() {
               style={{borderColor: "#00a651"}}
               value={selectedArtist || ''}
               onChange={(e) => {
-                console.log('Dropdown changed to:', e.target.value); // Debug log
                 setSelectedArtist(e.target.value);
               }}
             >
               {data.artists.map((artist, index) => (
                 <option key={index} value={artist.name}>
-                  {artist.name}
+                  {formatArtistName(artist.name)}
                 </option>
               ))}
             </select>
@@ -314,8 +366,8 @@ function App() {
               <div className="stat-box p-6 rounded-lg" 
                    style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
                 <h3 className="text-lg text-gray-400 mb-1">Spotify Followers</h3>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
+                <div className="stat-content">
+                  <div className="stat-dot" style={{background: "#1DB954"}}></div>
                   <div className="stat-value text-3xl font-bold">{formatNumber(currentArtistData.spotify.followers || 0)}</div>
                 </div>
               </div>
@@ -323,8 +375,8 @@ function App() {
               <div className="stat-box p-6 rounded-lg" 
                    style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
                 <h3 className="text-lg text-gray-400 mb-1">Monthly Listeners</h3>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
+                <div className="stat-content">
+                  <div className="stat-dot" style={{background: "#1DB954"}}></div>
                   <div className="stat-value text-3xl font-bold">{formatNumber(currentArtistData.spotify.monthly_listeners || "N/A")}</div>
                 </div>
               </div>
@@ -332,18 +384,20 @@ function App() {
               <div className="stat-box p-6 rounded-lg" 
                    style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
                 <h3 className="text-lg text-gray-400 mb-1">Spotify Popularity</h3>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full mr-2" style={{background: "#1DB954"}}></div>
-                  <div className="stat-value text-3xl font-bold">{currentArtistData.spotify.popularity_score || 0}</div>
-                  <div className="text-xl ml-1">/100</div>
+                <div className="stat-content">
+                  <div className="stat-dot" style={{background: "#1DB954"}}></div>
+                  <div className="stat-value text-3xl font-bold">
+                    {currentArtistData.spotify.popularity_score || 0}
+                    <span className="text-xl ml-1">/100</span>
+                  </div>
                 </div>
               </div>
 
               <div className="stat-box p-6 rounded-lg" 
                    style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
                 <h3 className="text-lg text-gray-400 mb-1">YouTube Subscribers</h3>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
+                <div className="stat-content">
+                  <div className="stat-dot" style={{background: "#FF0000"}}></div>
                   <div className="stat-value text-3xl font-bold">{formatNumber(currentArtistData.youtube.subscribers || 0)}</div>
                 </div>
               </div>
@@ -351,36 +405,58 @@ function App() {
               <div className="stat-box p-6 rounded-lg" 
                    style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
                 <h3 className="text-lg text-gray-400 mb-1">YouTube Views</h3>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full mr-2" style={{background: "#FF0000"}}></div>
+                <div className="stat-content">
+                  <div className="stat-dot" style={{background: "#FF0000"}}></div>
                   <div className="stat-value text-3xl font-bold">{formatNumber(currentArtistData.youtube.total_views || 0)}</div>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Top Tracks */}
+              {/* Top Tracks / Top Videos */}
               <div className="stat-box p-6 rounded-lg" 
                    style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-                <h3 className="text-2xl font-bold mb-4">Top Tracks</h3>
+                <h3 className="text-2xl font-bold mb-4">
+                  {isCasa24Beats ? 'Top Videos' : 'Top Tracks'}
+                  {isCasa24Beats && (
+                    <span className="youtube-indicator">
+                      <span className="youtube-dot"></span>
+                      YouTube
+                    </span>
+                  )}
+                </h3>
                 <div>
                   <table className="w-full">
                     <thead>
                       <tr>
-                        <th className="text-left pb-2">Track Name</th>
-                        <th className="text-right pb-2">Popularity</th>
+                        <th className="text-left pb-2">{isCasa24Beats ? 'Video Title' : 'Track Name'}</th>
+                        <th className="text-right pb-2">{isCasa24Beats ? 'Views' : 'Popularity'}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {currentArtistData.spotify.top_tracks && currentArtistData.spotify.top_tracks.map((track, index) => (
-                        <tr key={index} className="border-t border-gray-700">
-                          <td className="py-2">{track.name}</td>
-                          <td className="text-right py-2">{track.popularity}/100</td>
-                        </tr>
-                      ))}
-                      {(!currentArtistData.spotify.top_tracks || currentArtistData.spotify.top_tracks.length === 0) && (
+                      {isCasa24Beats && currentArtistData.youtube.top_videos && currentArtistData.youtube.top_videos.length > 0 ? (
+                        currentArtistData.youtube.top_videos.map((video, index) => (
+                          <tr key={index} className="border-t border-gray-700">
+                            <td className="py-2 pr-4" style={{maxWidth: '250px'}}>
+                              <div className="truncate" title={video.title}>
+                                {video.title}
+                              </div>
+                            </td>
+                            <td className="text-right py-2">{formatNumber(video.views)}</td>
+                          </tr>
+                        ))
+                      ) : !isCasa24Beats && currentArtistData.spotify.top_tracks && currentArtistData.spotify.top_tracks.length > 0 ? (
+                        currentArtistData.spotify.top_tracks.map((track, index) => (
+                          <tr key={index} className="border-t border-gray-700">
+                            <td className="py-2">{track.name}</td>
+                            <td className="text-right py-2">{track.popularity}/100</td>
+                          </tr>
+                        ))
+                      ) : (
                         <tr>
-                          <td colSpan="2" className="py-2 text-center text-gray-500">No top tracks found</td>
+                          <td colSpan="2" className="py-2 text-center text-gray-500">
+                            {isCasa24Beats ? "No videos found" : (!hasSpotifyData ? "No Spotify data available" : "No top tracks found")}
+                          </td>
                         </tr>
                       )}
                     </tbody>
@@ -401,7 +477,9 @@ function App() {
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-gray-500">No genres listed</p>
+                    <p className="text-gray-500">
+                      {!hasSpotifyData ? "No Spotify data available" : "No genres listed"}
+                    </p>
                   )}
                   
                   {currentArtistData.youtube.video_count > 0 && (

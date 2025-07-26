@@ -39,7 +39,39 @@
       "youtube": {
         "subscribers": 623,
         "total_views": 29000,
-        "video_count": 94
+        "video_count": 94,
+        "top_videos": [
+          {
+            "title": "chef lino.mp3 (Prod. Serch x Chef Lino)",
+            "views": 3443,
+            "video_id": "AL40f0Yftlg",
+            "published_at": "2023-04-02T05:00:07Z"
+          },
+          {
+            "title": "IRRESISTIBLE (VIDEO OFICIAL) - Casa 24",
+            "views": 3424,
+            "video_id": "WTg6VKaMvEs",
+            "published_at": "2022-05-20T00:00:09Z"
+          },
+          {
+            "title": "LaQuan & Casa 24 - Llama Si Te Sientes Lonely (Video Oficial)",
+            "views": 2791,
+            "video_id": "rCXFipa8CWQ",
+            "published_at": "2024-08-08T23:00:07Z"
+          },
+          {
+            "title": "Las Nubes (Video Oficial) - Casa 24 x N\u00e9mula",
+            "views": 1284,
+            "video_id": "lvZjo5NJzUE",
+            "published_at": "2022-07-27T00:00:11Z"
+          },
+          {
+            "title": "LaQuan - BREAK (Video Oficial)",
+            "views": 1254,
+            "video_id": "MLTHv39WrqE",
+            "published_at": "2023-06-16T03:00:31Z"
+          }
+        ]
       }
     },
     {
@@ -82,7 +114,39 @@
       "youtube": {
         "subscribers": 13,
         "total_views": 196,
-        "video_count": 5
+        "video_count": 5,
+        "top_videos": [
+          {
+            "title": "Personalidades Blandas / Kanye West  [Chef Lino \u202a@casa24records\u202c #3]",
+            "views": 82,
+            "video_id": "falH_K2-Avc",
+            "published_at": "2025-03-27T19:45:56Z"
+          },
+          {
+            "title": "Pensamientos sobre SUPERMAN + Rating [Chef Lino \u202a@casa24records  #5]",
+            "views": 44,
+            "video_id": "6-VE5husMeQ",
+            "published_at": "2025-07-22T16:50:38Z"
+          },
+          {
+            "title": "\u00bfPor qu\u00e9 hago esto? [Chef Lino @casa24records  #2]",
+            "views": 29,
+            "video_id": "_WEbNZUJ6Rs",
+            "published_at": "2025-02-28T18:26:17Z"
+          },
+          {
+            "title": "Chef Lino en Casa 24 VLOG #1 [ Feb 17, 2025 ]",
+            "views": 26,
+            "video_id": "AU2eD4leB_E",
+            "published_at": "2025-02-17T21:17:57Z"
+          },
+          {
+            "title": "Elegancia como Droga / Sinceridad Extrema  [Chef Lino \u202a@casa24records\u202c #4]",
+            "views": 16,
+            "video_id": "iCv8NOeCH0M",
+            "published_at": "2025-07-17T18:51:15Z"
+          }
+        ]
       }
     },
     {
@@ -123,7 +187,8 @@
       "youtube": {
         "subscribers": 0,
         "total_views": 0,
-        "video_count": 0
+        "video_count": 0,
+        "top_videos": []
       }
     },
     {
@@ -154,7 +219,39 @@
       "youtube": {
         "subscribers": 94,
         "total_views": 13702,
-        "video_count": 71
+        "video_count": 71,
+        "top_videos": [
+          {
+            "title": "(FREE) \"Keep Fightin\" JID x Isaiah Rashad Type Beat.",
+            "views": 2170,
+            "video_id": "ZJfy-F2DwSg",
+            "published_at": "2023-10-09T19:14:43Z"
+          },
+          {
+            "title": "(FREE) \"Bars\" JID x Mick Jenkins Type Beat.",
+            "views": 585,
+            "video_id": "6CFb2_e1WpQ",
+            "published_at": "2023-10-17T23:56:27Z"
+          },
+          {
+            "title": "(FREE) \"Data\" Isaiah Rashad x Aaron May Type Beat.",
+            "views": 309,
+            "video_id": "5mrghzhgtGc",
+            "published_at": "2023-09-21T22:45:53Z"
+          },
+          {
+            "title": "(FREE) \"Around\" Isaiah Rashad x JID Type Beat.",
+            "views": 296,
+            "video_id": "EZ5ry882f8A",
+            "published_at": "2023-09-13T22:20:24Z"
+          },
+          {
+            "title": "(FREE) \"Case\" JID x Mick Jenkins Type Beat.",
+            "views": 239,
+            "video_id": "RzUtB8x1cYo",
+            "published_at": "2023-10-25T01:06:28Z"
+          }
+        ]
       }
     },
     {
@@ -193,9 +290,10 @@
         ]
       },
       "youtube": {
-        "subscribers": 5,
+        "subscribers": 0,
         "total_views": 0,
-        "video_count": 0
+        "video_count": 0,
+        "top_videos": []
       }
     },
     {
@@ -210,7 +308,8 @@
       "youtube": {
         "subscribers": 0,
         "total_views": 0,
-        "video_count": 0
+        "video_count": 0,
+        "top_videos": []
       }
     },
     {
@@ -244,7 +343,39 @@
       "youtube": {
         "subscribers": 503,
         "total_views": 70588,
-        "video_count": 112
+        "video_count": 112,
+        "top_videos": [
+          {
+            "title": "Steak sandwich inspired by chicken tender Pubsub",
+            "views": 4491,
+            "video_id": "iJTxMioDX48",
+            "published_at": "2025-02-21T01:49:16Z"
+          },
+          {
+            "title": "I dont like it man",
+            "views": 1751,
+            "video_id": "bLHoAMJOaTw",
+            "published_at": "2025-05-05T14:52:47Z"
+          },
+          {
+            "title": "461/500 honest sub grind",
+            "views": 1741,
+            "video_id": "uTFS3pUVKXg",
+            "published_at": "2025-04-15T03:36:21Z"
+          },
+          {
+            "title": "Im movin\u2019 on up now.",
+            "views": 1582,
+            "video_id": "RBNQq3cMqjE",
+            "published_at": "2025-04-15T21:13:22Z"
+          },
+          {
+            "title": "Honest grind",
+            "views": 1546,
+            "video_id": "yHbfLsZPBHg",
+            "published_at": "2025-04-20T00:18:55Z"
+          }
+        ]
       }
     },
     {
@@ -285,7 +416,55 @@
       "youtube": {
         "subscribers": 0,
         "total_views": 0,
-        "video_count": 0
+        "video_count": 0,
+        "top_videos": []
+      }
+    },
+    {
+      "name": "Casa 24Beats",
+      "spotify": {
+        "popularity_score": 0,
+        "followers": 0,
+        "monthly_listeners": "N/A",
+        "genres": [],
+        "top_tracks": []
+      },
+      "youtube": {
+        "subscribers": 6,
+        "total_views": 402,
+        "video_count": 34,
+        "top_videos": [
+          {
+            "title": "\ud83d\udd25BEAT 4 SALE (Cookin Soul Type Beat \u2013 \"JOCKEY\" prod. P\u00ffro)",
+            "views": 96,
+            "video_id": "8NwuVSLQOnM",
+            "published_at": "2025-07-18T20:38:18Z"
+          },
+          {
+            "title": "AURA +100,000 \ud83d\udd25\ud83e\uddd9\ud83c\udffc (House + Hip-Hop + Amin\u00e9 Type Beat \u2013 \"Original Taste\" prod. P\u00ffro)",
+            "views": 47,
+            "video_id": "n6J_qJB0oJg",
+            "published_at": "2025-07-24T16:27:41Z"
+          },
+          {
+            "title": "Amin\u00e9 + House + R&B Type Beat \u2013 \"Yellow Brick\" prod. P\u00ffro",
+            "views": 18,
+            "video_id": "SaUx0EXFG5w",
+            "published_at": "2025-07-21T17:28:16Z"
+          },
+          {
+            "title": "Lo-Fi + R&B + SZA Type Beat \u2013 \"DANGER\" prod. bo.wlie",
+            "views": 18,
+            "video_id": "B6gWcVOaDJQ",
+            "published_at": "2025-07-14T21:57:49Z"
+          },
+          {
+            "title": "\ud83d\udd25BEAT 4 SALE (R&B + Chillhop + Jazzy Type Beat \u2013 \"Spunky Jazz\" prod. P\u00ffro)",
+            "views": 15,
+            "video_id": "ateTotWzyT8",
+            "published_at": "2025-07-15T18:53:47Z"
+          }
+        ]
       }
     }
   ]
