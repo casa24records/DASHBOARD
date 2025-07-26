@@ -25,7 +25,7 @@ const formatNumber = (num) => {
 // Helper function to format artist names with proper spacing
 const formatArtistName = (name) => {
   // Special case for Casa 24Beats
-  if (name === 'Casa 24 Beats') {
+  if (name === 'Casa 24Beats') {
     return 'Casa 24 Beats';
   }
   return name;
@@ -218,8 +218,8 @@ function App() {
     (currentArtistData.spotify.genres && currentArtistData.spotify.genres.length > 0)
   );
   
-  // Check if current artist is Casa 24 Beats
-  const isCasa24Beats = currentArtistData.name === 'Casa 24 Beats';
+  // Check if current artist is Casa 24Beats
+  const isCasa24Beats = currentArtistData.name === 'Casa 24Beats';
 
   // Calculate collective totals
   const collectiveTotals = data.artists.reduce((acc, artist) => {
