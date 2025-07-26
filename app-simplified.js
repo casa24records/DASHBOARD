@@ -108,6 +108,23 @@ const styles = `
         grid-template-columns: 1fr !important;
       }
     }
+    
+    /* YouTube video styling in tracks table */
+    .youtube-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      color: #FF0000;
+      margin-left: 8px;
+    }
+    
+    .youtube-dot {
+      width: 8px;
+      height: 8px;
+      background: #FF0000;
+      border-radius: 50%;
+    }
   </style>
 `;
 
@@ -200,6 +217,9 @@ function App() {
     currentArtistData.spotify.popularity_score > 0 ||
     (currentArtistData.spotify.genres && currentArtistData.spotify.genres.length > 0)
   );
+  
+  // Check if current artist is Casa 24Beats
+  const isCasa24Beats = currentArtistData.name === 'Casa 24Beats';
 
   // Calculate collective totals
   const collectiveTotals = data.artists.reduce((acc, artist) => {
@@ -392,11 +412,62 @@ function App() {
               </div>
             </div>
 
-            {/* Artist Info - Full Width Now */}
-            <div className="stat-box p-6 rounded-lg" 
-                 style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
-              <h3 className="text-2xl font-bold mb-4">Artist Info</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Top Tracks / Top Videos */}
+              <div className="stat-box p-6 rounded-lg" 
+                   style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+                <h3 className="text-2xl font-bold mb-4">
+                  {isCasa24Beats ? 'Top Videos' : 'Top Tracks'}
+                  {isCasa24Beats && (
+                    <span className="youtube-indicator">
+                      <span className="youtube-dot"></span>
+                      YouTube
+                    </span>
+                  )}
+                </h3>
+                <div>
+                  <table className="w-full">
+                    <thead>
+                      <tr>
+                        <th className="text-left pb-2">{isCasa24Beats ? 'Video Title' : 'Track Name'}</th>
+                        <th className="text-right pb-2">{isCasa24Beats ? 'Views' : 'Popularity'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {isCasa24Beats && currentArtistData.youtube.top_videos && currentArtistData.youtube.top_videos.length > 0 ? (
+                        currentArtistData.youtube.top_videos.map((video, index) => (
+                          <tr key={index} className="border-t border-gray-700">
+                            <td className="py-2 pr-4" style={{maxWidth: '250px'}}>
+                              <div className="truncate" title={video.title}>
+                                {video.title}
+                              </div>
+                            </td>
+                            <td className="text-right py-2">{formatNumber(video.views)}</td>
+                          </tr>
+                        ))
+                      ) : !isCasa24Beats && currentArtistData.spotify.top_tracks && currentArtistData.spotify.top_tracks.length > 0 ? (
+                        currentArtistData.spotify.top_tracks.map((track, index) => (
+                          <tr key={index} className="border-t border-gray-700">
+                            <td className="py-2">{track.name}</td>
+                            <td className="text-right py-2">{track.popularity}/100</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="2" className="py-2 text-center text-gray-500">
+                            {isCasa24Beats ? "No videos found" : (!hasSpotifyData ? "No Spotify data available" : "No top tracks found")}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Artist Info */}
+              <div className="stat-box p-6 rounded-lg" 
+                   style={{border: "2px solid #00a651", boxShadow: "4px 4px 0px #00a651", background: "rgba(26, 26, 26, 0.7)"}}>
+                <h3 className="text-2xl font-bold mb-4">Artist Info</h3>
                 <div>
                   <h4 className="text-lg font-semibold mb-2">Genres:</h4>
                   {currentArtistData.spotify.genres && currentArtistData.spotify.genres.length > 0 ? (
@@ -410,22 +481,22 @@ function App() {
                       {!hasSpotifyData ? "No Spotify data available" : "No genres listed"}
                     </p>
                   )}
+                  
+                  {currentArtistData.youtube.video_count > 0 && (
+                    <div className="mt-6">
+                      <h4 className="text-lg font-semibold mb-2">YouTube Stats:</h4>
+                      <ul className="list-disc pl-5">
+                        <li className="mb-1">Videos: {currentArtistData.youtube.video_count}</li>
+                        <li className="mb-1">Views: {formatNumber(currentArtistData.youtube.total_views)}</li>
+                        <li className="mb-1">Avg. Views/Video: {formatNumber(
+                          Math.round(
+                            currentArtistData.youtube.total_views / currentArtistData.youtube.video_count
+                          ) || 0
+                        )}</li>
+                      </ul>
+                    </div>
+                  )}
                 </div>
-                
-                {currentArtistData.youtube.video_count > 0 && (
-                  <div>
-                    <h4 className="text-lg font-semibold mb-2">YouTube Stats:</h4>
-                    <ul className="list-disc pl-5">
-                      <li className="mb-1">Videos: {currentArtistData.youtube.video_count}</li>
-                      <li className="mb-1">Views: {formatNumber(currentArtistData.youtube.total_views)}</li>
-                      <li className="mb-1">Avg. Views/Video: {formatNumber(
-                        Math.round(
-                          currentArtistData.youtube.total_views / currentArtistData.youtube.video_count
-                        ) || 0
-                      )}</li>
-                    </ul>
-                  </div>
-                )}
               </div>
             </div>
           </div>
