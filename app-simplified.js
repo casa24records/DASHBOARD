@@ -176,7 +176,7 @@ function App() {
       });
   }, []);
 
-  // Initialize Life@24 section when the tab changes
+  // Initialize sections when the tab changes
   useEffect(() => {
     if (activeTab === 'life' && window.life24 && typeof window.life24.initialize === 'function') {
       setTimeout(() => {
@@ -185,6 +185,10 @@ function App() {
     } else if (activeTab === 'unmastered' && window.unmastered && typeof window.unmastered.initialize === 'function') {
       setTimeout(() => {
         window.unmastered.initialize('newest');
+      }, 100);
+    } else if (activeTab === 'drum-machine' && window.drumMachine && typeof window.drumMachine.initialize === 'function') {
+      setTimeout(() => {
+        window.drumMachine.initialize();
       }, 100);
     }
   }, [activeTab]);
@@ -285,6 +289,16 @@ function App() {
               onClick={(e) => { e.preventDefault(); setActiveTab('unmastered'); }}
             >
               untitled unmastered
+            </a>
+            <a 
+              href="#drum-machine"
+              className={`py-4 px-1 font-medium text-lg ${
+                activeTab === 'drum-machine' ? 'text-accent' : 'text-gray-400'
+              }`}
+              style={{color: activeTab === 'drum-machine' ? "#00a651" : ""}}
+              onClick={(e) => { e.preventDefault(); setActiveTab('drum-machine'); }}
+            >
+              Drum Machine
             </a>
           </nav>
         </div>
@@ -535,6 +549,16 @@ function App() {
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mb-2"></div>
               <p className="text-gray-400">Loading tracks...</p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'drum-machine' && (
+        <div className="fade-in">
+          <h2 className="text-3xl font-bold mb-8" style={{color: "#00a651"}}>Beat Lab</h2>
+          
+          <div id="drum-machine-container">
+            {/* Drum machine will be loaded here */}
           </div>
         </div>
       )}
