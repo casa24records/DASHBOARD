@@ -75,6 +75,11 @@ artists = [
         'name': 'ARANDA',
         'spotify_id': '7DFovnGo8GZX5PuEyXh6LV',
         'youtube_id': None,
+    },
+    {
+        'name': 'Casa 24Beats',
+        'spotify_id': None,  # No Spotify presence
+        'youtube_id': 'UCg3IuQwjIBbkvEbDVJZd8VQ',
     }
 ]
 
@@ -511,7 +516,7 @@ def collect_all_data():
     for artist in artists:
         logging.info(f"\nCollecting data for {artist['name']}...")
         
-        # Get Spotify data
+        # Get Spotify data (skip for artists without Spotify ID)
         if spotify_token and artist.get('spotify_id'):
             spotify_data = get_spotify_artist_data(artist.get('spotify_id'), spotify_token, circuit_breaker)
             if spotify_data['popularity_score'] > 0:
@@ -519,6 +524,8 @@ def collect_all_data():
             if spotify_data['monthly_listeners'] != "N/A":
                 stats['monthly_listeners_found'] += 1
         else:
+            # For artists without Spotify presence (like Casa 24Beats)
+            logging.info(f"{artist['name']} has no Spotify ID, skipping Spotify data collection")
             spotify_data = {
                 'popularity_score': 0,
                 'followers': 0,
