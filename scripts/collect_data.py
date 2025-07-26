@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+  #!/usr/bin/env python3
 """
 Robust Spotify and YouTube data collection script with comprehensive error handling
 and anti-detection measures for all configured artists.
@@ -456,36 +456,83 @@ def get_spotify_artist_data(artist_id, token, circuit_breaker=None):
         }
 
 def get_youtube_channel_data(channel_id):
-    """Gets YouTube channel stats: subscribers, views, video count."""
+    """Gets YouTube channel stats and top videos."""
     if not channel_id:
-        return {'subscribers': 0, 'total_views': 0, 'video_count': 0}
+        return {'subscribers': 0, 'total_views': 0, 'video_count': 0, 'top_videos': []}
 
-    url = f"https://www.googleapis.com/youtube/v3/channels?part=statistics&id={channel_id}&key={YOUTUBE_API_KEY}"
+    # First, get channel statistics
+    channel_url = f"https://www.googleapis.com/youtube/v3/channels?part=statistics&id={channel_id}&key={YOUTUBE_API_KEY}"
     
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(channel_url, timeout=10)
         response.raise_for_status()
         data = response.json()
 
         if 'items' in data and len(data['items']) > 0:
             stats = data['items'][0]['statistics']
-            return {
+            channel_data = {
                 'subscribers': int(stats.get('subscriberCount', 0)),  
                 'total_views': int(stats.get('viewCount', 0)),        
-                'video_count': int(stats.get('videoCount', 0))        
+                'video_count': int(stats.get('videoCount', 0)),
+                'top_videos': []
             }
+            
+            # Now get the top videos
+            # Get uploads playlist ID
+            playlist_url = f"https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id={channel_id}&key={YOUTUBE_API_KEY}"
+            playlist_response = requests.get(playlist_url, timeout=10)
+            playlist_response.raise_for_status()
+            playlist_data = playlist_response.json()
+            
+            if 'items' in playlist_data and len(playlist_data['items']) > 0:
+                uploads_playlist_id = playlist_data['items'][0]['contentDetails']['relatedPlaylists']['uploads']
+                
+                # Get videos from uploads playlist (this gives us recent videos)
+                videos_url = f"https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId={uploads_playlist_id}&maxResults=50&key={YOUTUBE_API_KEY}"
+                videos_response = requests.get(videos_url, timeout=10)
+                videos_response.raise_for_status()
+                videos_data = videos_response.json()
+                
+                if 'items' in videos_data:
+                    video_ids = [item['snippet']['resourceId']['videoId'] for item in videos_data['items']]
+                    
+                    # Get video statistics for these videos
+                    if video_ids:
+                        # YouTube API allows up to 50 video IDs per request
+                        video_stats_url = f"https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id={','.join(video_ids[:50])}&key={YOUTUBE_API_KEY}"
+                        video_stats_response = requests.get(video_stats_url, timeout=10)
+                        video_stats_response.raise_for_status()
+                        video_stats_data = video_stats_response.json()
+                        
+                        if 'items' in video_stats_data:
+                            videos_with_views = []
+                            for video in video_stats_data['items']:
+                                view_count = int(video['statistics'].get('viewCount', 0))
+                                videos_with_views.append({
+                                    'title': video['snippet']['title'],
+                                    'views': view_count,
+                                    'video_id': video['id'],
+                                    'published_at': video['snippet']['publishedAt']
+                                })
+                            
+                            # Sort by views and take top 5
+                            videos_with_views.sort(key=lambda x: x['views'], reverse=True)
+                            channel_data['top_videos'] = videos_with_views[:5]
+            
+            return channel_data
         else:
             logging.warning(f"No YouTube data found for channel {channel_id}")
-            return {'subscribers': 0, 'total_views': 0, 'video_count': 0}
+            return {'subscribers': 0, 'total_views': 0, 'video_count': 0, 'top_videos': []}
+            
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 403:
             logging.error(f"YouTube API quota exceeded or API key invalid for channel {channel_id}")
         else:
             logging.error(f"HTTP error getting YouTube data for {channel_id}: {e}")
-        return {'subscribers': 0, 'total_views': 0, 'video_count': 0}
+        return {'subscribers': 0, 'total_views': 0, 'video_count': 0, 'top_videos': []}
     except Exception as e:
         logging.error(f"Error getting YouTube data for {channel_id}: {e}")
-        return {'subscribers': 0, 'total_views': 0, 'video_count': 0}
+        return {'subscribers': 0, 'total_views': 0, 'video_count': 0, 'top_videos': []}
 
 def collect_all_data():
     """Collects all artist data from multiple platforms."""
@@ -534,7 +581,7 @@ def collect_all_data():
                 'top_tracks': []
             }
         
-        # Get YouTube data
+        # Get YouTube data (now includes top videos)
         youtube_data = get_youtube_channel_data(artist.get('youtube_id'))
         if youtube_data['subscribers'] > 0:
             stats['youtube_success'] += 1
