@@ -287,6 +287,21 @@
         "total_views": 0,
         "video_count": 0
       }
+    },
+    {
+      "name": "Casa 24Beats",
+      "spotify": {
+        "popularity_score": 0,
+        "followers": 0,
+        "monthly_listeners": "N/A",
+        "genres": [],
+        "top_tracks": []
+      },
+      "youtube": {
+        "subscribers": 6,
+        "total_views": 402,
+        "video_count": 34
+      }
     }
   ]
 }
