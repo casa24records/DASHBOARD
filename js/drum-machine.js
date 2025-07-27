@@ -103,6 +103,8 @@
   let currentStep = 0;
   let intervalId = null;
   let pattern = {};
+  let isRecording = false;
+  let recordedChunks = [];
 
   // Initialize empty pattern
   instruments.forEach(inst => {
@@ -150,6 +152,17 @@
           .drum-control-btn.active {
             background: #00a651 !important;
             color: #1a1a1a !important;
+          }
+          
+          .drum-control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+          
+          .drum-control-btn:disabled:hover {
+            transform: none;
+            box-shadow: none;
+            background: rgba(26, 26, 26, 0.7) !important;
           }
           
           .drum-preset-btn {
@@ -277,6 +290,9 @@
             <button class="drum-control-btn" id="drumClearBtn">
               <span>✕</span> CLEAR
             </button>
+            <button class="drum-control-btn" id="drumDownloadBtn">
+              <span>💾</span> DOWNLOAD
+            </button>
           </div>
           
           <div class="flex items-center gap-3">
@@ -380,18 +396,19 @@
   }
 
   // Audio synthesis
-  function playSound(instId) {
+  function playSound(instId, destination = null) {
     if (!audioContext) return;
 
     const inst = instruments.find(i => i.id === instId);
     if (!inst) return;
 
+    const target = destination || audioContext.destination;
     const now = audioContext.currentTime;
     const osc = audioContext.createOscillator();
     const gain = audioContext.createGain();
 
     osc.connect(gain);
-    gain.connect(audioContext.destination);
+    gain.connect(target);
 
     switch(instId) {
       case 'kick':
@@ -414,7 +431,7 @@
 
         const noiseGain = audioContext.createGain();
         noise.connect(noiseGain);
-        noiseGain.connect(audioContext.destination);
+        noiseGain.connect(target);
         noiseGain.gain.setValueAtTime(0.2, now);
         noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
 
@@ -535,17 +552,213 @@
     }
   }
 
+  // Download functionality
+  async function downloadLoop() {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    const downloadBtn = document.getElementById('drumDownloadBtn');
+    downloadBtn.disabled = true;
+    downloadBtn.innerHTML = '<span>⏳</span> RENDERING...';
+
+    try {
+      const tempo = parseInt(document.getElementById('drumTempoSlider').value);
+      const stepDuration = (60 / tempo / 4); // Duration of one step in seconds
+      const loopDuration = stepDuration * STEPS; // Total loop duration
+      const sampleRate = 44100;
+      const numberOfChannels = 2;
+      const length = sampleRate * loopDuration;
+
+      // Create offline context
+      const offlineContext = new OfflineAudioContext(numberOfChannels, length, sampleRate);
+
+      // Render each step
+      for (let step = 0; step < STEPS; step++) {
+        const stepTime = step * stepDuration;
+        
+        instruments.forEach(inst => {
+          if (pattern[inst.id][step]) {
+            renderSound(offlineContext, inst.id, stepTime);
+          }
+        });
+      }
+
+      // Render the audio
+      const renderedBuffer = await offlineContext.startRendering();
+
+      // Convert to WAV
+      const wavBlob = bufferToWave(renderedBuffer, renderedBuffer.length);
+
+      // Download
+      const url = URL.createObjectURL(wavBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `casa24-beat-${Date.now()}.wav`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      downloadBtn.innerHTML = '<span>💾</span> DOWNLOAD';
+    } catch (error) {
+      console.error('Error downloading loop:', error);
+      downloadBtn.innerHTML = '<span>❌</span> ERROR';
+      setTimeout(() => {
+        downloadBtn.innerHTML = '<span>💾</span> DOWNLOAD';
+      }, 2000);
+    } finally {
+      downloadBtn.disabled = false;
+    }
+  }
+
+  // Render sound for offline context
+  function renderSound(offlineContext, instId, startTime) {
+    const inst = instruments.find(i => i.id === instId);
+    if (!inst) return;
+
+    const osc = offlineContext.createOscillator();
+    const gain = offlineContext.createGain();
+
+    osc.connect(gain);
+    gain.connect(offlineContext.destination);
+
+    switch(instId) {
+      case 'kick':
+        osc.frequency.setValueAtTime(150, startTime);
+        osc.frequency.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+        gain.gain.setValueAtTime(1, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+        osc.start(startTime);
+        osc.stop(startTime + 0.5);
+        break;
+
+      case 'snare':
+        const noise = offlineContext.createBufferSource();
+        const noiseBuffer = offlineContext.createBuffer(1, offlineContext.sampleRate * 0.2, offlineContext.sampleRate);
+        const noiseData = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < noiseBuffer.length; i++) {
+          noiseData[i] = Math.random() * 2 - 1;
+        }
+        noise.buffer = noiseBuffer;
+
+        const noiseGain = offlineContext.createGain();
+        noise.connect(noiseGain);
+        noiseGain.connect(offlineContext.destination);
+        noiseGain.gain.setValueAtTime(0.2, startTime);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.2);
+
+        osc.frequency.setValueAtTime(200, startTime);
+        osc.frequency.exponentialRampToValueAtTime(100, startTime + 0.1);
+        gain.gain.setValueAtTime(0.3, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.1);
+
+        osc.start(startTime);
+        osc.stop(startTime + 0.2);
+        noise.start(startTime);
+        noise.stop(startTime + 0.2);
+        break;
+
+      case 'hihat':
+      case 'openhat':
+        osc.type = 'square';
+        osc.frequency.value = inst.frequency;
+        gain.gain.setValueAtTime(0.1, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + (instId === 'openhat' ? 0.3 : 0.05));
+        osc.start(startTime);
+        osc.stop(startTime + (instId === 'openhat' ? 0.3 : 0.05));
+        break;
+
+      case 'clap':
+      case 'rim':
+      case 'cowbell':
+        osc.frequency.value = inst.frequency;
+        gain.gain.setValueAtTime(0.3, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.1);
+        osc.start(startTime);
+        osc.stop(startTime + 0.1);
+        break;
+
+      case 'crash':
+        osc.type = 'sawtooth';
+        osc.frequency.value = inst.frequency;
+        gain.gain.setValueAtTime(0.3, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 1);
+        osc.start(startTime);
+        osc.stop(startTime + 1);
+        break;
+    }
+  }
+
+  // Convert AudioBuffer to WAV
+  function bufferToWave(abuffer, len) {
+    const numOfChan = abuffer.numberOfChannels;
+    const length = len * numOfChan * 2 + 44;
+    const buffer = new ArrayBuffer(length);
+    const view = new DataView(buffer);
+    const channels = [];
+    let sample;
+    let offset = 0;
+    let pos = 0;
+
+    // write WAVE header
+    setUint32(0x46464952); // "RIFF"
+    setUint32(length - 8); // file length - 8
+    setUint32(0x45564157); // "WAVE"
+
+    setUint32(0x20746d66); // "fmt " chunk
+    setUint32(16); // length = 16
+    setUint16(1); // PCM (uncompressed)
+    setUint16(numOfChan);
+    setUint32(abuffer.sampleRate);
+    setUint32(abuffer.sampleRate * 2 * numOfChan); // avg. bytes/sec
+    setUint16(numOfChan * 2); // block-align
+    setUint16(16); // 16-bit (hardcoded)
+
+    setUint32(0x61746164); // "data" - chunk
+    setUint32(length - pos - 4); // chunk length
+
+    // write interleaved data
+    for (let i = 0; i < abuffer.numberOfChannels; i++)
+      channels.push(abuffer.getChannelData(i));
+
+    while (pos < length) {
+      for (let i = 0; i < numOfChan; i++) { // interleave channels
+        sample = Math.max(-1, Math.min(1, channels[i][offset])); // clamp
+        sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF; // scale to 16-bit signed int
+        view.setInt16(pos, sample, true); // write 16-bit sample
+        pos += 2;
+      }
+      offset++; // next source sample
+    }
+
+    // create Blob
+    return new Blob([buffer], { type: "audio/wav" });
+
+    function setUint16(data) {
+      view.setUint16(pos, data, true);
+      pos += 2;
+    }
+
+    function setUint32(data) {
+      view.setUint32(pos, data, true);
+      pos += 4;
+    }
+  }
+
   // Setup event listeners
   function setupEventListeners() {
     const playBtn = document.getElementById('drumPlayBtn');
     const stopBtn = document.getElementById('drumStopBtn');
     const clearBtn = document.getElementById('drumClearBtn');
+    const downloadBtn = document.getElementById('drumDownloadBtn');
     const tempoSlider = document.getElementById('drumTempoSlider');
     const tempoValue = document.getElementById('drumTempoValue');
 
     if (playBtn) playBtn.addEventListener('click', play);
     if (stopBtn) stopBtn.addEventListener('click', stop);
     if (clearBtn) clearBtn.addEventListener('click', clear);
+    if (downloadBtn) downloadBtn.addEventListener('click', downloadLoop);
 
     if (tempoSlider) {
       tempoSlider.addEventListener('input', (e) => {
