@@ -24,6 +24,10 @@
   
   <!-- Load Babel locally -->
   <script src="libs/babel/babel.min.js"></script>
+  
+  <!-- Load Chart.js for Analytics Dashboard -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 </head>
 <body>
   <div class="cassette-decoration"></div>
@@ -32,6 +36,10 @@
   <div id="root" class="min-h-screen p-6 vinyl-bg">
     <!-- App content will be injected here by app-simplified.js -->
   </div>
+  
+  <!-- Analytics Dashboard Dependencies -->
+  <script src="analytics/data-processor.js"></script>
+  <script src="js/dashboard.js"></script>
   
   <!-- Application Code -->
   <script type="text/babel" src="app-simplified.js"></script>
