@@ -1,50 +1,52 @@
-// Data Processor Module - Updated for proper metric handling
-const DataProcessor = {
+// Analytics Data Processor Module - Namespaced version
+window.AnalyticsDataProcessor = (function() {
+    'use strict';
+
     // Cache for loaded data
-    cache: {
+    const cache = {
         jsonFiles: [],
         csvData: null,
         processedData: {},
         metricAvailability: null,
         manifest: null
-    },
+    };
 
     // Load metric availability data
-    async loadMetricAvailability() {
+    async function loadMetricAvailability() {
         try {
             const response = await fetch('data/metric_availability.json');
             if (response.ok) {
                 const data = await response.json();
-                this.cache.metricAvailability = data.artists;
+                cache.metricAvailability = data.artists;
                 console.log('Loaded metric availability data');
             }
         } catch (error) {
             console.warn('Metric availability data not found:', error);
         }
-    },
+    }
 
     // Load manifest file
-    async loadManifest() {
+    async function loadManifest() {
         try {
             const response = await fetch('data/historical/manifest.json');
             if (response.ok) {
-                this.cache.manifest = await response.json();
-                return this.cache.manifest.files.map(f => `data/historical/${f}`);
+                cache.manifest = await response.json();
+                return cache.manifest.files.map(f => `data/historical/${f}`);
             }
         } catch (error) {
             console.warn('Manifest not found, falling back to date range method');
         }
         return null;
-    },
+    }
 
     // Load all JSON files from the historical folder
-    async loadHistoricalData() {
+    async function loadHistoricalData() {
         try {
             // Load metric availability first
-            await this.loadMetricAvailability();
+            await loadMetricAvailability();
 
             // Try to load from manifest
-            const manifestFiles = await this.loadManifest();
+            const manifestFiles = await loadManifest();
             
             let files;
             if (manifestFiles) {
@@ -70,7 +72,7 @@ const DataProcessor = {
                     const response = await fetch(file);
                     if (response.ok) {
                         const data = await response.json();
-                        return this.cleanDataValues(data);
+                        return cleanDataValues(data);
                     }
                 } catch (error) {
                     console.warn(`Failed to load ${file}:`, error);
@@ -79,18 +81,18 @@ const DataProcessor = {
             });
 
             const results = await Promise.all(promises);
-            this.cache.jsonFiles = results.filter(data => data !== null);
+            cache.jsonFiles = results.filter(data => data !== null);
             
-            console.log(`Loaded ${this.cache.jsonFiles.length} historical files`);
-            return this.cache.jsonFiles;
+            console.log(`Loaded ${cache.jsonFiles.length} historical files for analytics`);
+            return cache.jsonFiles;
         } catch (error) {
             console.error('Error loading historical data:', error);
             return [];
         }
-    },
+    }
 
     // Clean data values, converting invalid entries to null
-    cleanDataValues(data) {
+    function cleanDataValues(data) {
         if (!data || !data.artists) return data;
 
         data.artists.forEach(artist => {
@@ -142,23 +144,23 @@ const DataProcessor = {
         });
 
         return data;
-    },
+    }
 
     // Load CSV data if available
-    async loadCSVData() {
+    async function loadCSVData() {
         try {
             const response = await fetch('data/popularity_scores.csv');
             if (response.ok) {
                 const text = await response.text();
-                this.cache.csvData = this.parseCSV(text);
+                cache.csvData = parseCSV(text);
             }
         } catch (error) {
             console.warn('CSV file not found, using JSON data only');
         }
-    },
+    }
 
     // Simple CSV parser
-    parseCSV(text) {
+    function parseCSV(text) {
         const lines = text.trim().split('\n');
         const headers = lines[0].split(',');
         const data = [];
@@ -173,12 +175,12 @@ const DataProcessor = {
         }
 
         return data;
-    },
+    }
 
     // Get unique artist names
-    getArtistNames() {
+    function getArtistNames() {
         const artistSet = new Set();
-        this.cache.jsonFiles.forEach(file => {
+        cache.jsonFiles.forEach(file => {
             if (file && file.artists) {
                 file.artists.forEach(artist => {
                     artistSet.add(artist.name);
@@ -186,24 +188,24 @@ const DataProcessor = {
             }
         });
         return Array.from(artistSet).sort();
-    },
+    }
 
     // Check if a metric is available for an artist at a given date
-    isMetricAvailable(artistName, platform, metric, date) {
-        if (!this.cache.metricAvailability || !this.cache.metricAvailability[artistName]) {
+    function isMetricAvailable(artistName, platform, metric, date) {
+        if (!cache.metricAvailability || !cache.metricAvailability[artistName]) {
             return false;
         }
 
-        const availability = this.cache.metricAvailability[artistName];
+        const availability = cache.metricAvailability[artistName];
         const firstDate = availability[platform]?.[metric];
         
         if (!firstDate) return false;
         
         return date >= firstDate;
-    },
+    }
 
     // Get platform availability for an artist
-    getPlatformAvailability(artistName) {
+    function getPlatformAvailability(artistName) {
         const availability = {
             hasSpotify: false,
             hasYouTube: false,
@@ -212,9 +214,9 @@ const DataProcessor = {
             youtubeMetrics: []
         };
 
-        if (!this.cache.metricAvailability || !this.cache.metricAvailability[artistName]) {
+        if (!cache.metricAvailability || !cache.metricAvailability[artistName]) {
             // Fallback: check from actual data
-            this.cache.jsonFiles.forEach(file => {
+            cache.jsonFiles.forEach(file => {
                 if (!file || !file.artists) return;
                 
                 const artist = file.artists.find(a => a.name === artistName);
@@ -236,7 +238,7 @@ const DataProcessor = {
                 }
             });
         } else {
-            const metrics = this.cache.metricAvailability[artistName];
+            const metrics = cache.metricAvailability[artistName];
             
             // Check Spotify availability
             if (metrics.spotify) {
@@ -255,10 +257,10 @@ const DataProcessor = {
         }
 
         return availability;
-    },
+    }
 
     // Process data for a specific artist
-    processArtistData(artistName, timeRange = 'all') {
+    function processArtistData(artistName, timeRange = 'all') {
         const data = {
             dates: [],
             spotifyFollowers: [],
@@ -273,7 +275,7 @@ const DataProcessor = {
             latestMetrics: {},
             previousMetrics: {},
             topTracks: [],
-            platformAvailability: this.getPlatformAvailability(artistName)
+            platformAvailability: getPlatformAvailability(artistName)
         };
 
         // Filter data by time range
@@ -295,7 +297,7 @@ const DataProcessor = {
         }
 
         // Process each file
-        this.cache.jsonFiles.forEach(file => {
+        cache.jsonFiles.forEach(file => {
             if (!file || !file.artists) return;
 
             const fileDate = new Date(file.date);
@@ -310,20 +312,20 @@ const DataProcessor = {
             // Process Spotify data
             if (artist.spotify) {
                 // Only add values if the metric was available at this date
-                if (this.isMetricAvailable(artistName, 'spotify', 'followers', file.date)) {
+                if (isMetricAvailable(artistName, 'spotify', 'followers', file.date)) {
                     data.spotifyFollowers.push(artist.spotify.followers);
                     data.hasSpotifyData = true;
                 } else {
                     data.spotifyFollowers.push(null);
                 }
 
-                if (this.isMetricAvailable(artistName, 'spotify', 'popularity_score', file.date)) {
+                if (isMetricAvailable(artistName, 'spotify', 'popularity_score', file.date)) {
                     data.popularityScore.push(artist.spotify.popularity_score);
                 } else {
                     data.popularityScore.push(null);
                 }
                 
-                if (this.isMetricAvailable(artistName, 'spotify', 'monthly_listeners', file.date)) {
+                if (isMetricAvailable(artistName, 'spotify', 'monthly_listeners', file.date)) {
                     const listeners = artist.spotify.monthly_listeners;
                     if (listeners !== null && listeners !== undefined) {
                         data.monthlyListeners.push(listeners);
@@ -342,20 +344,20 @@ const DataProcessor = {
 
             // Process YouTube data
             if (artist.youtube) {
-                if (this.isMetricAvailable(artistName, 'youtube', 'subscribers', file.date)) {
+                if (isMetricAvailable(artistName, 'youtube', 'subscribers', file.date)) {
                     data.youtubeSubscribers.push(artist.youtube.subscribers);
                     data.hasYouTubeData = true;
                 } else {
                     data.youtubeSubscribers.push(null);
                 }
 
-                if (this.isMetricAvailable(artistName, 'youtube', 'total_views', file.date)) {
+                if (isMetricAvailable(artistName, 'youtube', 'total_views', file.date)) {
                     data.youtubeTotalViews.push(artist.youtube.total_views);
                 } else {
                     data.youtubeTotalViews.push(null);
                 }
 
-                if (this.isMetricAvailable(artistName, 'youtube', 'video_count', file.date)) {
+                if (isMetricAvailable(artistName, 'youtube', 'video_count', file.date)) {
                     data.youtubeVideoCount.push(artist.youtube.video_count);
                 } else {
                     data.youtubeVideoCount.push(null);
@@ -373,25 +375,25 @@ const DataProcessor = {
             
             // Find latest non-null values
             data.latestMetrics = {
-                spotifyFollowers: this.findLatestValue(data.spotifyFollowers) || 0,
-                youtubeSubscribers: this.findLatestValue(data.youtubeSubscribers) || 0,
-                youtubeTotalViews: this.findLatestValue(data.youtubeTotalViews) || 0,
-                popularityScore: this.findLatestValue(data.popularityScore) || 0,
-                monthlyListeners: this.findLatestValue(data.monthlyListeners) || 0
+                spotifyFollowers: findLatestValue(data.spotifyFollowers) || 0,
+                youtubeSubscribers: findLatestValue(data.youtubeSubscribers) || 0,
+                youtubeTotalViews: findLatestValue(data.youtubeTotalViews) || 0,
+                popularityScore: findLatestValue(data.popularityScore) || 0,
+                monthlyListeners: findLatestValue(data.monthlyListeners) || 0
             };
 
             // Find values from 7 days ago (or closest non-null)
             const targetIndex = Math.max(0, latestIndex - 7);
             data.previousMetrics = {
-                spotifyFollowers: this.findValueNearIndex(data.spotifyFollowers, targetIndex) || 0,
-                youtubeSubscribers: this.findValueNearIndex(data.youtubeSubscribers, targetIndex) || 0,
-                youtubeTotalViews: this.findValueNearIndex(data.youtubeTotalViews, targetIndex) || 0,
-                popularityScore: this.findValueNearIndex(data.popularityScore, targetIndex) || 0,
-                monthlyListeners: this.findValueNearIndex(data.monthlyListeners, targetIndex) || 0
+                spotifyFollowers: findValueNearIndex(data.spotifyFollowers, targetIndex) || 0,
+                youtubeSubscribers: findValueNearIndex(data.youtubeSubscribers, targetIndex) || 0,
+                youtubeTotalViews: findValueNearIndex(data.youtubeTotalViews, targetIndex) || 0,
+                popularityScore: findValueNearIndex(data.popularityScore, targetIndex) || 0,
+                monthlyListeners: findValueNearIndex(data.monthlyListeners, targetIndex) || 0
             };
 
             // Get latest top tracks
-            const latestFile = this.cache.jsonFiles.find(f => f.date === data.dates[latestIndex]);
+            const latestFile = cache.jsonFiles.find(f => f.date === data.dates[latestIndex]);
             if (latestFile) {
                 const artist = latestFile.artists.find(a => a.name === artistName);
                 if (artist && artist.spotify && artist.spotify.top_tracks) {
@@ -401,20 +403,20 @@ const DataProcessor = {
         }
 
         return data;
-    },
+    }
 
     // Find the latest non-null value in an array
-    findLatestValue(array) {
+    function findLatestValue(array) {
         for (let i = array.length - 1; i >= 0; i--) {
             if (array[i] !== null && array[i] !== undefined) {
                 return array[i];
             }
         }
         return null;
-    },
+    }
 
     // Find a non-null value near a specific index
-    findValueNearIndex(array, targetIndex) {
+    function findValueNearIndex(array, targetIndex) {
         // First try the exact index
         if (array[targetIndex] !== null && array[targetIndex] !== undefined) {
             return array[targetIndex];
@@ -435,16 +437,16 @@ const DataProcessor = {
         }
 
         return null;
-    },
+    }
 
     // Calculate percentage change
-    calculateChange(current, previous) {
+    function calculateChange(current, previous) {
         if (previous === 0 || previous === null) return current > 0 ? 100 : 0;
         return ((current - previous) / previous * 100).toFixed(1);
-    },
+    }
 
     // Format numbers with K/M suffixes
-    formatNumber(num) {
+    function formatNumber(num) {
         if (num === null || num === undefined) return 'N/A';
         if (num >= 1000000) {
             return (num / 1000000).toFixed(1) + 'M';
@@ -452,16 +454,28 @@ const DataProcessor = {
             return (num / 1000).toFixed(1) + 'K';
         }
         return num.toString();
-    },
+    }
 
     // Get the latest update date
-    getLatestUpdateDate() {
-        if (this.cache.jsonFiles.length === 0) return null;
+    function getLatestUpdateDate() {
+        if (cache.jsonFiles.length === 0) return null;
         
-        const dates = this.cache.jsonFiles
+        const dates = cache.jsonFiles
             .filter(f => f && f.date)
             .map(f => new Date(f.date));
         
         return new Date(Math.max(...dates));
     }
-};
+
+    // Public API
+    return {
+        loadHistoricalData: loadHistoricalData,
+        loadCSVData: loadCSVData,
+        getArtistNames: getArtistNames,
+        processArtistData: processArtistData,
+        getPlatformAvailability: getPlatformAvailability,
+        calculateChange: calculateChange,
+        formatNumber: formatNumber,
+        getLatestUpdateDate: getLatestUpdateDate
+    };
+})();
