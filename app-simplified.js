@@ -178,7 +178,11 @@ function App() {
 
   // Initialize sections when the tab changes
   useEffect(() => {
-    if (activeTab === 'life' && window.life24 && typeof window.life24.initialize === 'function') {
+    if (activeTab === 'analytics' && window.AnalyticsDashboard && typeof window.AnalyticsDashboard.init === 'function') {
+      setTimeout(() => {
+        window.AnalyticsDashboard.init();
+      }, 100);
+    } else if (activeTab === 'life' && window.life24 && typeof window.life24.initialize === 'function') {
       setTimeout(() => {
         window.life24.initialize('newest');
       }, 100);
@@ -269,6 +273,16 @@ function App() {
               onClick={(e) => { e.preventDefault(); setActiveTab('collective'); }}
             >
               Collective Overview
+            </a>
+            <a 
+              href="#analytics"
+              className={`py-4 px-1 font-medium text-lg ${
+                activeTab === 'analytics' ? 'text-accent' : 'text-gray-400'
+              }`}
+              style={{color: activeTab === 'analytics' ? "#00a651" : ""}}
+              onClick={(e) => { e.preventDefault(); setActiveTab('analytics'); }}
+            >
+              Analytics Dashboard
             </a>
             <a 
               href="#life"
@@ -513,6 +527,14 @@ function App() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'analytics' && (
+        <div className="fade-in">
+          <div id="analytics-dashboard-container">
+            {/* Analytics Dashboard will be loaded here */}
           </div>
         </div>
       )}
