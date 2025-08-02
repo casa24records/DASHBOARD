@@ -1,23 +1,24 @@
-  #!/usr/bin/env python3
+#!/usr/bin/env python3
 """
-Robust Spotify and YouTube data collection script with comprehensive error handling
-and anti-detection measures for all configured artists.
+Robust Spotify and YouTube data collection script with improved monthly listeners extraction
 """
 
 import base64
 import requests
 import json
-import pandas as pd
+import pandas
 from datetime import datetime
 import os
 import re
 import time
 import random
 import logging
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Tuple
 from dataclasses import dataclass
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from bs4 import BeautifulSoup
+import html
 
 # Configure logging
 logging.basicConfig(
@@ -100,7 +101,7 @@ class AntiDetectionManager:
         """Generate realistic browser headers"""
         return {
             'User-Agent': random.choice(AntiDetectionManager.USER_AGENTS),
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
             'DNT': '1',
@@ -110,54 +111,352 @@ class AntiDetectionManager:
             'Sec-Fetch-Mode': 'navigate',
             'Sec-Fetch-Site': 'none',
             'Sec-Fetch-User': '?1',
-            'sec-ch-ua': '"Chromium";v="123", "Not:A-Brand";v="8"',
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Windows"',
-            'Cache-Control': 'max-age=0'
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
         }
     
     @staticmethod
-    def get_delay(base_delay: float = 2.0) -> float:
+    def get_delay(base_delay: float = 1.0) -> float:
         """Generate random delay to mimic human behavior"""
-        return random.uniform(base_delay, base_delay * 2.5)
+        return random.uniform(base_delay, base_delay * 1.5)
 
-class CircuitBreaker:
-    """Circuit breaker pattern for handling persistent failures"""
+# ------------------ SPOTIFY SCRAPING FUNCTIONS ------------------
+
+def parse_listener_number(text: str) -> Optional[int]:
+    """
+    Parse monthly listeners from text, handling various formats:
+    - "1,041 monthly listeners" -> 1041
+    - "1.041 monthly listeners" -> 1041
+    - "0 monthly listeners" -> 0
+    - Just "1,041" -> 1041
+    """
+    if not text:
+        return None
     
-    def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 300):
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.failure_count = 0
-        self.last_failure_time = 0
-        self.state = "closed"  # closed, open, half-open
+    # First, try to find a number with optional "monthly listeners" text
+    patterns = [
+        r'([\d,.\s]+)\s*monthly\s*listeners?',
+        r'([\d,.\s]+)',  # Just the number
+    ]
     
-    def can_proceed(self) -> bool:
-        """Check if requests can proceed"""
-        if self.state == "closed":
-            return True
-        elif self.state == "open":
-            if time.time() - self.last_failure_time > self.recovery_timeout:
-                self.state = "half-open"
-                return True
-            return False
-        else:  # half-open
-            return True
+    for pattern in patterns:
+        match = re.search(pattern, text.strip(), re.IGNORECASE)
+        if match:
+            number_str = match.group(1).strip()
+            
+            # Remove all separators (commas, periods, spaces)
+            # But first, check if it's using periods as thousands separator (European style)
+            # by looking for patterns like "1.041" (exactly 3 digits after period)
+            if '.' in number_str and ',' not in number_str:
+                # Check if periods are used as thousands separators
+                parts = number_str.split('.')
+                if len(parts) > 1 and all(len(part) == 3 for part in parts[1:]):
+                    # European format: 1.041 means one thousand forty-one
+                    clean_number = number_str.replace('.', '')
+                else:
+                    # It's a decimal, which shouldn't happen for listener counts
+                    clean_number = number_str.split('.')[0]
+            else:
+                # Standard format with commas or spaces
+                clean_number = re.sub(r'[,.\s]', '', number_str)
+            
+            try:
+                value = int(clean_number)
+                if value >= 0:  # Monthly listeners can be 0 or positive
+                    return value
+            except ValueError:
+                continue
     
-    def record_success(self):
-        """Record successful operation"""
-        self.failure_count = 0
-        self.state = "closed"
+    return None
+
+def extract_monthly_listeners_from_html(html_content: str, artist_name: str) -> Optional[int]:
+    """
+    Extract monthly listeners using multiple strategies, focusing on accuracy
+    """
     
-    def record_failure(self):
-        """Record failed operation"""
-        self.failure_count += 1
-        self.last_failure_time = time.time()
+    # First, let's clean the HTML content
+    # Sometimes Spotify uses non-breaking spaces or other Unicode characters
+    html_content = html_content.replace('\u00a0', ' ')  # non-breaking space
+    html_content = html_content.replace('\u202f', ' ')  # narrow non-breaking space
+    
+    # Strategy 1: Look for the exact pattern in the visible text
+    # This is the most reliable for current Spotify pages
+    patterns = [
+        # Direct text patterns - these are most common
+        r'([\d,.\s]+)\s*monthly\s+listeners',
+        r'([\d,.\s]+)\s*monthly\s*listeners',
+        r'([\d,.]+)\s*monthly\s*listeners',
         
-        if self.failure_count >= self.failure_threshold:
-            self.state = "open"
-            logging.warning(f"Circuit breaker opened after {self.failure_count} failures")
+        # Handle different separators
+        r'(\d{1,3}(?:[,.\s]\d{3})*)\s*monthly\s*listeners',
+        
+        # JSON patterns in JavaScript
+        r'"monthly_listeners"\s*:\s*(\d+)',
+        r'"monthlyListeners"\s*:\s*(\d+)',
+        r'monthlyListeners["\']?\s*:\s*(\d+)',
+        r'"listeners"\s*:\s*{\s*"monthly"\s*:\s*(\d+)',
+        
+        # Data attributes
+        r'data-testid="monthly-listeners"[^>]*>([^<]+)',
+        r'data-monthly-listeners="(\d+)"',
+    ]
+    
+    for pattern in patterns:
+        matches = re.findall(pattern, html_content, re.IGNORECASE | re.MULTILINE)
+        if matches:
+            # Process all matches and return the most likely one
+            for match in matches:
+                # If it's already a clean number (from JSON)
+                if match.isdigit():
+                    listeners = int(match)
+                    if listeners >= 0:  # Valid listener count
+                        logging.info(f"Found {artist_name} listeners in JSON: {listeners}")
+                        return listeners
+                else:
+                    # Parse formatted number
+                    listeners = parse_listener_number(match + " monthly listeners")
+                    if listeners is not None:
+                        logging.info(f"Found {artist_name} listeners in text: {listeners}")
+                        return listeners
+    
+    # Strategy 2: Parse with BeautifulSoup for more structured extraction
+    try:
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        # Look for text containing "monthly listeners"
+        # Search in all text nodes
+        for text in soup.stripped_strings:
+            if 'monthly listener' in text.lower():
+                listeners = parse_listener_number(text)
+                if listeners is not None:
+                    logging.info(f"Found {artist_name} listeners via BeautifulSoup text: {listeners}")
+                    return listeners
+            # Also check if we have a number followed by monthly listeners in nearby text
+            elif text.strip().replace(',', '').replace('.', '').replace(' ', '').isdigit():
+                # This might be a number, check if "monthly listeners" is nearby
+                # Get the parent element
+                parent = None
+                for element in soup.find_all(text=text):
+                    parent = element.parent
+                    break
+                
+                if parent:
+                    parent_text = parent.get_text(strip=True)
+                    if 'monthly listener' in parent_text.lower():
+                        listeners = parse_listener_number(parent_text)
+                        if listeners is not None:
+                            logging.info(f"Found {artist_name} listeners via parent element: {listeners}")
+                            return listeners
+        
+        # Look for specific selectors
+        selectors_to_try = [
+            '[data-testid*="listener"]',
+            '[class*="listener"]',
+            '[aria-label*="listener"]',
+            'span',
+            'div',
+        ]
+        
+        for selector in selectors_to_try:
+            elements = soup.select(selector)
+            for elem in elements:
+                text = elem.get_text(strip=True)
+                if 'monthly listener' in text.lower():
+                    listeners = parse_listener_number(text)
+                    if listeners is not None:
+                        logging.info(f"Found {artist_name} listeners via selector {selector}: {listeners}")
+                        return listeners
+                
+                # Also check parent
+                parent = elem.parent
+                if parent:
+                    parent_text = parent.get_text(strip=True)
+                    if 'monthly listener' in parent_text.lower():
+                        listeners = parse_listener_number(parent_text)
+                        if listeners is not None:
+                            logging.info(f"Found {artist_name} listeners via parent of {selector}: {listeners}")
+                            return listeners
+    
+    except Exception as e:
+        logging.debug(f"BeautifulSoup parsing error for {artist_name}: {e}")
+    
+    # Strategy 3: More aggressive search - look for any number near "monthly listeners"
+    # This helps when the number and text are in separate elements
+    monthly_listener_regions = re.finditer(r'monthly\s*listeners?', html_content, re.IGNORECASE)
+    for match in monthly_listener_regions:
+        start = max(0, match.start() - 200)  # Look 200 chars before
+        end = min(len(html_content), match.end() + 200)  # And 200 chars after
+        region = html_content[start:end]
+        
+        # Look for numbers in this region
+        number_patterns = [
+            r'>\s*([\d,.\s]+)\s*<',  # Number between tags
+            r'([\d,.\s]+)(?=\s*<)',  # Number before a tag
+            r'(?<=>)\s*([\d,.\s]+)',  # Number after a tag
+        ]
+        
+        for num_pattern in number_patterns:
+            num_matches = re.findall(num_pattern, region)
+            for num_match in num_matches:
+                # Clean and parse the number
+                cleaned = re.sub(r'[^\d,.]', '', num_match).strip()
+                if cleaned and re.match(r'[\d,.]+', cleaned):
+                    listeners = parse_listener_number(cleaned + " monthly listeners")
+                    if listeners is not None and listeners > 0:
+                        logging.info(f"Found {artist_name} listeners via proximity search: {listeners}")
+                        return listeners
+    
+    # Strategy 4: Look for embedded JSON data
+    json_patterns = [
+        r'<script[^>]*type="application/json"[^>]*>(.*?)</script>',
+        r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>',
+        r'<script[^>]*>window\.Spotify\s*=\s*({.*?});</script>',
+        r'<script[^>]*>Spotify\s*=\s*({.*?});</script>',
+    ]
+    
+    for pattern in json_patterns:
+        matches = re.findall(pattern, html_content, re.DOTALL)
+        for match in matches:
+            try:
+                # Try to parse as JSON
+                data = json.loads(match)
+                # Recursively search for monthly listeners in the JSON
+                listeners = find_listeners_in_json(data)
+                if listeners is not None:
+                    logging.info(f"Found {artist_name} listeners in embedded JSON: {listeners}")
+                    return listeners
+            except:
+                continue
+    
+    return None
 
-# ------------------ FUNCTIONS ------------------
+def find_listeners_in_json(obj, depth=0, max_depth=10):
+    """Recursively search for monthly listeners in JSON object"""
+    if depth > max_depth:
+        return None
+    
+    if isinstance(obj, dict):
+        # Check for direct monthly listeners keys
+        for key in ['monthly_listeners', 'monthlyListeners', 'listeners']:
+            if key in obj:
+                if isinstance(obj[key], int):
+                    return obj[key]
+                elif isinstance(obj[key], dict) and 'monthly' in obj[key]:
+                    return obj[key]['monthly']
+        
+        # Recursively search
+        for value in obj.values():
+            result = find_listeners_in_json(value, depth + 1, max_depth)
+            if result is not None:
+                return result
+    
+    elif isinstance(obj, list):
+        for item in obj:
+            result = find_listeners_in_json(item, depth + 1, max_depth)
+            if result is not None:
+                return result
+    
+    return None
+
+def create_session_with_retry():
+    """Create a session with retry strategy"""
+    session = requests.Session()
+    
+    retry_strategy = Retry(
+        total=3,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["HEAD", "GET", "OPTIONS"],
+        raise_on_status=False
+    )
+    
+    adapter = HTTPAdapter(
+        max_retries=retry_strategy,
+        pool_maxsize=10,
+        pool_block=True
+    )
+    
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    
+    return session
+
+def scrape_monthly_listeners(artist_id: str, artist_name: str) -> str:
+    """
+    Scrapes monthly listeners from Spotify's public artist page.
+    Returns the number as a string, or "N/A" if not found.
+    """
+    if not artist_id:
+        return "N/A"
+    
+    try:
+        url = f"https://open.spotify.com/artist/{artist_id}"
+        
+        # Create session with retries
+        session = create_session_with_retry()
+        
+        # Use anti-detection headers
+        headers = AntiDetectionManager.get_headers()
+        headers.update({
+            'Referer': 'https://open.spotify.com/',
+            'Origin': 'https://open.spotify.com'
+        })
+        
+        logging.info(f"Fetching Spotify page for {artist_name}...")
+        response = session.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        # Extract monthly listeners
+        listeners = extract_monthly_listeners_from_html(response.text, artist_name)
+        
+        if listeners is not None:
+            logging.info(f"✓ Successfully found {artist_name} monthly listeners: {listeners:,}")
+            return str(listeners)
+        
+        # If not found in first attempt, try with a fresh request
+        # Sometimes Spotify returns different content
+        time.sleep(AntiDetectionManager.get_delay(0.5))
+        
+        # Try once more with slightly different headers
+        headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+        response = session.get(url, headers=headers, timeout=10)
+        
+        listeners = extract_monthly_listeners_from_html(response.text, artist_name)
+        if listeners is not None:
+            logging.info(f"✓ Found {artist_name} monthly listeners on retry: {listeners:,}")
+            return str(listeners)
+        
+        # Debug: Save HTML for manual inspection if it's a known problematic artist
+        if artist_name in ['Casa 24', 'ZACKO']:
+            debug_file = f"debug_{artist_name.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+            with open(debug_file, 'w', encoding='utf-8') as f:
+                f.write(response.text)
+            logging.warning(f"Could not find monthly listeners for {artist_name}. Debug HTML saved to {debug_file}")
+            
+            # Extra debugging for Casa 24
+            if artist_name == 'Casa 24':
+                # Look for any text containing numbers
+                all_numbers = re.findall(r'\b\d{1,3}(?:[,.\s]\d{3})*\b', response.text)
+                logging.info(f"All numbers found on Casa 24 page: {all_numbers[:20]}")  # First 20 numbers
+                
+                # Look for text around "monthly"
+                monthly_matches = re.finditer(r'.{50}monthly.{50}', response.text, re.IGNORECASE)
+                for i, match in enumerate(monthly_matches):
+                    if i < 5:  # First 5 matches
+                        logging.info(f"Context around 'monthly' #{i+1}: {repr(match.group())}")
+        
+        logging.warning(f"✗ Could not find monthly listeners for {artist_name}")
+        return "N/A"
+        
+    except requests.exceptions.HTTPError as e:
+        logging.error(f"HTTP error for {artist_name}: {e}")
+        return "N/A"
+    except Exception as e:
+        logging.error(f"Unexpected error for {artist_name}: {e}")
+        return "N/A"
+    finally:
+        if 'session' in locals():
+            session.close()
 
 def get_spotify_token():
     """Gets an access token from Spotify API."""
@@ -177,213 +476,7 @@ def get_spotify_token():
         logging.error(f"Failed to get Spotify token: {e}")
         raise
 
-def extract_monthly_listeners(html_content):
-    """Extract monthly listeners from various patterns in the HTML with enhanced strategies."""
-    
-    # Strategy 1: Look for JSON-LD structured data
-    json_ld_pattern = r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>'
-    json_matches = re.findall(json_ld_pattern, html_content, re.DOTALL)
-    
-    for match in json_matches:
-        try:
-            data = json.loads(match.strip())
-            # Sometimes the data is nested
-            if isinstance(data, dict):
-                # Look for any numeric value that could be monthly listeners
-                if 'interactionStatistic' in data:
-                    for stat in data.get('interactionStatistic', []):
-                        if 'userInteractionCount' in stat:
-                            return str(stat['userInteractionCount'])
-        except:
-            continue
-    
-    # Strategy 2: Enhanced patterns for monthly listeners
-    listeners_patterns = [
-        # Standard patterns
-        r'(\d{1,3}(?:,\d{3})*)\s*monthly\s*listeners',
-        r'monthly\s*listeners[:\s]*(\d{1,3}(?:,\d{3})*)',
-        r'(\d{1,3}(?:\.\d{3})*)\s*monthly\s*listeners',
-        r'(\d{1,3}(?:\s\d{3})*)\s*monthly\s*listeners',
-        
-        # JSON patterns
-        r'"monthly_listeners"\s*:\s*(\d+)',
-        r'"monthlyListeners"\s*:\s*(\d+)',
-        r'"listeners"\s*:\s*{\s*"monthly"\s*:\s*(\d+)',
-        r'monthlyListeners["\']?\s*:\s*(\d+)',
-        r'"stats"\s*:.*?"monthlyListeners"\s*:\s*(\d+)',
-        
-        # Alternative formats
-        r'(\d{1,3}(?:,\d{3})*)\s*(?:monthly|/month|per month)',
-        r'listeners["\']?\s*[>:]\s*["\']?(\d{1,3}(?:,\d{3})*)',
-        
-        # Data attributes
-        r'data-monthly-listeners="(\d+)"',
-        r'data-listeners="(\d+)"',
-        r'data-stats=\'[^\']*"monthlyListeners"\s*:\s*(\d+)'
-    ]
-    
-    for pattern in listeners_patterns:
-        matches = re.findall(pattern, html_content, re.IGNORECASE)
-        if matches:
-            # Take the largest number found (likely the monthly listeners)
-            numbers = []
-            for match in matches:
-                # Clean the number (remove commas, dots, spaces)
-                clean_number = match.replace(',', '').replace('.', '').replace(' ', '')
-                if clean_number.isdigit():
-                    numbers.append(int(clean_number)
-            if numbers:
-                # Return the largest number (most likely to be monthly listeners)
-                return str(max(numbers))
-    
-    # Strategy 3: Look in script tags for Spotify's internal data
-    script_pattern = r'<script[^>]*>(.*?)</script>'
-    script_matches = re.findall(script_pattern, html_content, re.DOTALL)
-    
-    for script in script_matches:
-        # Look for patterns in JavaScript objects
-        js_patterns = [
-            r'["\']\s*monthlyListeners\s*["\']\s*:\s*(\d+)',
-            r'monthlyListeners\s*=\s*(\d+)',
-            r'listeners.*?monthly.*?(\d{1,3}(?:,\d{3})*)'
-        ]
-        
-        for pattern in js_patterns:
-            match = re.search(pattern, script, re.IGNORECASE)
-            if match:
-                number = match.group(1).replace(',', '').replace('.', '').replace(' ', '')
-                if number.isdigit():
-                    return number
-    
-    # Strategy 4: Look in meta tags
-    meta_patterns = [
-        r'<meta[^>]*property="music:monthly_listeners"[^>]*content="(\d+)"',
-        r'<meta[^>]*name="monthly_listeners"[^>]*content="(\d+)"',
-        r'<meta[^>]*content="(\d+)"[^>]*property="music:monthly_listeners"',
-        r'<meta[^>]*content="(\d+)"[^>]*name="monthly_listeners"'
-    ]
-    
-    for pattern in meta_patterns:
-        match = re.search(pattern, html_content)
-        if match:
-            return match.group(1)
-    
-    return None
-
-def create_session_with_retry():
-    """Create a session with retry strategy"""
-    session = requests.Session()
-    
-    retry_strategy = Retry(
-        total=5,
-        backoff_factor=1,
-        status_forcelist=[429, 500, 502, 503, 504],
-        allowed_methods=["HEAD", "GET", "OPTIONS"],
-        raise_on_status=False
-    )
-    
-    adapter = HTTPAdapter(
-        max_retries=retry_strategy,
-        pool_maxsize=10,
-        pool_block=True
-    )
-    
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
-    
-    return session
-
-def scrape_monthly_listeners(artist_id, circuit_breaker=None):
-    """Scrapes monthly listeners from Spotify's public artist page with enhanced error handling."""
-    if not artist_id:
-        return "N/A"
-    
-    # Use circuit breaker if provided
-    if circuit_breaker and not circuit_breaker.can_proceed():
-        logging.warning(f"Circuit breaker is open for artist {artist_id}")
-        return "N/A"
-    
-    try:
-        url = f"https://open.spotify.com/artist/{artist_id}"
-        
-        # Create session with connection pooling
-        session = create_session_with_retry()
-        
-        # Use anti-detection headers
-        headers = AntiDetectionManager.get_headers()
-        
-        # Add specific headers that help with Spotify
-        headers.update({
-            'Referer': 'https://open.spotify.com/',
-            'Origin': 'https://open.spotify.com'
-        })
-        
-        # First request
-        response = session.get(url, headers=headers, timeout=15)
-        response.raise_for_status()
-        
-        # Try to extract monthly listeners
-        monthly_listeners = extract_monthly_listeners(response.text)
-        
-        if monthly_listeners:
-            if circuit_breaker:
-                circuit_breaker.record_success()
-            logging.info(f"Found monthly listeners: {monthly_listeners}")
-            return monthly_listeners
-        
-        # If first attempt fails, try with different approach
-        # Small delay before retry
-        time.sleep(AntiDetectionManager.get_delay(1.5))
-        
-        # Try with updated headers
-        headers['Sec-Ch-Ua'] = '"Not_A Brand";v="8", "Chromium";v="120"'
-        headers['Sec-Ch-Ua-Mobile'] = '?0'
-        headers['Sec-Ch-Ua-Platform'] = '"macOS"'
-        
-        response = session.get(url, headers=headers, timeout=15)
-        monthly_listeners = extract_monthly_listeners(response.text)
-        
-        if monthly_listeners:
-            if circuit_breaker:
-                circuit_breaker.record_success()
-            logging.info(f"Found monthly listeners on retry: {monthly_listeners}")
-            return monthly_listeners
-        
-        # Log content snippet for debugging (especially for Casa24)
-        if artist_id == '2QpRYjtwNg9z6KwD4fhC5h':  # Casa24
-            logging.debug(f"Casa24 page snippet: {response.text[:500]}")
-        
-        logging.warning(f"Could not find monthly listeners for artist {artist_id}")
-        if circuit_breaker:
-            circuit_breaker.record_failure()
-        
-        return "N/A"
-        
-    except requests.exceptions.HTTPError as e:
-        logging.error(f"HTTP error scraping monthly listeners for {artist_id}: {e}")
-        if circuit_breaker and e.response.status_code == 429:
-            circuit_breaker.record_failure()
-        return "N/A"
-    except requests.exceptions.Timeout:
-        logging.error(f"Timeout scraping monthly listeners for {artist_id}")
-        if circuit_breaker:
-            circuit_breaker.record_failure()
-        return "N/A"
-    except requests.exceptions.ConnectionError as e:
-        logging.error(f"Connection error scraping monthly listeners for {artist_id}: {e}")
-        if circuit_breaker:
-            circuit_breaker.record_failure()
-        return "N/A"
-    except Exception as e:
-        logging.error(f"Unexpected error scraping monthly listeners for {artist_id}: {e}")
-        if circuit_breaker:
-            circuit_breaker.record_failure()
-        return "N/A"
-    finally:
-        if 'session' in locals():
-            session.close()
-
-def get_spotify_artist_data(artist_id, token, circuit_breaker=None):
+def get_spotify_artist_data(artist_id, token, artist_name):
     """Gets name, popularity, followers, and monthly listeners for a Spotify artist."""
     if not artist_id:
         return {
@@ -418,12 +511,11 @@ def get_spotify_artist_data(artist_id, token, circuit_breaker=None):
                 })
 
         # Scrape monthly listeners from the public page
-        artist_name = artist_data.get('name', 'Unknown Artist')
         logging.info(f"Scraping monthly listeners for {artist_name}...")
-        monthly_listeners = scrape_monthly_listeners(artist_id, circuit_breaker)
+        monthly_listeners = scrape_monthly_listeners(artist_id, artist_name)
         
-        # Add a delay to be respectful to Spotify's servers
-        time.sleep(AntiDetectionManager.get_delay())
+        # Add a small delay to be respectful
+        time.sleep(AntiDetectionManager.get_delay(0.5))
 
         return {
             'popularity_score': artist_data.get('popularity', 0),
@@ -434,9 +526,9 @@ def get_spotify_artist_data(artist_id, token, circuit_breaker=None):
         }
     except requests.exceptions.HTTPError as e:
         if e.response.status_code == 401:
-            logging.error(f"Spotify API authentication failed for {artist_id}")
+            logging.error(f"Spotify API authentication failed for {artist_name}")
         else:
-            logging.error(f"HTTP error getting Spotify data for {artist_id}: {e}")
+            logging.error(f"HTTP error getting Spotify data for {artist_name}: {e}")
         return {
             'popularity_score': 0,
             'followers': 0,
@@ -445,7 +537,7 @@ def get_spotify_artist_data(artist_id, token, circuit_breaker=None):
             'top_tracks': []
         }
     except Exception as e:
-        logging.error(f"Error getting Spotify data for {artist_id}: {e}")
+        logging.error(f"Error getting Spotify data for {artist_name}: {e}")
         return {
             'popularity_score': 0,
             'followers': 0,
@@ -453,6 +545,8 @@ def get_spotify_artist_data(artist_id, token, circuit_breaker=None):
             'genres': [],
             'top_tracks': []
         }
+
+# ------------------ YOUTUBE FUNCTIONS ------------------
 
 def get_youtube_channel_data(channel_id):
     """Gets YouTube channel stats and top videos."""
@@ -477,7 +571,6 @@ def get_youtube_channel_data(channel_id):
             }
             
             # Now get the top videos
-            # Get uploads playlist ID
             playlist_url = f"https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id={channel_id}&key={YOUTUBE_API_KEY}"
             playlist_response = requests.get(playlist_url, timeout=10)
             playlist_response.raise_for_status()
@@ -486,7 +579,7 @@ def get_youtube_channel_data(channel_id):
             if 'items' in playlist_data and len(playlist_data['items']) > 0:
                 uploads_playlist_id = playlist_data['items'][0]['contentDetails']['relatedPlaylists']['uploads']
                 
-                # Get videos from uploads playlist (this gives us recent videos)
+                # Get videos from uploads playlist
                 videos_url = f"https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId={uploads_playlist_id}&maxResults=50&key={YOUTUBE_API_KEY}"
                 videos_response = requests.get(videos_url, timeout=10)
                 videos_response.raise_for_status()
@@ -495,9 +588,8 @@ def get_youtube_channel_data(channel_id):
                 if 'items' in videos_data:
                     video_ids = [item['snippet']['resourceId']['videoId'] for item in videos_data['items']]
                     
-                    # Get video statistics for these videos
+                    # Get video statistics
                     if video_ids:
-                        # YouTube API allows up to 50 video IDs per request
                         video_stats_url = f"https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id={','.join(video_ids[:50])}&key={YOUTUBE_API_KEY}"
                         video_stats_response = requests.get(video_stats_url, timeout=10)
                         video_stats_response.raise_for_status()
@@ -523,15 +615,11 @@ def get_youtube_channel_data(channel_id):
             logging.warning(f"No YouTube data found for channel {channel_id}")
             return {'subscribers': 0, 'total_views': 0, 'video_count': 0, 'top_videos': []}
             
-    except requests.exceptions.HTTPError as e:
-        if e.response.status_code == 403:
-            logging.error(f"YouTube API quota exceeded or API key invalid for channel {channel_id}")
-        else:
-            logging.error(f"HTTP error getting YouTube data for {channel_id}: {e}")
-        return {'subscribers': 0, 'total_views': 0, 'video_count': 0, 'top_videos': []}
     except Exception as e:
         logging.error(f"Error getting YouTube data for {channel_id}: {e}")
         return {'subscribers': 0, 'total_views': 0, 'video_count': 0, 'top_videos': []}
+
+# ------------------ MAIN COLLECTION FUNCTION ------------------
 
 def collect_all_data():
     """Collects all artist data from multiple platforms."""
@@ -548,9 +636,6 @@ def collect_all_data():
         'artists': []
     }
     
-    # Create circuit breaker for scraping
-    circuit_breaker = CircuitBreaker()
-    
     # Statistics
     stats = {
         'total': len(artists),
@@ -560,17 +645,22 @@ def collect_all_data():
     }
     
     for artist in artists:
-        logging.info(f"\nCollecting data for {artist['name']}...")
+        logging.info(f"\n{'='*50}")
+        logging.info(f"Collecting data for {artist['name']}...")
+        logging.info(f"{'='*50}")
         
-        # Get Spotify data (skip for artists without Spotify ID)
+        # Get Spotify data
         if spotify_token and artist.get('spotify_id'):
-            spotify_data = get_spotify_artist_data(artist.get('spotify_id'), spotify_token, circuit_breaker)
+            spotify_data = get_spotify_artist_data(
+                artist.get('spotify_id'), 
+                spotify_token,
+                artist['name']
+            )
             if spotify_data['popularity_score'] > 0:
                 stats['spotify_success'] += 1
             if spotify_data['monthly_listeners'] != "N/A":
                 stats['monthly_listeners_found'] += 1
         else:
-            # For artists without Spotify presence (like Casa 24Beats)
             logging.info(f"{artist['name']} has no Spotify ID, skipping Spotify data collection")
             spotify_data = {
                 'popularity_score': 0,
@@ -580,7 +670,7 @@ def collect_all_data():
                 'top_tracks': []
             }
         
-        # Get YouTube data (now includes top videos)
+        # Get YouTube data
         youtube_data = get_youtube_channel_data(artist.get('youtube_id'))
         if youtube_data['subscribers'] > 0:
             stats['youtube_success'] += 1
@@ -597,7 +687,7 @@ def collect_all_data():
         logging.info(f"Progress: {len(all_artists_data['artists'])}/{stats['total']} artists processed")
         
         # Add a small delay between artists
-        time.sleep(1)
+        time.sleep(0.5)
     
     # Log summary statistics
     logging.info("\n" + "="*50)
@@ -608,6 +698,15 @@ def collect_all_data():
     logging.info(f"Monthly listeners found: {stats['monthly_listeners_found']}/{stats['total']}")
     logging.info(f"YouTube API success: {stats['youtube_success']}/{stats['total']}")
     logging.info("="*50)
+    
+    # Print monthly listeners summary
+    print("\nMonthly Listeners Summary:")
+    print("-" * 40)
+    for artist in all_artists_data['artists']:
+        name = artist['name']
+        listeners = artist['spotify']['monthly_listeners']
+        print(f"{name:<20} {listeners:>10}")
+    print("-" * 40)
     
     return all_artists_data
 
@@ -649,7 +748,7 @@ def update_historical_data(data):
         }
         artists_data.append(artist_info)
     
-    df = pd.DataFrame(artists_data)
+    df = pandas.DataFrame(artists_data)
     
     # Check if file exists to determine if we need headers
     file_exists = os.path.exists(csv_file)
@@ -660,8 +759,11 @@ def update_historical_data(data):
 # ------------------ MAIN PROCESS ------------------
 
 if __name__ == "__main__":
-    print("Starting data collection...")
-    print(f"Current date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("\n" + "="*60)
+    print("SPOTIFY DATA COLLECTION SCRIPT v2.0")
+    print("="*60)
+    print(f"Start time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("="*60 + "\n")
     
     # Ensure data directory exists
     os.makedirs('data', exist_ok=True)
@@ -673,20 +775,14 @@ if __name__ == "__main__":
         # Update historical records
         update_historical_data(collected_data)
         
-        print("\nData collection complete!")
+        print("\n" + "="*60)
+        print("DATA COLLECTION COMPLETE!")
+        print("="*60)
         print(f"Successfully collected data for {len(collected_data['artists'])} artists")
-        
-        # Print any artists with missing monthly listeners
-        missing_listeners = [
-            artist['name'] 
-            for artist in collected_data['artists'] 
-            if artist['spotify']['monthly_listeners'] == "N/A"
-        ]
-        
-        if missing_listeners:
-            print(f"\nWarning: Could not get monthly listeners for: {', '.join(missing_listeners)}")
+        print(f"End time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print("="*60)
         
     except Exception as e:
-        print(f"\nError during data collection: {e}")
+        print(f"\nERROR during data collection: {e}")
+        logging.exception("Fatal error in main execution")
         raise
-
