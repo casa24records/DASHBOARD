@@ -5,8 +5,8 @@
       "name": "Casa 24",
       "spotify": {
         "popularity_score": 5,
-        "followers": 392,
-        "monthly_listeners": "N/A",
+        "followers": 464,
+        "monthly_listeners": "1000",
         "genres": [],
         "top_tracks": [
           {
@@ -26,7 +26,7 @@
           },
           {
             "name": "Japon",
-            "popularity": 5,
+            "popularity": 4,
             "preview_url": null
           },
           {
@@ -38,7 +38,7 @@
       },
       "youtube": {
         "subscribers": 622,
-        "total_views": 29031,
+        "total_views": 29033,
         "video_count": 94,
         "top_videos": [
           {
@@ -55,7 +55,7 @@
           },
           {
             "title": "LaQuan & Casa 24 - Llama Si Te Sientes Lonely (Video Oficial)",
-            "views": 2800,
+            "views": 2801,
             "video_id": "rCXFipa8CWQ",
             "published_at": "2024-08-08T23:00:07Z"
           },
@@ -79,7 +79,7 @@
       "spotify": {
         "popularity_score": 4,
         "followers": 256,
-        "monthly_listeners": "379",
+        "monthly_listeners": "378",
         "genres": [
           "latin hip hop"
         ],
@@ -153,8 +153,8 @@
       "name": "PYRO",
       "spotify": {
         "popularity_score": 1,
-        "followers": 201,
-        "monthly_listeners": "532",
+        "followers": 200,
+        "monthly_listeners": "530",
         "genres": [],
         "top_tracks": [
           {
@@ -218,7 +218,7 @@
       },
       "youtube": {
         "subscribers": 94,
-        "total_views": 13733,
+        "total_views": 13734,
         "video_count": 71,
         "top_videos": [
           {
@@ -264,7 +264,7 @@
         "top_tracks": [
           {
             "name": "Japon",
-            "popularity": 5,
+            "popularity": 4,
             "preview_url": null
           },
           {
@@ -278,12 +278,12 @@
             "preview_url": null
           },
           {
-            "name": "Cherry Trees",
+            "name": "Harlem",
             "popularity": 0,
             "preview_url": null
           },
           {
-            "name": "Harlem",
+            "name": "Cherry Trees",
             "popularity": 0,
             "preview_url": null
           }
@@ -342,7 +342,7 @@
       },
       "youtube": {
         "subscribers": 503,
-        "total_views": 70756,
+        "total_views": 70762,
         "video_count": 112,
         "top_videos": [
           {
@@ -383,7 +383,7 @@
       "spotify": {
         "popularity_score": 0,
         "followers": 103,
-        "monthly_listeners": "9",
+        "monthly_listeners": "10",
         "genres": [],
         "top_tracks": [
           {
@@ -431,7 +431,7 @@
       },
       "youtube": {
         "subscribers": 8,
-        "total_views": 517,
+        "total_views": 519,
         "video_count": 38,
         "top_videos": [
           {
@@ -448,7 +448,7 @@
           },
           {
             "title": "Jeepers Peepers X-\u267e (Downtempo + Hip-Hop + Flying Lotus Type Beat \u2013 \"Executive\" prod. P\u00ffro)",
-            "views": 40,
+            "views": 41,
             "video_id": "rwb7aSDF9m4",
             "published_at": "2025-07-30T19:37:11Z"
           },
