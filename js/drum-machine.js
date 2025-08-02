@@ -15,85 +15,38 @@
 
   // Preset patterns
   const presets = {
-    'boom-bap': {
-      kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
-      snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-      hihat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
-      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
-      clap:    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      cowbell: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    },
-    'trap': {
-      kick:    [1,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0],
-      snare:   [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
-      hihat:   [1,0,1,0,1,0,1,0,1,1,0,1,0,1,1,1],
-      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],
-      clap:    [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
-      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      cowbell: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    },
-    'house': {
+    "Traffic jam groove": {
+      bpm: 109,
       kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
       snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
       hihat:   [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
-      openhat: [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],
-      clap:    [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      cowbell: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    },
-    'techno': {
-      kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
-      snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-      hihat:   [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
-      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-      clap:    [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      cowbell: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    },
-    'breakbeat': {
-      kick:    [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],
-      snare:   [0,0,0,0,1,0,0,0,0,1,0,0,1,0,0,0],
-      hihat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
-      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
-      clap:    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      cowbell: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    },
-    'minimal': {
-      kick:    [1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
-      snare:   [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
-      hihat:   [0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1],
       openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      clap:    [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      clap:    [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
       crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      cowbell: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      rim:     [0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
+      cowbell: [0,0,0,0,0,0,0,1,0,0,1,0,0,0,1,1]
     },
-    'afrobeat': {
-      kick:    [1,0,0,1,0,0,1,0,0,0,1,0,1,0,0,0],
-      snare:   [0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],
-      hihat:   [1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1],
-      openhat: [0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0],
-      clap:    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    "Robofunk": {
+      bpm: 104,
+      kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+      snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hihat:   [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      clap:    [1,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],
       crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
-      cowbell: [0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0]
+      rim:     [0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0],
+      cowbell: [0,0,0,1,0,0,1,0,0,0,1,0,0,0,1,0]
     },
-    'reggaeton': {
-      kick:    [1,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0],
-      snare:   [0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0],
-      hihat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
-      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],
-      clap:    [0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0],
-      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      cowbell: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    "Power pose": {
+      bpm: 76,
+      kick:    [1,0,0,1,1,0,0,0,1,0,0,1,1,0,0,0],
+      snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hihat:   [0,0,1,0,0,0,1,0,0,0,1,0,1,0,1,0],
+      openhat: [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      clap:    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      crash:   [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      rim:     [0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      cowbell: [0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0]
     }
   };
 
@@ -315,14 +268,9 @@
         <div style="border: 2px solid #00a651; border-radius: 0.5rem; background: rgba(26, 26, 26, 0.7); box-shadow: 4px 4px 0px #00a651; padding: 1.5rem;">
           <h4 style="font-family: 'VT323', monospace; font-size: 1.5rem; color: #00a651; letter-spacing: 1px; margin-bottom: 1rem; text-align: center;">BEAT PRESETS</h4>
           <div class="flex flex-wrap gap-3 justify-center" id="drumPresets">
-            <button class="drum-preset-btn" data-preset="boom-bap">BOOM BAP</button>
-            <button class="drum-preset-btn" data-preset="trap">TRAP</button>
-            <button class="drum-preset-btn" data-preset="house">HOUSE</button>
-            <button class="drum-preset-btn" data-preset="techno">TECHNO</button>
-            <button class="drum-preset-btn" data-preset="breakbeat">BREAKBEAT</button>
-            <button class="drum-preset-btn" data-preset="minimal">MINIMAL</button>
-            <button class="drum-preset-btn" data-preset="afrobeat">AFROBEAT</button>
-            <button class="drum-preset-btn" data-preset="reggaeton">REGGAETON</button>
+            <button class="drum-preset-btn" data-preset="Traffic jam groove">TRAFFIC JAM GROOVE</button>
+            <button class="drum-preset-btn" data-preset="Robofunk">ROBOFUNK</button>
+            <button class="drum-preset-btn" data-preset="Power pose">POWER POSE</button>
           </div>
         </div>
       </div>
@@ -335,7 +283,7 @@
     setupEventListeners();
 
     // Load default preset
-    loadPreset('boom-bap');
+    loadPreset('Traffic jam groove');
   }
 
   // Create sequencer grid
@@ -547,7 +495,28 @@
 
   function loadPreset(presetName) {
     if (presets[presetName]) {
-      pattern = JSON.parse(JSON.stringify(presets[presetName]));
+      // Copy the pattern data
+      pattern = {};
+      instruments.forEach(inst => {
+        pattern[inst.id] = [...presets[presetName][inst.id]];
+      });
+      
+      // Update the tempo if the preset has a BPM value
+      if (presets[presetName].bpm) {
+        const tempoSlider = document.getElementById('drumTempoSlider');
+        const tempoValue = document.getElementById('drumTempoValue');
+        if (tempoSlider && tempoValue) {
+          tempoSlider.value = presets[presetName].bpm;
+          tempoValue.textContent = `${presets[presetName].bpm} BPM`;
+          
+          // If playing, restart with new tempo
+          if (isPlaying) {
+            pause();
+            play();
+          }
+        }
+      }
+      
       updatePattern();
     }
   }
