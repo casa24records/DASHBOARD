@@ -231,8 +231,7 @@ def extract_monthly_listeners(html_content):
                 # Clean the number (remove commas, dots, spaces)
                 clean_number = match.replace(',', '').replace('.', '').replace(' ', '')
                 if clean_number.isdigit():
-                    numbers.append(int(clean_number))
-            
+                    numbers.append(int(clean_number)
             if numbers:
                 # Return the largest number (most likely to be monthly listeners)
                 return str(max(numbers))
@@ -690,3 +689,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\nError during data collection: {e}")
         raise
+
