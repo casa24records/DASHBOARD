@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 Robust Spotify and YouTube data collection script with improved monthly listeners extraction
+Handles K/M/B notation and meta tag extraction
 """
 
 import base64
@@ -125,36 +126,64 @@ class AntiDetectionManager:
 def parse_listener_number(text: str) -> Optional[int]:
     """
     Parse monthly listeners from text, handling various formats:
-    - "1,041 monthly listeners" -> 1041
-    - "1.041 monthly listeners" -> 1041
+    - "1,048 monthly listeners" -> 1048
+    - "1.048 monthly listeners" -> 1048
+    - "1K monthly listeners" -> 1000
+    - "1.2K monthly listeners" -> 1200
+    - "2.5M monthly listeners" -> 2500000
     - "0 monthly listeners" -> 0
-    - Just "1,041" -> 1041
     """
     if not text:
         return None
     
-    # First, try to find a number with optional "monthly listeners" text
+    # Clean the text
+    text = text.strip()
+    
+    # First, try to find patterns with K/M/B notation
+    kmb_patterns = [
+        r'(\d+(?:\.\d+)?)\s*([KMB])\s*monthly\s*listeners?',
+        r'(\d+(?:\.\d+)?)\s*([KMB])\s+monthly\s*listeners?',
+        r'Artist\s*[·•]\s*(\d+(?:\.\d+)?)\s*([KMB])\s*monthly\s*listeners?',  # For meta descriptions
+    ]
+    
+    for pattern in kmb_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            number = float(match.group(1))
+            multiplier = match.group(2).upper()
+            
+            multipliers = {
+                'K': 1000,
+                'M': 1000000,
+                'B': 1000000000
+            }
+            
+            result = int(number * multipliers.get(multiplier, 1))
+            logging.debug(f"Parsed {text} as {result} using K/M/B notation")
+            return result
+    
+    # Then try standard number patterns
     patterns = [
         r'([\d,.\s]+)\s*monthly\s*listeners?',
+        r'Artist\s*[·•]\s*([\d,.\s]+)\s*monthly\s*listeners?',
         r'([\d,.\s]+)',  # Just the number
     ]
     
     for pattern in patterns:
-        match = re.search(pattern, text.strip(), re.IGNORECASE)
+        match = re.search(pattern, text, re.IGNORECASE)
         if match:
             number_str = match.group(1).strip()
             
             # Remove all separators (commas, periods, spaces)
             # But first, check if it's using periods as thousands separator (European style)
-            # by looking for patterns like "1.041" (exactly 3 digits after period)
             if '.' in number_str and ',' not in number_str:
                 # Check if periods are used as thousands separators
                 parts = number_str.split('.')
                 if len(parts) > 1 and all(len(part) == 3 for part in parts[1:]):
-                    # European format: 1.041 means one thousand forty-one
+                    # European format: 1.048 means one thousand forty-eight
                     clean_number = number_str.replace('.', '')
                 else:
-                    # It's a decimal, which shouldn't happen for listener counts
+                    # It's a decimal, take the integer part
                     clean_number = number_str.split('.')[0]
             else:
                 # Standard format with commas or spaces
@@ -178,10 +207,52 @@ def extract_monthly_listeners_from_html(html_content: str, artist_name: str) -> 
     # Sometimes Spotify uses non-breaking spaces or other Unicode characters
     html_content = html_content.replace('\u00a0', ' ')  # non-breaking space
     html_content = html_content.replace('\u202f', ' ')  # narrow non-breaking space
+    html_content = html_content.replace('\\u00B7', '·')  # middle dot
+    
+    # Strategy 0: Look in meta tags first (most reliable for K notation)
+    # This is where we found "1K monthly listeners" in the debug output
+    meta_patterns = [
+        r'<meta[^>]*property="og:description"[^>]*content="([^"]*)"',
+        r'<meta[^>]*content="([^"]*)"[^>]*property="og:description"',
+        r'<meta[^>]*name="description"[^>]*content="([^"]*)"',
+        r'<meta[^>]*content="([^"]*)"[^>]*name="description"',
+        r'<meta[^>]*name="twitter:description"[^>]*content="([^"]*)"',
+        r'<meta[^>]*content="([^"]*)"[^>]*name="twitter:description"',
+    ]
+    
+    for pattern in meta_patterns:
+        matches = re.findall(pattern, html_content, re.IGNORECASE)
+        for match in matches:
+            # Unescape HTML entities
+            match = html.unescape(match)
+            if 'monthly listener' in match.lower():
+                listeners = parse_listener_number(match)
+                if listeners is not None:
+                    logging.info(f"Found {artist_name} listeners in meta tag: {listeners} from '{match}'")
+                    return listeners
+    
+    # Also check in JSON-LD or escaped content
+    # Look for patterns like "Artist \\u00B7 1K monthly listeners"
+    escaped_patterns = [
+        r'Artist\s*\\u00B7\s*(\d+(?:\.\d+)?[KMB]?)\s*monthly\s*listeners',
+        r'"([^"]*\d+(?:\.\d+)?[KMB]?\s*monthly\s*listeners[^"]*)"',
+    ]
+    
+    for pattern in escaped_patterns:
+        matches = re.findall(pattern, html_content, re.IGNORECASE)
+        for match in matches:
+            if 'monthly listener' in match.lower():
+                listeners = parse_listener_number(match)
+                if listeners is not None:
+                    logging.info(f"Found {artist_name} listeners in escaped content: {listeners}")
+                    return listeners
     
     # Strategy 1: Look for the exact pattern in the visible text
-    # This is the most reliable for current Spotify pages
     patterns = [
+        # K/M/B notation patterns
+        r'(\d+(?:\.\d+)?[KMB])\s*monthly\s+listeners',
+        r'(\d+(?:\.\d+)?[KMB])\s*monthly\s*listeners',
+        
         # Direct text patterns - these are most common
         r'([\d,.\s]+)\s*monthly\s+listeners',
         r'([\d,.\s]+)\s*monthly\s*listeners',
@@ -223,110 +294,46 @@ def extract_monthly_listeners_from_html(html_content: str, artist_name: str) -> 
     try:
         soup = BeautifulSoup(html_content, 'html.parser')
         
+        # First check meta tags with BeautifulSoup
+        for meta in soup.find_all('meta'):
+            content = meta.get('content', '')
+            if 'monthly listener' in content.lower():
+                listeners = parse_listener_number(content)
+                if listeners is not None:
+                    logging.info(f"Found {artist_name} listeners in meta via BeautifulSoup: {listeners}")
+                    return listeners
+        
         # Look for text containing "monthly listeners"
-        # Search in all text nodes
         for text in soup.stripped_strings:
             if 'monthly listener' in text.lower():
                 listeners = parse_listener_number(text)
                 if listeners is not None:
                     logging.info(f"Found {artist_name} listeners via BeautifulSoup text: {listeners}")
                     return listeners
-            # Also check if we have a number followed by monthly listeners in nearby text
-            elif text.strip().replace(',', '').replace('.', '').replace(' ', '').isdigit():
-                # This might be a number, check if "monthly listeners" is nearby
-                # Get the parent element
-                parent = None
-                for element in soup.find_all(text=text):
-                    parent = element.parent
-                    break
-                
-                if parent:
-                    parent_text = parent.get_text(strip=True)
-                    if 'monthly listener' in parent_text.lower():
-                        listeners = parse_listener_number(parent_text)
-                        if listeners is not None:
-                            logging.info(f"Found {artist_name} listeners via parent element: {listeners}")
-                            return listeners
-        
-        # Look for specific selectors
-        selectors_to_try = [
-            '[data-testid*="listener"]',
-            '[class*="listener"]',
-            '[aria-label*="listener"]',
-            'span',
-            'div',
-        ]
-        
-        for selector in selectors_to_try:
-            elements = soup.select(selector)
-            for elem in elements:
-                text = elem.get_text(strip=True)
-                if 'monthly listener' in text.lower():
-                    listeners = parse_listener_number(text)
-                    if listeners is not None:
-                        logging.info(f"Found {artist_name} listeners via selector {selector}: {listeners}")
-                        return listeners
-                
-                # Also check parent
-                parent = elem.parent
-                if parent:
-                    parent_text = parent.get_text(strip=True)
-                    if 'monthly listener' in parent_text.lower():
-                        listeners = parse_listener_number(parent_text)
-                        if listeners is not None:
-                            logging.info(f"Found {artist_name} listeners via parent of {selector}: {listeners}")
-                            return listeners
+            # Check for K/M/B notation near monthly
+            elif re.search(r'\d+[KMB]', text) and 'monthly' in text.lower():
+                listeners = parse_listener_number(text)
+                if listeners is not None:
+                    logging.info(f"Found {artist_name} listeners via BeautifulSoup K notation: {listeners}")
+                    return listeners
     
     except Exception as e:
         logging.debug(f"BeautifulSoup parsing error for {artist_name}: {e}")
     
     # Strategy 3: More aggressive search - look for any number near "monthly listeners"
-    # This helps when the number and text are in separate elements
     monthly_listener_regions = re.finditer(r'monthly\s*listeners?', html_content, re.IGNORECASE)
     for match in monthly_listener_regions:
         start = max(0, match.start() - 200)  # Look 200 chars before
         end = min(len(html_content), match.end() + 200)  # And 200 chars after
         region = html_content[start:end]
         
-        # Look for numbers in this region
-        number_patterns = [
-            r'>\s*([\d,.\s]+)\s*<',  # Number between tags
-            r'([\d,.\s]+)(?=\s*<)',  # Number before a tag
-            r'(?<=>)\s*([\d,.\s]+)',  # Number after a tag
-        ]
-        
-        for num_pattern in number_patterns:
-            num_matches = re.findall(num_pattern, region)
-            for num_match in num_matches:
-                # Clean and parse the number
-                cleaned = re.sub(r'[^\d,.]', '', num_match).strip()
-                if cleaned and re.match(r'[\d,.]+', cleaned):
-                    listeners = parse_listener_number(cleaned + " monthly listeners")
-                    if listeners is not None and listeners > 0:
-                        logging.info(f"Found {artist_name} listeners via proximity search: {listeners}")
-                        return listeners
-    
-    # Strategy 4: Look for embedded JSON data
-    json_patterns = [
-        r'<script[^>]*type="application/json"[^>]*>(.*?)</script>',
-        r'<script[^>]*type="application/ld\+json"[^>]*>(.*?)</script>',
-        r'<script[^>]*>window\.Spotify\s*=\s*({.*?});</script>',
-        r'<script[^>]*>Spotify\s*=\s*({.*?});</script>',
-    ]
-    
-    for pattern in json_patterns:
-        matches = re.findall(pattern, html_content, re.DOTALL)
-        for match in matches:
-            try:
-                # Try to parse as JSON
-                data = json.loads(match)
-                # Recursively search for monthly listeners in the JSON
-                listeners = find_listeners_in_json(data)
-                if listeners is not None:
-                    logging.info(f"Found {artist_name} listeners in embedded JSON: {listeners}")
-                    return listeners
-            except:
-                continue
+        # Look for K/M/B notation in this region
+        kmb_match = re.search(r'(\d+(?:\.\d+)?[KMB])', region, re.IGNORECASE)
+        if kmb_match:
+            potential_listeners = parse_listener_number(kmb_match.group(1) + " monthly listeners")
+            if potential_listeners is not None:
+                logging.info(f"Found {artist_name} listeners via proximity K notation: {potential_listeners}")
+                return potential_listeners
     
     return None
 
@@ -435,9 +442,9 @@ def scrape_monthly_listeners(artist_id: str, artist_name: str) -> str:
             
             # Extra debugging for Casa 24
             if artist_name == 'Casa 24':
-                # Look for any text containing numbers
-                all_numbers = re.findall(r'\b\d{1,3}(?:[,.\s]\d{3})*\b', response.text)
-                logging.info(f"All numbers found on Casa 24 page: {all_numbers[:20]}")  # First 20 numbers
+                # Look for any text containing numbers or K/M/B
+                all_numbers = re.findall(r'\b\d+(?:\.\d+)?[KMB]?\b', response.text)
+                logging.info(f"All numbers/K notations found on Casa 24 page: {all_numbers[:30]}")  # First 30
                 
                 # Look for text around "monthly"
                 monthly_matches = re.finditer(r'.{50}monthly.{50}', response.text, re.IGNORECASE)
