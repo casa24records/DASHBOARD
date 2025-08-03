@@ -2,16 +2,44 @@
 (function() {
   // Configuration
   const STEPS = 16;
-  const instruments = [
-    { id: 'kick', label: 'KICK', frequency: 60 },
-    { id: 'snare', label: 'SNARE', frequency: 200 },
-    { id: 'hihat', label: 'HI-HAT', frequency: 800 },
-    { id: 'openhat', label: 'OPEN HAT', frequency: 800 },
-    { id: 'clap', label: 'CLAP', frequency: 1500 },
-    { id: 'crash', label: 'CRASH', frequency: 2000 },
-    { id: 'rim', label: 'RIM', frequency: 400 },
-    { id: 'cowbell', label: 'COWBELL', frequency: 800 }
-  ];
+  
+  // Instrument configuration sets
+  const instrumentConfigs = {
+    "Robocop": [
+      { id: 'kick', label: 'KICK', frequency: 60 },
+      { id: 'snare', label: 'SNARE', frequency: 200 },
+      { id: 'hihat', label: 'HI-HAT', frequency: 800 },
+      { id: 'openhat', label: 'OPEN HAT', frequency: 800 },
+      { id: 'clap', label: 'CLAP', frequency: 1500 },
+      { id: 'crash', label: 'CRASH', frequency: 2000 },
+      { id: 'rim', label: 'RIM', frequency: 400 },
+      { id: 'cowbell', label: 'COWBELL', frequency: 800 }
+    ],
+    "Boom-bap": [
+      { id: 'kick', label: 'KICK', frequency: 60 },
+      { id: 'snare', label: 'SNARE', frequency: 220 },
+      { id: 'hihat', label: 'HI-HAT', frequency: 8000 },
+      { id: 'openhat', label: 'OPEN HAT', frequency: 7000 },
+      { id: 'clap', label: 'CLAP', frequency: 2000 },
+      { id: 'crash', label: 'CRASH', frequency: 11000 },
+      { id: 'rim', label: 'RIM', frequency: 1000 },
+      { id: 'cowbell', label: 'COWBELL', frequency: 900 }
+    ],
+    "Lo-fi": [
+      { id: 'kick', label: 'KICK', frequency: 50 },
+      { id: 'snare', label: 'SNARE', frequency: 180 },
+      { id: 'hihat', label: 'HI-HAT', frequency: 6500 },
+      { id: 'openhat', label: 'OPEN HAT', frequency: 4500 },
+      { id: 'clap', label: 'CLAP', frequency: 1000 },
+      { id: 'crash', label: 'CRASH', frequency: 9000 },
+      { id: 'rim', label: 'RIM', frequency: 800 },
+      { id: 'cowbell', label: 'COWBELL', frequency: 700 }
+    ]
+  };
+  
+  // Current configuration
+  let currentConfig = "Robocop";
+  let instruments = instrumentConfigs[currentConfig];
 
   // Preset patterns
   const presets = {
@@ -58,6 +86,7 @@
   let pattern = {};
   let isRecording = false;
   let recordedChunks = [];
+  let currentPreset = null;
 
   // Initialize empty pattern
   instruments.forEach(inst => {
@@ -90,14 +119,16 @@
           }
           
           .drum-control-btn:hover,
-          .drum-preset-btn:hover {
+          .drum-preset-btn:hover,
+          .drum-config-select:hover {
             transform: translate(-2px, -2px);
             box-shadow: 3px 3px 0px #00a651;
             background: rgba(0, 166, 81, 0.1) !important;
           }
           
           .drum-control-btn:active,
-          .drum-preset-btn:active {
+          .drum-preset-btn:active,
+          .drum-config-select:active {
             transform: translate(0, 0);
             box-shadow: 1px 1px 0px #00a651;
           }
@@ -130,6 +161,32 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
             font-family: 'Space Mono', monospace;
+          }
+          
+          .drum-preset-btn.active {
+            background: #00a651 !important;
+            color: #1a1a1a !important;
+            font-weight: bold;
+          }
+          
+          .drum-config-select {
+            background: rgba(26, 26, 26, 0.7);
+            border: 2px solid #00a651;
+            color: #e0e0e0;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-family: 'Space Mono', monospace;
+            outline: none;
+          }
+          
+          .drum-config-select option {
+            background: #1a1a1a;
+            color: #e0e0e0;
           }
           
           .drum-step-btn {
@@ -231,8 +288,18 @@
           }
         </style>
 
+        <!-- Configuration Selector -->
+        <div class="flex items-center gap-3 mb-4 justify-center">
+          <span style="font-family: 'VT323', monospace; font-size: 1.25rem; color: #00a651; letter-spacing: 1px;">SOUND KIT</span>
+          <select class="drum-config-select" id="drumConfigSelect">
+            <option value="Robocop">ROBOCOP</option>
+            <option value="Boom-bap">BOOM-BAP</option>
+            <option value="Lo-fi">LO-FI</option>
+          </select>
+        </div>
+
         <!-- Transport Controls -->
-        <div class="drum-controls-wrapper flex flex-wrap gap-4 items-center justify-center mb-8">
+        <div class="drum-controls-wrapper flex flex-wrap gap-4 items-center justify-center mb-4">
           <div class="flex gap-2">
             <button class="drum-control-btn" id="drumPlayBtn">
               <span>▶</span> PLAY
@@ -255,22 +322,22 @@
           </div>
         </div>
 
-        <!-- Sequencer Grid -->
-        <div style="border: 2px solid #00a651; border-radius: 0.5rem; background: rgba(26, 26, 26, 0.7); box-shadow: 4px 4px 0px #00a651; padding: 2rem; margin-bottom: 2rem; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);" 
-             onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='6px 6px 0px #00a651';" 
-             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='4px 4px 0px #00a651';">
-          <div id="drumPatternGrid" style="display: grid; gap: 0.75rem;">
-            <!-- Grid will be generated by JavaScript -->
-          </div>
-        </div>
-
-        <!-- Presets -->
-        <div style="border: 2px solid #00a651; border-radius: 0.5rem; background: rgba(26, 26, 26, 0.7); box-shadow: 4px 4px 0px #00a651; padding: 1.5rem;">
+        <!-- Presets Section (moved here) -->
+        <div style="border: 2px solid #00a651; border-radius: 0.5rem; background: rgba(26, 26, 26, 0.7); box-shadow: 4px 4px 0px #00a651; padding: 1.5rem; margin-bottom: 1.5rem;">
           <h4 style="font-family: 'VT323', monospace; font-size: 1.5rem; color: #00a651; letter-spacing: 1px; margin-bottom: 1rem; text-align: center;">BEAT PRESETS</h4>
           <div class="flex flex-wrap gap-3 justify-center" id="drumPresets">
             <button class="drum-preset-btn" data-preset="Traffic jam groove">TRAFFIC JAM GROOVE</button>
             <button class="drum-preset-btn" data-preset="Robofunk">ROBOFUNK</button>
             <button class="drum-preset-btn" data-preset="Power pose">POWER POSE</button>
+          </div>
+        </div>
+
+        <!-- Sequencer Grid -->
+        <div style="border: 2px solid #00a651; border-radius: 0.5rem; background: rgba(26, 26, 26, 0.7); box-shadow: 4px 4px 0px #00a651; padding: 2rem; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);" 
+             onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='6px 6px 0px #00a651';" 
+             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='4px 4px 0px #00a651';">
+          <div id="drumPatternGrid" style="display: grid; gap: 0.75rem;">
+            <!-- Grid will be generated by JavaScript -->
           </div>
         </div>
       </div>
@@ -383,8 +450,8 @@
         noiseGain.gain.setValueAtTime(0.2, now);
         noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
 
-        osc.frequency.setValueAtTime(200, now);
-        osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+        osc.frequency.setValueAtTime(inst.frequency, now);
+        osc.frequency.exponentialRampToValueAtTime(inst.frequency * 0.5, now + 0.1);
         gain.gain.setValueAtTime(0.3, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
 
@@ -495,6 +562,9 @@
 
   function loadPreset(presetName) {
     if (presets[presetName]) {
+      // Update current preset tracking
+      currentPreset = presetName;
+      
       // Copy the pattern data
       pattern = {};
       instruments.forEach(inst => {
@@ -517,6 +587,37 @@
         }
       }
       
+      updatePattern();
+      updatePresetButtons();
+    }
+  }
+
+  // Update preset button visual states
+  function updatePresetButtons() {
+    document.querySelectorAll('.drum-preset-btn').forEach(btn => {
+      if (btn.dataset.preset === currentPreset) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+
+  // Change instrument configuration
+  function changeConfiguration(configName) {
+    if (instrumentConfigs[configName]) {
+      currentConfig = configName;
+      instruments = instrumentConfigs[configName];
+      
+      // Preserve pattern data if it exists
+      const tempPattern = {};
+      instruments.forEach(inst => {
+        tempPattern[inst.id] = pattern[inst.id] || new Array(STEPS).fill(0);
+      });
+      pattern = tempPattern;
+      
+      // Recreate grid with new configuration
+      createGrid();
       updatePattern();
     }
   }
@@ -617,8 +718,8 @@
         noiseGain.gain.setValueAtTime(0.2, startTime);
         noiseGain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.2);
 
-        osc.frequency.setValueAtTime(200, startTime);
-        osc.frequency.exponentialRampToValueAtTime(100, startTime + 0.1);
+        osc.frequency.setValueAtTime(inst.frequency, startTime);
+        osc.frequency.exponentialRampToValueAtTime(inst.frequency * 0.5, startTime + 0.1);
         gain.gain.setValueAtTime(0.3, startTime);
         gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.1);
 
@@ -723,6 +824,7 @@
     const downloadBtn = document.getElementById('drumDownloadBtn');
     const tempoSlider = document.getElementById('drumTempoSlider');
     const tempoValue = document.getElementById('drumTempoValue');
+    const configSelect = document.getElementById('drumConfigSelect');
 
     if (playBtn) playBtn.addEventListener('click', play);
     if (stopBtn) stopBtn.addEventListener('click', stop);
@@ -738,6 +840,12 @@
           pause();
           play();
         }
+      });
+    }
+
+    if (configSelect) {
+      configSelect.addEventListener('change', (e) => {
+        changeConfiguration(e.target.value);
       });
     }
 
