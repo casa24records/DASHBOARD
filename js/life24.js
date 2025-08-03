@@ -314,16 +314,13 @@ function createMagazineCard(magazine) {
   `;
   thumbnailContainer.appendChild(hoverOverlay);
   
-  // Magazine info
+  // Magazine info - Date subtitle removed
   const info = document.createElement('div');
   info.className = 'space-y-1';
   info.innerHTML = `
     <h3 class="text-xs sm:text-sm font-semibold text-white break-words line-clamp-2">
       ${magazine.displayName || magazine.name.replace('.pdf', '')}
     </h3>
-    <p class="text-xs text-gray-400">
-      ${magazine.date ? formatDisplayDate(magazine.date) : formatDisplayDate(magazine.modifiedTime)}
-    </p>
   `;
   
   card.appendChild(thumbnailContainer);
