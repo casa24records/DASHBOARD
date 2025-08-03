@@ -7,7 +7,7 @@
   const instrumentConfigs = {
     "Robocop": [
       { id: 'kick', label: 'KICK', frequency: 60 },
-      { id: 'snare', label: 'SNARE', frequency: 200 },
+      { id: 'snare', label: 'SNARE', frequency: 2000 },
       { id: 'hihat', label: 'HI-HAT', frequency: 800 },
       { id: 'openhat', label: 'OPEN HAT', frequency: 800 },
       { id: 'clap', label: 'CLAP', frequency: 1500 },
