@@ -364,7 +364,7 @@
     refresh: refresh
   };
 
-  // DO NOT auto-initialize - let main.js handle initialization
-  // Remove the DOMContentLoaded auto-initialization that was causing conflicts
+  // Signal that the module is loaded
+  window.CollectiveOverviewLoaded = true;
 
 })();
