@@ -1,4 +1,4 @@
-// Drum Machine Pro - MVP Max Mode with Maximum Capabilities
+// Drum Machine Pro - Complete MVP Implementation with Maximum Capabilities
 (function() {
   'use strict';
   
@@ -247,40 +247,40 @@
 
   initializeInstrumentParams();
 
-  // Preset patterns with improved grooves
+  // Updated preset patterns with the three specified patterns
   const presets = {
-    "Panama Classic": {
-      bpm: 105,
-      kick:    [1,0,0,0,1,0,0,1,1,0,0,0,1,0,0,0],
+    "Traffic jam groove": {
+      bpm: 109,
+      kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
       snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-      hihat:   [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,1],
-      openhat: [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      hihat:   [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
+      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
       clap:    [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-      crash:   [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
       rim:     [0,1,0,0,0,0,1,0,0,1,0,0,0,0,0,0],
       cowbell: [0,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0]
     },
-    "Trap Mode": {
-      bpm: 140,
-      kick:    [1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0],
-      snare:   [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
-      hihat:   [1,1,0,1,1,1,0,1,1,1,0,1,1,1,1,1],
-      openhat: [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
-      clap:    [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
-      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0],
-      cowbell: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    },
-    "Boom Bap": {
-      bpm: 90,
-      kick:    [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],
+    "Robofunk": {
+      bpm: 104,
+      kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
       snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-      hihat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
-      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-      clap:    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      hihat:   [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      clap:    [1,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],
       crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      cowbell: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      rim:     [0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0],
+      cowbell: [0,0,0,1,0,0,1,0,0,0,1,0,0,0,1,0]
+    },
+    "Power pose": {
+      bpm: 76,
+      kick:    [1,0,0,1,1,0,0,0,1,0,0,1,1,0,0,0],
+      snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hihat:   [0,0,1,0,0,0,1,0,0,0,1,0,1,0,1,0],
+      openhat: [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      clap:    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      crash:   [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      rim:     [0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      cowbell: [0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0]
     },
     "Future Funk": {
       bpm: 120,
@@ -310,6 +310,11 @@
   let selectedInstrument = null;
   let automationData = {};
   let recordedSamples = {};
+  let schedulerTimer = null;
+  let nextStepTime = 0.0;
+  let lookahead = 25.0; // ms
+  let scheduleAheadTime = 0.1; // seconds
+  let stepQueue = [];
 
   // Initialize empty pattern
   instruments.forEach(inst => {
@@ -334,13 +339,15 @@
     container.innerHTML = `
       <div class="dm-wrapper">
         <style>
-          /* Drum Machine Pro Styles - MVP Max Mode */
+          /* Drum Machine Pro Styles - Complete MVP Implementation */
           .dm-wrapper {
-            font-family: 'Space Mono', monospace;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
             border-radius: 1rem;
             padding: 1.5rem;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            user-select: none;
+            -webkit-user-select: none;
           }
 
           /* Header */
@@ -356,11 +363,13 @@
           }
 
           .dm-title {
-            font-family: 'VT323', monospace;
-            font-size: 2rem;
+            font-family: 'Courier New', monospace;
+            font-size: 2.5rem;
+            font-weight: bold;
             color: #00a651;
             text-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
             margin: 0;
+            letter-spacing: 2px;
           }
 
           .dm-header-controls {
@@ -433,7 +442,7 @@
             padding: 0.5rem 1rem;
             border-radius: 0.5rem;
             cursor: pointer;
-            font-family: 'Space Mono', monospace;
+            font-family: inherit;
             transition: all 0.2s;
           }
 
@@ -469,6 +478,7 @@
             align-items: center;
             gap: 0.5rem;
             text-transform: uppercase;
+            font-family: inherit;
           }
 
           .dm-btn:hover {
@@ -495,30 +505,6 @@
             background: #ff8533;
             border-color: #ff8533;
             box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
-          }
-
-          .dm-btn.random {
-            background: #9b59b6;
-            border-color: #9b59b6;
-            color: #fff;
-          }
-
-          .dm-btn.random:hover {
-            background: #8e44ad;
-            border-color: #8e44ad;
-            box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);
-          }
-
-          .dm-btn.record {
-            background: #e74c3c;
-            border-color: #e74c3c;
-            color: #fff;
-          }
-
-          .dm-btn.record:hover {
-            background: #c0392b;
-            border-color: #c0392b;
-            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
           }
 
           .dm-btn-icon {
@@ -565,12 +551,28 @@
             box-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
           }
 
-          /* Creative Controls */
+          /* Creative Effects Section */
+          .dm-creative-section {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+          }
+
+          .dm-creative-header {
+            text-align: center;
+            color: #00a651;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+          }
+
           .dm-creative-controls {
             display: flex;
             justify-content: center;
             gap: 0.5rem;
-            margin-bottom: 1rem;
             flex-wrap: wrap;
           }
 
@@ -696,8 +698,8 @@
           }
 
           .dm-track-btn {
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             border-radius: 0.25rem;
             border: 1px solid #444;
             background: #2a2a2a;
@@ -706,7 +708,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.625rem;
+            font-size: 0.75rem;
+            font-weight: bold;
             transition: all 0.2s;
             z-index: 11;
             position: relative;
@@ -1234,7 +1237,7 @@
           </button>
           <button class="dm-btn" id="dmClearBtn">
             <span class="dm-btn-icon">✕</span>
-            <span>CLEAR</span>
+            <span>CLEAR PATTERN</span>
           </button>
           <button class="dm-btn reset" id="dmResetBtn">
             <span class="dm-btn-icon">↺</span>
@@ -1246,36 +1249,31 @@
             <div class="dm-tempo-display" id="dmTempoDisplay">120 BPM</div>
           </div>
 
-          <button class="dm-btn random" id="dmRandomBtn">
-            <span class="dm-btn-icon">🎲</span>
-            <span>RANDOM</span>
-          </button>
-          <button class="dm-btn record" id="dmRecordBtn">
-            <span class="dm-btn-icon">⏺</span>
-            <span>REC</span>
-          </button>
           <button class="dm-btn" id="dmDownloadBtn">
             <span class="dm-btn-icon">💾</span>
             <span>EXPORT</span>
           </button>
         </div>
 
-        <!-- Creative Controls -->
-        <div class="dm-creative-controls">
-          <button class="dm-creative-btn" id="dmTapeStopBtn">TAPE STOP</button>
-          <button class="dm-creative-btn" id="dmStutterBtn">STUTTER</button>
-          <button class="dm-creative-btn" id="dmGlitchBtn">GLITCH</button>
-          <button class="dm-creative-btn" id="dmReverseBtn">REVERSE</button>
-          <button class="dm-creative-btn" id="dmGranularBtn">GRANULAR</button>
-          <button class="dm-creative-btn" id="dmLayeringBtn">LAYERING</button>
+        <!-- Creative FX Section -->
+        <div class="dm-creative-section">
+          <div class="dm-creative-header">CREATIVE FX</div>
+          <div class="dm-creative-controls">
+            <button class="dm-creative-btn" id="dmTapeStopBtn">TAPE STOP</button>
+            <button class="dm-creative-btn" id="dmStutterBtn">STUTTER</button>
+            <button class="dm-creative-btn" id="dmGlitchBtn">GLITCH</button>
+            <button class="dm-creative-btn" id="dmReverseBtn">REVERSE</button>
+            <button class="dm-creative-btn" id="dmGranularBtn">GRANULAR</button>
+            <button class="dm-creative-btn" id="dmLayeringBtn">LAYERING</button>
+          </div>
         </div>
 
         <!-- Preset Buttons -->
         <div class="dm-presets">
           <div class="dm-preset-section-title">PATTERNS</div>
-          <button class="dm-preset-btn" data-preset="Panama Classic">Panama Classic</button>
-          <button class="dm-preset-btn" data-preset="Trap Mode">Trap Mode</button>
-          <button class="dm-preset-btn" data-preset="Boom Bap">Boom Bap</button>
+          <button class="dm-preset-btn" data-preset="Traffic jam groove">Traffic jam groove</button>
+          <button class="dm-preset-btn" data-preset="Robofunk">Robofunk</button>
+          <button class="dm-preset-btn" data-preset="Power pose">Power pose</button>
           <button class="dm-preset-btn" data-preset="Future Funk">Future Funk</button>
         </div>
 
@@ -1327,7 +1325,7 @@
     createEffectsPanel();
     createCreativePanel();
     setupEventListeners();
-    loadPreset('Panama Classic');
+    loadPreset('Traffic jam groove');
   }
 
   // Create pattern grid
@@ -1438,7 +1436,7 @@
       mixerTracks.appendChild(channel);
     });
 
-    // Setup fader listeners
+    // Setup fader listeners with real-time updates
     document.querySelectorAll('.dm-mixer-fader').forEach(fader => {
       fader.addEventListener('input', (e) => {
         const inst = e.target.dataset.instrument;
@@ -1448,7 +1446,7 @@
       });
     });
 
-    // Setup layer buttons
+    // Setup layer buttons with real-time response
     document.querySelectorAll('.dm-layer-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const inst = e.target.dataset.instrument;
@@ -2213,7 +2211,7 @@
   }
 
   // Play sound with full effects chain and layering
-  function playSound(instId) {
+  function playSound(instId, time) {
     if (!audioContext) return;
 
     const inst = instruments.find(i => i.id === instId);
@@ -2223,7 +2221,7 @@
     if (isSolo && soloTrack !== instId) return;
 
     const params = globalParams.instrumentParams[instId];
-    const now = audioContext.currentTime;
+    const now = time || audioContext.currentTime;
 
     // Apply reverse probability
     const shouldReverse = globalParams.reverse.enabled && Math.random() < globalParams.reverse.probability;
@@ -2258,7 +2256,7 @@
     }
   }
 
-  // Core sound generation
+  // Core sound generation with optimized real-time performance
   function playSoundCore(inst, params, startTime, reverse = false) {
     const osc = audioContext.createOscillator();
     const oscGain = audioContext.createGain();
@@ -2496,13 +2494,29 @@
     switch(inst.id) {
       case 'kick':
         osc.frequency.setValueAtTime(150 * pitchMultiplier, now);
+        osc.frequency.exponentialRampToValueAtTime(inst.frequency * pitchMultiplier, now + 0.05);
         osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.5);
         osc.start(now);
         osc.stop(now + 0.5);
+        
+        // Sub oscillator
+        if (inst.subFreq) {
+          const subOsc = audioContext.createOscillator();
+          const subGain = audioContext.createGain();
+          subOsc.frequency.value = inst.subFreq * pitchMultiplier;
+          subOsc.type = 'sine';
+          subGain.gain.setValueAtTime(baseVolume * 0.5, now);
+          subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+          subOsc.connect(subGain);
+          subGain.connect(panner);
+          subOsc.start(now);
+          subOsc.stop(now + 0.5);
+        }
         break;
 
       case 'snare':
         osc.frequency.setValueAtTime(inst.frequency * pitchMultiplier, now);
+        osc.type = 'triangle';
         
         const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.2, audioContext.sampleRate);
         const noiseData = noiseBuffer.getChannelData(0);
@@ -2514,15 +2528,34 @@
         noise.buffer = noiseBuffer;
         const noiseGain = audioContext.createGain();
         const noisePanner = audioContext.createStereoPanner();
+        const noiseFilter = audioContext.createBiquadFilter();
+        
+        noiseFilter.type = 'highpass';
+        noiseFilter.frequency.value = 2000;
         noisePanner.pan.value = params.pan;
         
-        noise.connect(noiseGain);
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
         noiseGain.connect(noisePanner);
         noisePanner.connect(wetGain);
         noisePanner.connect(dryGain);
         
         noiseGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
         noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        
+        // Add sub tone
+        if (inst.subFreq) {
+          const subOsc = audioContext.createOscillator();
+          const subGain = audioContext.createGain();
+          subOsc.frequency.value = inst.subFreq * pitchMultiplier;
+          subOsc.type = 'sine';
+          subGain.gain.setValueAtTime(baseVolume * 0.3, now);
+          subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+          subOsc.connect(subGain);
+          subGain.connect(panner);
+          subOsc.start(now);
+          subOsc.stop(now + 0.2);
+        }
         
         osc.start(now);
         osc.stop(now + 0.2);
@@ -2540,45 +2573,104 @@
         hihatFilter.frequency.value = 5000;
         hihatFilter.Q.value = 1;
         
+        const hihatEnvFilter = audioContext.createBiquadFilter();
+        hihatEnvFilter.type = 'highpass';
+        hihatEnvFilter.frequency.setValueAtTime(8000, now);
+        hihatEnvFilter.frequency.exponentialRampToValueAtTime(2000, now + 0.1);
+        
         panner.disconnect();
         panner.connect(hihatFilter);
-        hihatFilter.connect(dryGain);
-        hihatFilter.connect(wetGain);
+        hihatFilter.connect(hihatEnvFilter);
+        hihatEnvFilter.connect(dryGain);
+        hihatEnvFilter.connect(wetGain);
+        
+        // Add metallic noise
+        const metalBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.1, audioContext.sampleRate);
+        const metalData = metalBuffer.getChannelData(0);
+        for (let i = 0; i < metalBuffer.length; i++) {
+          metalData[i] = (Math.random() * 2 - 1) * Math.sin(i * 0.1);
+        }
+        
+        const metalNoise = audioContext.createBufferSource();
+        metalNoise.buffer = metalBuffer;
+        const metalGain = audioContext.createGain();
+        metalGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
+        metalGain.gain.exponentialRampToValueAtTime(0.01, now + (inst.id === 'openhat' ? 0.3 : 0.05));
+        
+        metalNoise.connect(metalGain);
+        metalGain.connect(hihatFilter);
         
         const duration = inst.id === 'openhat' ? 0.3 : 0.05;
         osc.start(now);
         osc.stop(now + duration);
+        metalNoise.start(now);
+        metalNoise.stop(now + duration);
         break;
 
       case 'clap':
-        for (let i = 0; i < 3; i++) {
+        // Multi-layered clap
+        const clapLayers = 4;
+        for (let i = 0; i < clapLayers; i++) {
           const clapOsc = audioContext.createOscillator();
           const clapGain = audioContext.createGain();
+          const clapFilter = audioContext.createBiquadFilter();
           const clapPanner = audioContext.createStereoPanner();
           
-          clapOsc.frequency.value = inst.frequency * pitchMultiplier;
-          clapPanner.pan.value = params.pan;
+          clapOsc.frequency.value = inst.frequency * pitchMultiplier * (1 + i * 0.1);
+          clapOsc.type = 'square';
           
-          clapOsc.connect(clapGain);
+          clapFilter.type = 'bandpass';
+          clapFilter.frequency.value = 1500 + i * 200;
+          clapFilter.Q.value = 10;
+          
+          clapPanner.pan.value = params.pan + (Math.random() - 0.5) * 0.2;
+          
+          clapOsc.connect(clapFilter);
+          clapFilter.connect(clapGain);
           clapGain.connect(clapPanner);
           clapPanner.connect(dryGain);
           clapPanner.connect(wetGain);
           
           const startT = now + i * 0.01;
-          clapGain.gain.setValueAtTime(baseVolume * 0.3, startT);
+          clapGain.gain.setValueAtTime(baseVolume * 0.3 * (1 - i * 0.2), startT);
           clapGain.gain.exponentialRampToValueAtTime(0.01, startT + 0.02);
           
           clapOsc.start(startT);
           clapOsc.stop(startT + 0.02);
         }
         
+        // Add noise burst
+        const clapNoiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.03, audioContext.sampleRate);
+        const clapNoiseData = clapNoiseBuffer.getChannelData(0);
+        for (let i = 0; i < clapNoiseBuffer.length; i++) {
+          clapNoiseData[i] = Math.random() * 2 - 1;
+        }
+        
+        const clapNoise = audioContext.createBufferSource();
+        clapNoise.buffer = clapNoiseBuffer;
+        const clapNoiseGain = audioContext.createGain();
+        const clapNoiseFilter = audioContext.createBiquadFilter();
+        
+        clapNoiseFilter.type = 'highpass';
+        clapNoiseFilter.frequency.value = 1000;
+        
+        clapNoise.connect(clapNoiseFilter);
+        clapNoiseFilter.connect(clapNoiseGain);
+        clapNoiseGain.connect(panner);
+        
+        clapNoiseGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
+        clapNoiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+        
         osc.frequency.value = inst.frequency * pitchMultiplier;
         oscGain.gain.setValueAtTime(0, now);
         osc.start(now);
         osc.stop(now + 0.1);
+        clapNoise.start(now);
+        clapNoise.stop(now + 0.05);
         break;
 
       case 'crash':
+        // Complex metallic crash
         const crashBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 1.5, audioContext.sampleRate);
         const crashData = crashBuffer.getChannelData(0);
         for (let i = 0; i < crashBuffer.length; i++) {
@@ -2589,24 +2681,45 @@
         crashNoise.buffer = crashBuffer;
         const crashGain = audioContext.createGain();
         const crashFilter = audioContext.createBiquadFilter();
+        const crashFilter2 = audioContext.createBiquadFilter();
         const crashPanner = audioContext.createStereoPanner();
         
         crashFilter.type = 'bandpass';
         crashFilter.frequency.value = inst.frequency * pitchMultiplier;
         crashFilter.Q.value = 0.5;
+        
+        crashFilter2.type = 'highpass';
+        crashFilter2.frequency.value = 8000;
+        
         crashPanner.pan.value = params.pan;
         
         crashNoise.connect(crashGain);
         crashGain.connect(crashFilter);
-        crashFilter.connect(crashPanner);
+        crashFilter.connect(crashFilter2);
+        crashFilter2.connect(crashPanner);
         crashPanner.connect(dryGain);
         crashPanner.connect(wetGain);
         
-        crashGain.gain.setValueAtTime(baseVolume * 0.7, now);
+        crashGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
+        crashGain.gain.exponentialRampToValueAtTime(baseVolume * 0.3, now + 0.5);
         crashGain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+        
+        // Add shimmer
+        const shimmerOsc = audioContext.createOscillator();
+        const shimmerGain = audioContext.createGain();
+        shimmerOsc.frequency.value = inst.frequency * 2 * pitchMultiplier;
+        shimmerOsc.type = 'triangle';
+        
+        shimmerGain.gain.setValueAtTime(baseVolume * 0.2, now);
+        shimmerGain.gain.exponentialRampToValueAtTime(0.01, now + 1);
+        
+        shimmerOsc.connect(shimmerGain);
+        shimmerGain.connect(crashFilter2);
         
         crashNoise.start(now);
         crashNoise.stop(now + 1.5);
+        shimmerOsc.start(now);
+        shimmerOsc.stop(now + 1);
         
         oscGain.gain.value = 0;
         osc.start(now);
@@ -2619,18 +2732,47 @@
         
         const clickOsc = audioContext.createOscillator();
         const clickGain = audioContext.createGain();
+        const clickFilter = audioContext.createBiquadFilter();
         const clickPanner = audioContext.createStereoPanner();
         
-        clickOsc.frequency.value = 2000;
+        clickOsc.frequency.value = 2000 * pitchMultiplier;
+        clickOsc.type = 'square';
+        
+        clickFilter.type = 'highpass';
+        clickFilter.frequency.value = 1000;
+        
         clickPanner.pan.value = params.pan;
         
-        clickOsc.connect(clickGain);
+        clickOsc.connect(clickFilter);
+        clickFilter.connect(clickGain);
         clickGain.connect(clickPanner);
         clickPanner.connect(dryGain);
         clickPanner.connect(wetGain);
         
-        clickGain.gain.setValueAtTime(baseVolume * 0.2, now);
+        clickGain.gain.setValueAtTime(baseVolume * 0.5, now);
         clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.01);
+        
+        // Add wood tone
+        if (inst.noiseAmount > 0) {
+          const woodBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.05, audioContext.sampleRate);
+          const woodData = woodBuffer.getChannelData(0);
+          for (let i = 0; i < woodBuffer.length; i++) {
+            woodData[i] = (Math.random() * 2 - 1) * Math.exp(-i * 0.0001);
+          }
+          
+          const woodNoise = audioContext.createBufferSource();
+          woodNoise.buffer = woodBuffer;
+          const woodGain = audioContext.createGain();
+          
+          woodGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
+          woodGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+          
+          woodNoise.connect(woodGain);
+          woodGain.connect(panner);
+          
+          woodNoise.start(now);
+          woodNoise.stop(now + 0.05);
+        }
         
         osc.start(now);
         osc.stop(now + 0.05);
@@ -2641,15 +2783,38 @@
       case 'cowbell':
         const cowbellOsc2 = audioContext.createOscillator();
         const cowbellGain2 = audioContext.createGain();
+        const cowbellFilter = audioContext.createBiquadFilter();
         
         osc.frequency.value = inst.frequency * pitchMultiplier;
         cowbellOsc2.frequency.value = inst.frequency * 1.48 * pitchMultiplier;
         
-        cowbellOsc2.connect(cowbellGain2);
-        cowbellGain2.connect(panner);
+        osc.type = 'square';
+        cowbellOsc2.type = 'square';
         
-        cowbellGain2.gain.setValueAtTime(baseVolume * 0.3, now);
+        cowbellFilter.type = 'bandpass';
+        cowbellFilter.frequency.value = inst.frequency * pitchMultiplier;
+        cowbellFilter.Q.value = 15;
+        
+        cowbellOsc2.connect(cowbellGain2);
+        cowbellGain2.connect(cowbellFilter);
+        cowbellFilter.connect(panner);
+        
+        cowbellGain2.gain.setValueAtTime(baseVolume * 0.4, now);
         cowbellGain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        
+        // Add sub frequency if present
+        if (inst.subFreq) {
+          const subOsc = audioContext.createOscillator();
+          const subGain = audioContext.createGain();
+          subOsc.frequency.value = inst.subFreq * pitchMultiplier;
+          subOsc.type = 'sine';
+          subGain.gain.setValueAtTime(baseVolume * 0.3, now);
+          subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+          subOsc.connect(subGain);
+          subGain.connect(panner);
+          subOsc.start(now);
+          subOsc.stop(now + 0.2);
+        }
         
         osc.start(now);
         osc.stop(now + 0.2);
@@ -2664,63 +2829,79 @@
     }
   }
 
-  // Sequencer functions
-  function advanceSequencer() {
+  // Sequencer functions with lookahead scheduling
+  function scheduler() {
+    if (!isPlaying) return;
+    
+    while (nextStepTime < audioContext.currentTime + scheduleAheadTime) {
+      scheduleNote(currentStep, nextStepTime);
+      nextStep();
+    }
+    
+    schedulerTimer = setTimeout(scheduler, lookahead);
+  }
+
+  function scheduleNote(beatNumber, time) {
+    // Queue the visual update
+    stepQueue.push({ step: beatNumber, time: time });
+    
+    // Schedule sounds for this step
+    instruments.forEach(inst => {
+      if (pattern[inst.id][beatNumber]) {
+        playSound(inst.id, time);
+      }
+    });
+  }
+
+  function nextStep() {
+    const tempo = parseInt(document.getElementById('dmTempoSlider').value);
+    const secondsPerBeat = 60.0 / tempo / 4; // 16th notes
+    
+    // Apply swing if needed
+    if (globalParams.swing > 0 && currentStep % 2 === 1) {
+      const swingAmount = secondsPerBeat * (globalParams.swing / 100) * 0.5;
+      nextStepTime += secondsPerBeat + swingAmount;
+    } else if (globalParams.swing > 0 && currentStep % 2 === 0) {
+      const swingAmount = secondsPerBeat * (globalParams.swing / 100) * 0.5;
+      nextStepTime += secondsPerBeat - swingAmount;
+    } else {
+      nextStepTime += secondsPerBeat;
+    }
+    
+    currentStep = (currentStep + 1) % STEPS;
+  }
+
+  function processStepQueue() {
+    const currentTime = audioContext.currentTime;
+    const lookaheadTime = 0.1;
+    
+    while (stepQueue.length && stepQueue[0].time < currentTime + lookaheadTime) {
+      const currentNote = stepQueue.shift();
+      
+      // Calculate delay for visual update
+      const delay = Math.max(0, (currentNote.time - currentTime) * 1000);
+      
+      setTimeout(() => {
+        updateStepVisual(currentNote.step);
+      }, delay);
+    }
+    
+    requestAnimationFrame(processStepQueue);
+  }
+
+  function updateStepVisual(stepNumber) {
+    // Clear previous playing states
     document.querySelectorAll('.dm-step').forEach(el => {
       el.classList.remove('playing');
     });
-
-    // Apply swing and humanize
-    let swingDelay = 0;
-    if (globalParams.swing > 0 && currentStep % 2 === 1) {
-      const tempo = parseInt(document.getElementById('dmTempoSlider').value);
-      const stepTime = (60 / tempo / 4);
-      swingDelay = stepTime * (globalParams.swing / 100) * 0.5;
-    }
-
-    // Add humanize timing
-    const humanizeDelay = globalParams.humanize ? (Math.random() - 0.5) * globalParams.humanize * 0.01 : 0;
-
-    setTimeout(() => {
-      instruments.forEach(inst => {
-        const el = document.querySelector(`[data-instrument="${inst.id}"][data-step="${currentStep}"]`);
-        if (el) {
-          el.classList.add('playing');
-          if (pattern[inst.id][currentStep]) {
-            // Add humanize velocity
-            const humanizeVelocity = globalParams.humanize ? 
-              1 + (Math.random() - 0.5) * globalParams.humanize * 0.02 : 1;
-            
-            const originalVolume = globalParams.instrumentParams[inst.id].volume;
-            globalParams.instrumentParams[inst.id].volume *= humanizeVelocity;
-            
-            playSound(inst.id);
-            
-            globalParams.instrumentParams[inst.id].volume = originalVolume;
-          }
-        }
-      });
-
-      // Tape stop effect
-      if (globalParams.tapeStop.enabled && globalParams.tapeStop.active) {
-        const currentTempo = parseInt(document.getElementById('dmTempoSlider').value);
-        const slowdown = currentTempo * (1 - globalParams.tapeStop.speed / 100);
-        document.getElementById('dmTempoSlider').value = slowdown;
-        document.getElementById('dmTempoDisplay').textContent = `${Math.round(slowdown)} BPM`;
-        
-        setTimeout(() => {
-          globalParams.tapeStop.active = false;
-          document.getElementById('dmTempoSlider').value = currentTempo;
-          document.getElementById('dmTempoDisplay').textContent = `${currentTempo} BPM`;
-          if (isPlaying) {
-            pause();
-            play();
-          }
-        }, 2000);
+    
+    // Highlight current step
+    instruments.forEach(inst => {
+      const el = document.querySelector(`[data-instrument="${inst.id}"][data-step="${stepNumber}"]`);
+      if (el) {
+        el.classList.add('playing');
       }
-    }, (swingDelay + humanizeDelay) * 1000);
-
-    currentStep = (currentStep + 1) % STEPS;
+    });
   }
 
   // Transport controls
@@ -2729,15 +2910,18 @@
 
     if (!isPlaying) {
       isPlaying = true;
-      const tempo = parseInt(document.getElementById('dmTempoSlider').value);
-      const interval = (60 / tempo / 4) * 1000;
-
+      
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      
+      nextStepTime = audioContext.currentTime;
+      scheduler();
+      requestAnimationFrame(processStepQueue);
+      
       const playBtn = document.getElementById('dmPlayBtn');
       playBtn.classList.add('active');
       playBtn.querySelector('span:last-child').textContent = 'PAUSE';
-
-      advanceSequencer();
-      intervalId = setInterval(advanceSequencer, interval);
     } else {
       pause();
     }
@@ -2745,7 +2929,8 @@
 
   function pause() {
     isPlaying = false;
-    clearInterval(intervalId);
+    clearTimeout(schedulerTimer);
+    
     const playBtn = document.getElementById('dmPlayBtn');
     if (playBtn) {
       playBtn.classList.remove('active');
@@ -2756,6 +2941,7 @@
   function stop() {
     pause();
     currentStep = 0;
+    stepQueue = [];
     document.querySelectorAll('.dm-step').forEach(el => {
       el.classList.remove('playing');
     });
@@ -2798,52 +2984,6 @@
     });
   }
 
-  // Random pattern generation
-  function randomizePattern() {
-    instruments.forEach(inst => {
-      for (let i = 0; i < STEPS; i++) {
-        // Different probability for different instruments
-        let probability = 0.3;
-        if (inst.id === 'kick') probability = 0.4;
-        if (inst.id === 'hihat') probability = 0.5;
-        if (inst.id === 'crash') probability = 0.05;
-        
-        pattern[inst.id][i] = Math.random() < probability ? 1 : 0;
-      }
-    });
-    updatePattern();
-  }
-
-  function randomizeKit() {
-    const kits = Object.keys(instrumentConfigs);
-    const randomKit = kits[Math.floor(Math.random() * kits.length)];
-    document.getElementById('dmKitSelect').value = randomKit;
-    changeConfiguration(randomKit);
-  }
-
-  function randomizeEffects() {
-    // Randomly enable/disable effects
-    globalParams.reverb.enabled = Math.random() > 0.5;
-    globalParams.delay.enabled = Math.random() > 0.5;
-    globalParams.filter.enabled = Math.random() > 0.5;
-    globalParams.distortion.enabled = Math.random() > 0.7;
-    globalParams.chorus.enabled = Math.random() > 0.7;
-    
-    // Randomize some parameters
-    if (globalParams.reverb.enabled) {
-      globalParams.reverb.mix = Math.random() * 0.5;
-    }
-    if (globalParams.delay.enabled) {
-      globalParams.delay.time = Math.random() * 500 + 100;
-      globalParams.delay.feedback = Math.random() * 0.5;
-    }
-    if (globalParams.filter.enabled) {
-      globalParams.filter.frequency = Math.random() * 10000 + 500;
-    }
-    
-    updateAllControls();
-  }
-
   // Preset management
   function loadPreset(presetName) {
     if (presets[presetName]) {
@@ -2856,7 +2996,8 @@
             if (i < 16) {
               pattern[inst.id][i] = presetData[i] || 0;
             } else {
-              pattern[inst.id][i] = presetData[i - 16] || 0;
+              // For 8-bar mode, duplicate the pattern
+              pattern[inst.id][i] = currentBarMode === 8 ? (presetData[i - 16] || 0) : 0;
             }
           }
         }
@@ -2925,6 +3066,7 @@
     const newSteps = bars * 4;
     
     if (currentBarMode === 4 && bars === 8) {
+      // Duplicate pattern when expanding to 8 bars
       instruments.forEach(inst => {
         for (let i = 16; i < 32; i++) {
           pattern[inst.id][i] = pattern[inst.id][i - 16];
@@ -2949,17 +3091,22 @@
     }
   }
 
-  // Reset to defaults
+  // Reset to defaults (preserves pattern)
   function resetToDefaults() {
-    if (confirm('Reset all settings to defaults? This will not clear your pattern.')) {
-      globalParams = JSON.parse(JSON.stringify(defaultGlobalParams));
-      initializeInstrumentParams();
-      updateAllControls();
-      
-      if (isPlaying) {
-        pause();
-        play();
-      }
+    // Reset all parameters to default without clearing pattern
+    globalParams = JSON.parse(JSON.stringify(defaultGlobalParams));
+    initializeInstrumentParams();
+    updateAllControls();
+    
+    // Re-initialize effect states
+    if (effectsChain.reverb) {
+      effectsChain.reverb.wetGain.gain.value = 0;
+      effectsChain.reverb.dryGain.gain.value = 1;
+    }
+    
+    if (isPlaying) {
+      pause();
+      play();
     }
   }
 
@@ -2983,6 +3130,14 @@
         updateEffectUI(effectName, globalParams[key]);
       }
     });
+    
+    // Update creative effect buttons
+    document.getElementById('dmTapeStopBtn')?.classList.toggle('active', globalParams.tapeStop.enabled);
+    document.getElementById('dmStutterBtn')?.classList.toggle('active', globalParams.stutter.enabled);
+    document.getElementById('dmGlitchBtn')?.classList.toggle('active', globalParams.glitch.enabled);
+    document.getElementById('dmReverseBtn')?.classList.toggle('active', globalParams.reverse.enabled);
+    document.getElementById('dmGranularBtn')?.classList.toggle('active', globalParams.granular.enabled);
+    document.getElementById('dmLayeringBtn')?.classList.toggle('active', globalParams.layering);
     
     createMixerChannels();
   }
@@ -3068,7 +3223,7 @@
     });
   }
 
-  // WAV export with high quality
+  // WAV export with casa24beat naming
   async function downloadLoop() {
     initAudio();
 
@@ -3146,7 +3301,12 @@
       const url = URL.createObjectURL(wavBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `drum-machine-pro-${Date.now()}.wav`;
+      
+      // Generate casa24beat filename with timestamp
+      const now = new Date();
+      const timestamp = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+      a.download = `casa24beat-${timestamp}.wav`;
+      
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -3222,28 +3382,6 @@
     document.getElementById('dmClearBtn')?.addEventListener('click', clear);
     document.getElementById('dmResetBtn')?.addEventListener('click', resetToDefaults);
     document.getElementById('dmDownloadBtn')?.addEventListener('click', downloadLoop);
-    
-    // Random buttons
-    document.getElementById('dmRandomBtn')?.addEventListener('click', () => {
-      const randomType = Math.floor(Math.random() * 3);
-      switch(randomType) {
-        case 0:
-          randomizePattern();
-          break;
-        case 1:
-          randomizeKit();
-          break;
-        case 2:
-          randomizeEffects();
-          break;
-      }
-    });
-    
-    // Record button (automation placeholder)
-    document.getElementById('dmRecordBtn')?.addEventListener('click', () => {
-      globalParams.automation.recording = !globalParams.automation.recording;
-      document.getElementById('dmRecordBtn').classList.toggle('active');
-    });
 
     // Master volume
     const masterSlider = document.getElementById('dmMasterSlider');
@@ -3383,7 +3521,7 @@
     setupAllEffectControls();
   }
 
-  // Setup effect controls
+  // Setup effect controls with real-time parameter updates
   function setupAllEffectControls() {
     // Standard effects
     setupEffectToggle('dmReverbToggle', 'reverb');
@@ -3431,6 +3569,9 @@
     
     setupEffectToggle('dmGranularToggle', 'granular');
     setupEffectSliders('Granular', 'granular');
+    
+    // Setup preset/mode buttons
+    setupEffectPresets();
   }
 
   function setupEffectToggle(toggleId, effectName) {
@@ -3464,6 +3605,48 @@
           }
         });
       }
+    });
+  }
+
+  function setupEffectPresets() {
+    // Reverb presets
+    document.querySelectorAll('#dmReverbUnit .dm-effect-preset-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const preset = e.target.dataset.preset;
+        globalParams.reverb.preset = preset;
+        document.querySelectorAll('#dmReverbUnit .dm-effect-preset-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+      });
+    });
+    
+    // Delay modes
+    document.querySelectorAll('#dmDelayUnit .dm-effect-preset-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const mode = e.target.dataset.mode;
+        globalParams.delay.pingPong = mode === 'pingpong';
+        document.querySelectorAll('#dmDelayUnit .dm-effect-preset-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+      });
+    });
+    
+    // Filter modes
+    document.querySelectorAll('.dm-filter-mode-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const mode = e.target.dataset.mode;
+        globalParams.filter.type = mode;
+        document.querySelectorAll('.dm-filter-mode-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+      });
+    });
+    
+    // Distortion types
+    document.querySelectorAll('#dmDistUnit .dm-effect-preset-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const type = e.target.dataset.type;
+        globalParams.distortion.type = type;
+        document.querySelectorAll('#dmDistUnit .dm-effect-preset-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+      });
     });
   }
 
@@ -3506,7 +3689,8 @@
       // Convert percentage values
       if (param.includes('mix') || param.includes('probability') || 
           param.includes('depth') || param.includes('overlap') || 
-          param.includes('intensity') || param.includes('frequency')) {
+          param.includes('intensity') || param.includes('frequency') ||
+          param.includes('speed')) {
         globalParams[effectName][param] = value / 100;
       } else {
         globalParams[effectName][param] = value;
@@ -3535,10 +3719,7 @@
     stop: stop,
     clear: clear,
     loadPreset: loadPreset,
-    resetToDefaults: resetToDefaults,
-    randomizePattern: randomizePattern,
-    randomizeKit: randomizeKit,
-    randomizeEffects: randomizeEffects
+    resetToDefaults: resetToDefaults
   };
 
   // Auto-initialize
