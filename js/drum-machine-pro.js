@@ -1,10 +1,15 @@
-// Casa 24 Drum Machine Pro - Optimized Version with All Fixes Applied
+// Drum Machine Pro - Production MVP with Industry Standards Applied
 (function() {
   // Configuration
-  let STEPS = 16; // Now dynamic for 4-bar/8-bar support
+  let STEPS = 16; // Dynamic for 4-bar/8-bar support
   let currentBarMode = 4; // 4 or 8 bars
   
-  // Enhanced instrument configuration with 10 kits total
+  // Industry-standard gain staging constants
+  const REFERENCE_LEVEL = -18; // dBFS average operating level
+  const HEADROOM = 6; // dB of headroom
+  const MASTER_GAIN_DEFAULT = 0.7; // ~-3dB from unity for safety
+  
+  // Enhanced instrument configuration with 10 kits
   const instrumentConfigs = {
     "Robocop": [
       { id: 'kick', label: 'KICK', icon: '🥁', frequency: 60, subFreq: 40, noiseAmount: 0 },
@@ -13,7 +18,7 @@
       { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 800, subFreq: 0, noiseAmount: 0.4 },
       { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1500, subFreq: 0, noiseAmount: 0.1 },
       { id: 'crash', label: 'CRASH', icon: '💥', frequency: 2000, subFreq: 0, noiseAmount: 0.5 },
-      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 400, subFreq: 0, noiseAmount: 0.05 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 400, subFreq: 0, noiseAmount: 0.05 },
       { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 800, subFreq: 0, noiseAmount: 0 }
     ],
     "Boom-bap": [
@@ -23,7 +28,7 @@
       { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 7000, subFreq: 0, noiseAmount: 0.5 },
       { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2000, subFreq: 0, noiseAmount: 0.15 },
       { id: 'crash', label: 'CRASH', icon: '💥', frequency: 11000, subFreq: 0, noiseAmount: 0.6 },
-      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 1000, subFreq: 0, noiseAmount: 0.08 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 1000, subFreq: 0, noiseAmount: 0.08 },
       { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 900, subFreq: 0, noiseAmount: 0 }
     ],
     "Lo-fi": [
@@ -33,7 +38,7 @@
       { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 4500, subFreq: 0, noiseAmount: 0.55 },
       { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1000, subFreq: 0, noiseAmount: 0.2 },
       { id: 'crash', label: 'CRASH', icon: '💥', frequency: 9000, subFreq: 0, noiseAmount: 0.65 },
-      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 800, subFreq: 0, noiseAmount: 0.1 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 800, subFreq: 0, noiseAmount: 0.1 },
       { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 700, subFreq: 0, noiseAmount: 0.02 }
     ],
     "Trap Lord": [
@@ -43,7 +48,7 @@
       { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 9000, subFreq: 0, noiseAmount: 0.7 },
       { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1800, subFreq: 0, noiseAmount: 0.12 },
       { id: 'crash', label: 'CRASH', icon: '💥', frequency: 12000, subFreq: 0, noiseAmount: 0.8 },
-      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 500, subFreq: 0, noiseAmount: 0.03 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 500, subFreq: 0, noiseAmount: 0.03 },
       { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 850, subFreq: 0, noiseAmount: 0 }
     ],
     "Latin Fusion": [
@@ -53,7 +58,7 @@
       { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 6000, subFreq: 0, noiseAmount: 0.45 },
       { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2500, subFreq: 0, noiseAmount: 0.08 },
       { id: 'crash', label: 'CRASH', icon: '💥', frequency: 10000, subFreq: 0, noiseAmount: 0.7 },
-      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 1200, subFreq: 0, noiseAmount: 0.04 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 1200, subFreq: 0, noiseAmount: 0.04 },
       { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 950, subFreq: 0, noiseAmount: 0.01 }
     ],
     "Panama Heat": [
@@ -63,7 +68,7 @@
       { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 7500, subFreq: 0, noiseAmount: 0.6 },
       { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1600, subFreq: 0, noiseAmount: 0.14 },
       { id: 'crash', label: 'CRASH', icon: '💥', frequency: 11500, subFreq: 0, noiseAmount: 0.75 },
-      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 600, subFreq: 0, noiseAmount: 0.06 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 600, subFreq: 0, noiseAmount: 0.06 },
       { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 1050, subFreq: 0, noiseAmount: 0 }
     ],
     "Digital Grime": [
@@ -73,7 +78,7 @@
       { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 10000, subFreq: 0, noiseAmount: 0.8 },
       { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2200, subFreq: 0, noiseAmount: 0.25 },
       { id: 'crash', label: 'CRASH', icon: '💥', frequency: 14000, subFreq: 0, noiseAmount: 0.9 },
-      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 700, subFreq: 0, noiseAmount: 0.15 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 700, subFreq: 0, noiseAmount: 0.15 },
       { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 750, subFreq: 0, noiseAmount: 0.05 }
     ],
     "Smooth Jazz": [
@@ -83,7 +88,7 @@
       { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 4000, subFreq: 0, noiseAmount: 0.3 },
       { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1200, subFreq: 0, noiseAmount: 0.05 },
       { id: 'crash', label: 'CRASH', icon: '💥', frequency: 8000, subFreq: 0, noiseAmount: 0.4 },
-      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 350, subFreq: 0, noiseAmount: 0.02 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 350, subFreq: 0, noiseAmount: 0.02 },
       { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 680, subFreq: 0, noiseAmount: 0 }
     ],
     "Future Bass": [
@@ -93,7 +98,7 @@
       { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 9500, subFreq: 0, noiseAmount: 0.75 },
       { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2000, subFreq: 0, noiseAmount: 0.18 },
       { id: 'crash', label: 'CRASH', icon: '💥', frequency: 13000, subFreq: 0, noiseAmount: 0.85 },
-      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 450, subFreq: 0, noiseAmount: 0.07 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 450, subFreq: 0, noiseAmount: 0.07 },
       { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 920, subFreq: 0, noiseAmount: 0.02 }
     ],
     "Street Heat": [
@@ -103,7 +108,7 @@
       { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 8000, subFreq: 0, noiseAmount: 0.65 },
       { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1700, subFreq: 0, noiseAmount: 0.13 },
       { id: 'crash', label: 'CRASH', icon: '💥', frequency: 11800, subFreq: 0, noiseAmount: 0.78 },
-      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 550, subFreq: 0, noiseAmount: 0.09 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 550, subFreq: 0, noiseAmount: 0.09 },
       { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 880, subFreq: 0, noiseAmount: 0.01 }
     ]
   };
@@ -112,30 +117,78 @@
   let currentConfig = "Robocop";
   let instruments = instrumentConfigs[currentConfig];
 
-  // Global effects parameters with accurate defaults
-  let globalParams = {
-    // Per-instrument parameters
+  // Default parameters with industry-standard values
+  const defaultGlobalParams = {
+    masterVolume: MASTER_GAIN_DEFAULT,
     instrumentParams: {},
-    // Global effects with accurate implementation
-    reverb: { enabled: false, mix: 0.3 },
-    delay: { enabled: false, time: 250, feedback: 0.3 },
-    filter: { enabled: false, frequency: 20000, type: 'lowpass' },
-    compression: { enabled: false, threshold: -20, ratio: 4 },
+    // Effects with professional defaults
+    reverb: { 
+      enabled: false, 
+      mix: 0.25, // 25% typical for drums
+      preset: 'room' // room, hall, plate
+    },
+    delay: { 
+      enabled: false, 
+      time: 250, // ms
+      feedback: 0.3, // 30% safe from self-oscillation
+      mix: 0.2,
+      pingPong: false
+    },
+    filter: { 
+      enabled: false, 
+      frequency: 20000, // Hz
+      type: 'lowpass',
+      resonance: 1 // Q factor
+    },
+    compression: { 
+      enabled: false, 
+      threshold: -20, // dB
+      ratio: 4, // 4:1 moderate compression
+      attack: 0.003,
+      release: 0.25
+    },
+    distortion: {
+      enabled: false,
+      amount: 0.1, // 10% drive
+      tone: 0.5
+    },
+    chorus: {
+      enabled: false,
+      rate: 1.5, // Hz
+      depth: 0.3,
+      mix: 0.3
+    },
+    bitcrusher: {
+      enabled: false,
+      bits: 8,
+      downsample: 1
+    },
+    stereoWidth: {
+      enabled: false,
+      width: 1.0 // 0 = mono, 1 = normal, 2 = extra wide
+    },
     swing: 0,
     humanize: 0
   };
 
-  // Initialize instrument parameters
-  instruments.forEach(inst => {
-    globalParams.instrumentParams[inst.id] = {
-      volume: 0.7,
-      pitch: 0,
-      decay: 1.0,
-      pan: 0
-    };
-  });
+  // Global parameters (deep clone of defaults)
+  let globalParams = JSON.parse(JSON.stringify(defaultGlobalParams));
 
-  // Updated preset patterns - removed old ones and added new ones
+  // Initialize instrument parameters with defaults
+  function initializeInstrumentParams() {
+    instruments.forEach(inst => {
+      globalParams.instrumentParams[inst.id] = {
+        volume: 0.7,
+        pitch: 0, // semitones (-12 to +12 standard)
+        decay: 1.0,
+        pan: 0 // -1 to +1
+      };
+    });
+  }
+
+  initializeInstrumentParams();
+
+  // Preset patterns
   const presets = {
     "Traffic jam groove": {
       bpm: 109,
@@ -190,9 +243,19 @@
 
   // Initialize empty pattern
   instruments.forEach(inst => {
-    pattern[inst.id] = new Array(32).fill(0); // Max size for 8-bar
+    pattern[inst.id] = new Array(32).fill(0);
     isMuted[inst.id] = false;
   });
+
+  // Utility: Convert dB to linear gain
+  function dbToGain(db) {
+    return Math.pow(10, db / 20);
+  }
+
+  // Utility: Convert linear gain to dB
+  function gainToDb(gain) {
+    return 20 * Math.log10(Math.max(0.0001, gain));
+  }
 
   // Create the drum machine HTML with improved UI
   function createDrumMachine() {
@@ -235,6 +298,50 @@
             gap: 1rem;
             align-items: center;
             flex-wrap: wrap;
+          }
+
+          .dm-master-volume {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 0.5rem;
+            border: 1px solid #00a651;
+          }
+
+          .dm-master-label {
+            color: #00a651;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+          }
+
+          .dm-master-slider {
+            width: 100px;
+            height: 4px;
+            background: #333;
+            outline: none;
+            border-radius: 2px;
+            cursor: pointer;
+            -webkit-appearance: none;
+          }
+
+          .dm-master-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #00a651;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
+          }
+
+          .dm-master-value {
+            color: #00a651;
+            font-size: 0.75rem;
+            min-width: 40px;
+            text-align: right;
           }
 
           .dm-kit-selector {
@@ -312,6 +419,18 @@
             color: #1a1a1a;
             border-color: #00a651;
             box-shadow: 0 0 20px rgba(0, 166, 81, 0.5);
+          }
+
+          .dm-btn.reset {
+            background: #ff6b00;
+            border-color: #ff6b00;
+            color: #1a1a1a;
+          }
+
+          .dm-btn.reset:hover {
+            background: #ff8533;
+            border-color: #ff8533;
+            box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
           }
 
           .dm-btn-icon {
@@ -571,7 +690,7 @@
             font-size: 0.625rem;
           }
 
-          /* Mixer Panel */
+          /* Mixer/Effects Toggle */
           .dm-mixer-toggle {
             display: flex;
             justify-content: center;
@@ -596,6 +715,7 @@
             border-bottom: none;
           }
 
+          /* Mixer Panel */
           .dm-mixer-panel {
             background: rgba(0, 0, 0, 0.3);
             border-radius: 0.75rem;
@@ -648,8 +768,8 @@
           }
 
           .dm-mixer-fader {
-            writing-mode: bt-lr; /* IE */
-            -webkit-appearance: slider-vertical; /* WebKit */
+            writing-mode: bt-lr;
+            -webkit-appearance: slider-vertical;
             width: 30px;
             height: 100px;
             background: #333;
@@ -835,12 +955,14 @@
             cursor: pointer;
           }
 
+          .dm-effect-preset-selector,
           .dm-filter-mode-selector {
             display: flex;
             gap: 0.5rem;
             margin-top: 0.5rem;
           }
 
+          .dm-effect-preset-btn,
           .dm-filter-mode-btn {
             flex: 1;
             padding: 0.25rem;
@@ -851,8 +973,10 @@
             cursor: pointer;
             font-size: 0.625rem;
             transition: all 0.2s;
+            text-transform: uppercase;
           }
 
+          .dm-effect-preset-btn.active,
           .dm-filter-mode-btn.active {
             background: #00a651;
             color: #1a1a1a;
@@ -906,6 +1030,12 @@
         <div class="dm-header">
           <h2 class="dm-title">DRUM MACHINE PRO</h2>
           <div class="dm-header-controls">
+            <div class="dm-master-volume">
+              <span class="dm-master-label">MASTER</span>
+              <input type="range" class="dm-master-slider" id="dmMasterSlider" 
+                     min="0" max="100" value="${Math.round(globalParams.masterVolume * 100)}">
+              <span class="dm-master-value" id="dmMasterValue">${Math.round(globalParams.masterVolume * 100)}%</span>
+            </div>
             <div class="dm-kit-selector">
               <span class="dm-kit-label">Sound Kit:</span>
               <select class="dm-kit-select" id="dmKitSelect">
@@ -937,6 +1067,10 @@
           <button class="dm-btn" id="dmClearBtn">
             <span class="dm-btn-icon">✕</span>
             <span>CLEAR</span>
+          </button>
+          <button class="dm-btn reset" id="dmResetBtn">
+            <span class="dm-btn-icon">↺</span>
+            <span>RESET</span>
           </button>
           
           <div class="dm-tempo-control">
@@ -983,9 +1117,14 @@
               <div class="dm-effect-controls">
                 <div class="dm-effect-param">
                   <span class="dm-effect-param-label">Mix</span>
-                  <span class="dm-effect-param-value" id="dmReverbMixVal">30%</span>
+                  <span class="dm-effect-param-value" id="dmReverbMixVal">25%</span>
                 </div>
-                <input type="range" class="dm-effect-slider" id="dmReverbMix" min="0" max="100" value="30">
+                <input type="range" class="dm-effect-slider" id="dmReverbMix" min="0" max="100" value="25">
+                <div class="dm-effect-preset-selector">
+                  <button class="dm-effect-preset-btn active" data-preset="room">ROOM</button>
+                  <button class="dm-effect-preset-btn" data-preset="hall">HALL</button>
+                  <button class="dm-effect-preset-btn" data-preset="plate">PLATE</button>
+                </div>
               </div>
             </div>
 
@@ -1005,7 +1144,16 @@
                   <span class="dm-effect-param-label">Feedback</span>
                   <span class="dm-effect-param-value" id="dmDelayFeedbackVal">30%</span>
                 </div>
-                <input type="range" class="dm-effect-slider" id="dmDelayFeedback" min="0" max="90" value="30">
+                <input type="range" class="dm-effect-slider" id="dmDelayFeedback" min="0" max="85" value="30">
+                <div class="dm-effect-param">
+                  <span class="dm-effect-param-label">Mix</span>
+                  <span class="dm-effect-param-value" id="dmDelayMixVal">20%</span>
+                </div>
+                <input type="range" class="dm-effect-slider" id="dmDelayMixSlider" min="0" max="100" value="20">
+                <div class="dm-effect-preset-selector">
+                  <button class="dm-effect-preset-btn active" data-mode="normal">NORMAL</button>
+                  <button class="dm-effect-preset-btn" data-mode="pingpong">PING-PONG</button>
+                </div>
               </div>
             </div>
 
@@ -1021,6 +1169,11 @@
                   <span class="dm-effect-param-value" id="dmFilterCutoffVal">20.0kHz</span>
                 </div>
                 <input type="range" class="dm-effect-slider" id="dmFilterCutoff" min="20" max="20000" value="20000" step="1">
+                <div class="dm-effect-param">
+                  <span class="dm-effect-param-label">Resonance</span>
+                  <span class="dm-effect-param-value" id="dmFilterResonanceVal">1.0</span>
+                </div>
+                <input type="range" class="dm-effect-slider" id="dmFilterResonance" min="1" max="30" value="1">
                 <div class="dm-filter-mode-selector">
                   <button class="dm-filter-mode-btn active" data-mode="lowpass">LOW-PASS</button>
                   <button class="dm-filter-mode-btn" data-mode="highpass">HIGH-PASS</button>
@@ -1040,6 +1193,91 @@
                   <span class="dm-effect-param-value" id="dmCompThresholdVal">-20dB</span>
                 </div>
                 <input type="range" class="dm-effect-slider" id="dmCompThreshold" min="-60" max="0" value="-20">
+                <div class="dm-effect-param">
+                  <span class="dm-effect-param-label">Ratio</span>
+                  <span class="dm-effect-param-value" id="dmCompRatioVal">4:1</span>
+                </div>
+                <input type="range" class="dm-effect-slider" id="dmCompRatio" min="1" max="20" value="4">
+              </div>
+            </div>
+
+            <!-- Distortion -->
+            <div class="dm-effect-unit" id="dmDistUnit">
+              <div class="dm-effect-header">
+                <span class="dm-effect-title">DISTORTION</span>
+                <div class="dm-effect-toggle" id="dmDistToggle"></div>
+              </div>
+              <div class="dm-effect-controls">
+                <div class="dm-effect-param">
+                  <span class="dm-effect-param-label">Drive</span>
+                  <span class="dm-effect-param-value" id="dmDistDriveVal">10%</span>
+                </div>
+                <input type="range" class="dm-effect-slider" id="dmDistDrive" min="0" max="100" value="10">
+                <div class="dm-effect-param">
+                  <span class="dm-effect-param-label">Tone</span>
+                  <span class="dm-effect-param-value" id="dmDistToneVal">50%</span>
+                </div>
+                <input type="range" class="dm-effect-slider" id="dmDistTone" min="0" max="100" value="50">
+              </div>
+            </div>
+
+            <!-- Chorus -->
+            <div class="dm-effect-unit" id="dmChorusUnit">
+              <div class="dm-effect-header">
+                <span class="dm-effect-title">CHORUS</span>
+                <div class="dm-effect-toggle" id="dmChorusToggle"></div>
+              </div>
+              <div class="dm-effect-controls">
+                <div class="dm-effect-param">
+                  <span class="dm-effect-param-label">Rate</span>
+                  <span class="dm-effect-param-value" id="dmChorusRateVal">1.5Hz</span>
+                </div>
+                <input type="range" class="dm-effect-slider" id="dmChorusRate" min="0.1" max="10" value="1.5" step="0.1">
+                <div class="dm-effect-param">
+                  <span class="dm-effect-param-label">Depth</span>
+                  <span class="dm-effect-param-value" id="dmChorusDepthVal">30%</span>
+                </div>
+                <input type="range" class="dm-effect-slider" id="dmChorusDepth" min="0" max="100" value="30">
+                <div class="dm-effect-param">
+                  <span class="dm-effect-param-label">Mix</span>
+                  <span class="dm-effect-param-value" id="dmChorusMixVal">30%</span>
+                </div>
+                <input type="range" class="dm-effect-slider" id="dmChorusMix" min="0" max="100" value="30">
+              </div>
+            </div>
+
+            <!-- Bitcrusher -->
+            <div class="dm-effect-unit" id="dmBitcrusherUnit">
+              <div class="dm-effect-header">
+                <span class="dm-effect-title">BITCRUSHER</span>
+                <div class="dm-effect-toggle" id="dmBitcrusherToggle"></div>
+              </div>
+              <div class="dm-effect-controls">
+                <div class="dm-effect-param">
+                  <span class="dm-effect-param-label">Bits</span>
+                  <span class="dm-effect-param-value" id="dmBitcrusherBitsVal">8</span>
+                </div>
+                <input type="range" class="dm-effect-slider" id="dmBitcrusherBits" min="1" max="16" value="8">
+                <div class="dm-effect-param">
+                  <span class="dm-effect-param-label">Downsample</span>
+                  <span class="dm-effect-param-value" id="dmBitcrusherDownsampleVal">1x</span>
+                </div>
+                <input type="range" class="dm-effect-slider" id="dmBitcrusherDownsample" min="1" max="10" value="1">
+              </div>
+            </div>
+
+            <!-- Stereo Width -->
+            <div class="dm-effect-unit" id="dmStereoWidthUnit">
+              <div class="dm-effect-header">
+                <span class="dm-effect-title">STEREO WIDTH</span>
+                <div class="dm-effect-toggle" id="dmStereoWidthToggle"></div>
+              </div>
+              <div class="dm-effect-controls">
+                <div class="dm-effect-param">
+                  <span class="dm-effect-param-label">Width</span>
+                  <span class="dm-effect-param-value" id="dmStereoWidthVal">100%</span>
+                </div>
+                <input type="range" class="dm-effect-slider" id="dmStereoWidth" min="0" max="200" value="100">
               </div>
             </div>
           </div>
@@ -1174,7 +1412,7 @@
       mixerTracks.appendChild(channel);
     });
 
-    // Setup fader listeners with reduced sensitivity
+    // Setup fader listeners
     document.querySelectorAll('.dm-mixer-fader').forEach(fader => {
       fader.addEventListener('input', (e) => {
         const inst = e.target.dataset.instrument;
@@ -1188,13 +1426,13 @@
     setupKnobControls();
   }
 
-  // Setup knob controls with reduced sensitivity and proper limits
+  // Setup knob controls with industry-standard limits
   function setupKnobControls() {
     document.querySelectorAll('.dm-knob-control').forEach(knob => {
       let isDragging = false;
       let startY = 0;
       let startValue = 0;
-      const sensitivity = 0.5; // Reduced sensitivity
+      const sensitivity = 0.5;
 
       const updateKnob = (value) => {
         const inst = knob.dataset.instrument;
@@ -1203,16 +1441,16 @@
         const valueDisplay = knob.parentElement.querySelector('.dm-knob-value');
         
         if (param === 'pan') {
-          // Limit panning to -50 to +50
+          // Industry standard: -1 to +1 (displayed as L50 to R50)
           const panValue = Math.max(-50, Math.min(50, Math.round((value - 50) * 50 / 50)));
-          const rotation = panValue * 2.7; // Map to rotation
+          const rotation = panValue * 2.7;
           indicator.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
           globalParams.instrumentParams[inst].pan = panValue / 50;
           valueDisplay.textContent = panValue === 0 ? 'C' : panValue > 0 ? panValue + 'R' : Math.abs(panValue) + 'L';
         } else if (param === 'pitch') {
-          // Limit pitch to -48 to +48
-          const pitchValue = Math.max(-48, Math.min(48, Math.round((value - 50) * 48 / 50)));
-          const rotation = pitchValue * 2.8125; // Map to rotation
+          // Industry standard: -12 to +12 semitones (one octave each way)
+          const pitchValue = Math.max(-12, Math.min(12, Math.round((value - 50) * 12 / 50)));
+          const rotation = pitchValue * 11.25;
           indicator.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
           globalParams.instrumentParams[inst].pitch = pitchValue;
           valueDisplay.textContent = pitchValue > 0 ? '+' + pitchValue : pitchValue.toString();
@@ -1225,7 +1463,7 @@
       if (param === 'pan') {
         updateKnob(50 + globalParams.instrumentParams[inst].pan * 50);
       } else if (param === 'pitch') {
-        updateKnob(50 + globalParams.instrumentParams[inst].pitch * 50 / 48);
+        updateKnob(50 + globalParams.instrumentParams[inst].pitch * 50 / 12);
       }
 
       knob.addEventListener('mousedown', (e) => {
@@ -1237,7 +1475,7 @@
         if (param === 'pan') {
           startValue = 50 + globalParams.instrumentParams[inst].pan * 50;
         } else if (param === 'pitch') {
-          startValue = 50 + globalParams.instrumentParams[inst].pitch * 50 / 48;
+          startValue = 50 + globalParams.instrumentParams[inst].pitch * 50 / 12;
         }
         
         e.preventDefault();
@@ -1257,7 +1495,7 @@
     });
   }
 
-  // Toggle step - no sound on click
+  // Toggle step
   function toggleStep(e) {
     const inst = e.target.dataset.instrument;
     const step = parseInt(e.target.dataset.step);
@@ -1282,76 +1520,136 @@
     });
   }
 
-  // Initialize audio context and effects
+  // Initialize audio context and effects with proper gain staging
   function initAudio() {
     if (!audioContext) {
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       
-      // Create master gain
+      // Create master gain with industry-standard default
       masterGain = audioContext.createGain();
-      masterGain.gain.value = 0.8;
+      masterGain.gain.value = globalParams.masterVolume;
       
-      // Create effects nodes with proper routing
+      // Create limiter to prevent clipping
+      const limiter = audioContext.createDynamicsCompressor();
+      limiter.threshold.value = -1;
+      limiter.knee.value = 0;
+      limiter.ratio.value = 20;
+      limiter.attack.value = 0.001;
+      limiter.release.value = 0.01;
+      
+      // Create effects nodes with proper gain staging
       effectsChain = {
         reverb: createReverb(),
         delay: createDelay(),
         filter: createFilter(),
         compressor: createCompressor(),
-        dry: audioContext.createGain(),
-        wet: audioContext.createGain()
+        distortion: createDistortion(),
+        chorus: createChorus(),
+        bitcrusher: createBitcrusher(),
+        stereoWidth: createStereoWidth(),
+        limiter: limiter
       };
       
-      // Set up routing
-      effectsChain.dry.gain.value = 1;
-      effectsChain.wet.gain.value = 0;
-      
-      effectsChain.dry.connect(masterGain);
-      effectsChain.wet.connect(masterGain);
-      masterGain.connect(audioContext.destination);
+      // Final output chain
+      masterGain.connect(limiter);
+      limiter.connect(audioContext.destination);
     }
   }
 
-  // Create reverb effect with proper wet/dry mix
+  // Create reverb with presets
   function createReverb() {
     const convolver = audioContext.createConvolver();
     const wetGain = audioContext.createGain();
     const dryGain = audioContext.createGain();
     
-    // Create impulse response
-    const length = audioContext.sampleRate * 2;
-    const impulse = audioContext.createBuffer(2, length, audioContext.sampleRate);
+    // Store preset buffers
+    const presets = {};
     
+    // Create room impulse
+    const roomLength = audioContext.sampleRate * 0.5;
+    const roomImpulse = audioContext.createBuffer(2, roomLength, audioContext.sampleRate);
     for (let channel = 0; channel < 2; channel++) {
-      const channelData = impulse.getChannelData(channel);
-      for (let i = 0; i < length; i++) {
-        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+      const channelData = roomImpulse.getChannelData(channel);
+      for (let i = 0; i < roomLength; i++) {
+        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / roomLength, 1.5);
       }
     }
+    presets.room = roomImpulse;
     
-    convolver.buffer = impulse;
+    // Create hall impulse
+    const hallLength = audioContext.sampleRate * 2;
+    const hallImpulse = audioContext.createBuffer(2, hallLength, audioContext.sampleRate);
+    for (let channel = 0; channel < 2; channel++) {
+      const channelData = hallImpulse.getChannelData(channel);
+      for (let i = 0; i < hallLength; i++) {
+        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / hallLength, 2);
+      }
+    }
+    presets.hall = hallImpulse;
+    
+    // Create plate impulse
+    const plateLength = audioContext.sampleRate * 1;
+    const plateImpulse = audioContext.createBuffer(2, plateLength, audioContext.sampleRate);
+    for (let channel = 0; channel < 2; channel++) {
+      const channelData = plateImpulse.getChannelData(channel);
+      for (let i = 0; i < plateLength; i++) {
+        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / plateLength, 0.8);
+      }
+    }
+    presets.plate = plateImpulse;
+    
+    // Set default preset
+    convolver.buffer = presets[globalParams.reverb.preset];
     wetGain.gain.value = 0;
     dryGain.gain.value = 1;
     
-    return { convolver, wetGain, dryGain };
+    return { convolver, wetGain, dryGain, presets };
   }
 
-  // Create delay effect with accurate time and feedback
+  // Create delay with ping-pong option
   function createDelay() {
     const delay = audioContext.createDelay(2);
     const feedback = audioContext.createGain();
     const wetGain = audioContext.createGain();
     
+    // Ping-pong delay nodes
+    const delayL = audioContext.createDelay(2);
+    const delayR = audioContext.createDelay(2);
+    const feedbackL = audioContext.createGain();
+    const feedbackR = audioContext.createGain();
+    const merger = audioContext.createChannelMerger(2);
+    const splitter = audioContext.createChannelSplitter(2);
+    
     delay.delayTime.value = 0.25;
     feedback.gain.value = 0.3;
     wetGain.gain.value = 0;
     
+    delayL.delayTime.value = 0.25;
+    delayR.delayTime.value = 0.25;
+    feedbackL.gain.value = 0.3;
+    feedbackR.gain.value = 0.3;
+    
+    // Normal delay routing
     delay.connect(feedback);
     feedback.connect(delay);
     
-    return { delay, feedback, wetGain };
+    // Ping-pong routing
+    splitter.connect(delayL, 0);
+    splitter.connect(delayR, 1);
+    delayL.connect(feedbackL);
+    delayR.connect(feedbackR);
+    feedbackL.connect(merger, 0, 1); // Cross-feed
+    feedbackR.connect(merger, 0, 0); // Cross-feed
+    merger.connect(splitter);
+    
+    return { 
+      delay, feedback, wetGain,
+      delayL, delayR, feedbackL, feedbackR,
+      merger, splitter
+    };
   }
 
-  // Create filter effect with mode switching
+  // Create filter with resonance
   function createFilter() {
     const filter = audioContext.createBiquadFilter();
     filter.type = 'lowpass';
@@ -1360,7 +1658,7 @@
     return filter;
   }
 
-  // Create compressor effect with accurate parameters
+  // Create compressor with professional settings
   function createCompressor() {
     const compressor = audioContext.createDynamicsCompressor();
     compressor.threshold.value = -20;
@@ -1370,7 +1668,101 @@
     return compressor;
   }
 
-  // Play sound with accurate effects processing
+  // Create distortion/saturation
+  function createDistortion() {
+    const waveshaper = audioContext.createWaveShaper();
+    const inputGain = audioContext.createGain();
+    const outputGain = audioContext.createGain();
+    const toneFilter = audioContext.createBiquadFilter();
+    
+    inputGain.gain.value = 1;
+    outputGain.gain.value = 1;
+    toneFilter.type = 'highshelf';
+    toneFilter.frequency.value = 3000;
+    toneFilter.gain.value = 0;
+    
+    // Create distortion curve
+    const samples = 44100;
+    const curve = new Float32Array(samples);
+    const deg = Math.PI / 180;
+    
+    for (let i = 0; i < samples; i++) {
+      const x = (i * 2) / samples - 1;
+      curve[i] = ((3 + 10) * x * 20 * deg) / (Math.PI + 10 * Math.abs(x));
+    }
+    
+    waveshaper.curve = curve;
+    waveshaper.oversample = '4x';
+    
+    return { waveshaper, inputGain, outputGain, toneFilter };
+  }
+
+  // Create chorus effect
+  function createChorus() {
+    const delay = audioContext.createDelay(0.1);
+    const lfo = audioContext.createOscillator();
+    const lfoGain = audioContext.createGain();
+    const wetGain = audioContext.createGain();
+    
+    lfo.type = 'sine';
+    lfo.frequency.value = 1.5;
+    lfoGain.gain.value = 0.002;
+    wetGain.gain.value = 0;
+    
+    lfo.connect(lfoGain);
+    lfoGain.connect(delay.delayTime);
+    
+    delay.delayTime.value = 0.02;
+    
+    lfo.start();
+    
+    return { delay, lfo, lfoGain, wetGain };
+  }
+
+  // Create bitcrusher effect
+  function createBitcrusher() {
+    const scriptNode = audioContext.createScriptProcessor(4096, 1, 1);
+    let bits = 8;
+    let downsample = 1;
+    let sampleCount = 0;
+    let lastSample = 0;
+    
+    scriptNode.onaudioprocess = function(e) {
+      const input = e.inputBuffer.getChannelData(0);
+      const output = e.outputBuffer.getChannelData(0);
+      
+      for (let i = 0; i < input.length; i++) {
+        sampleCount++;
+        if (sampleCount >= downsample) {
+          const step = Math.pow(0.5, bits);
+          lastSample = step * Math.floor(input[i] / step + 0.5);
+          sampleCount = 0;
+        }
+        output[i] = lastSample;
+      }
+    };
+    
+    return { 
+      scriptNode,
+      setBits: (b) => { bits = b; },
+      setDownsample: (d) => { downsample = d; }
+    };
+  }
+
+  // Create stereo width control
+  function createStereoWidth() {
+    const splitter = audioContext.createChannelSplitter(2);
+    const merger = audioContext.createChannelMerger(2);
+    const midGain = audioContext.createGain();
+    const sideGain = audioContext.createGain();
+    
+    midGain.gain.value = 1;
+    sideGain.gain.value = 1;
+    
+    return { splitter, merger, midGain, sideGain };
+  }
+
+  // Play sound with proper gain staging and effects
   function playSound(instId) {
     if (!audioContext) return;
 
@@ -1384,74 +1776,171 @@
     const params = globalParams.instrumentParams[instId];
     const now = audioContext.currentTime;
 
-    // Create base sound nodes
+    // Create base sound nodes with gain staging
     const osc = audioContext.createOscillator();
     const oscGain = audioContext.createGain();
     const panner = audioContext.createStereoPanner();
     
-    // Set panning (limited to -1 to +1, which maps to 50L to 50R)
+    // Apply gain staging (-18dBFS reference level)
+    const referenceGain = dbToGain(REFERENCE_LEVEL);
+    
+    // Set panning
     panner.pan.value = params.pan;
     
-    // Calculate pitch adjustment (limited to -48 to +48 semitones)
-    const pitchMultiplier = Math.pow(2, params.pitch / 12);
+    // Calculate pitch adjustment (limited to ±12 semitones)
+    const pitchMultiplier = Math.pow(2, Math.max(-12, Math.min(12, params.pitch)) / 12);
     
-    // Create sound chain
+    // Create signal chain with proper gain staging
     osc.connect(oscGain);
     oscGain.connect(panner);
     
-    // Apply effects chain
-    let currentNode = panner;
-    
-    // Apply filter if enabled
-    if (globalParams.filter.enabled && effectsChain.filter) {
-      currentNode.connect(effectsChain.filter);
-      currentNode = effectsChain.filter;
-    }
-    
-    // Apply compression if enabled
-    if (globalParams.compression.enabled && effectsChain.compressor) {
-      currentNode.connect(effectsChain.compressor);
-      currentNode = effectsChain.compressor;
-    }
-    
-    // Create dry and wet paths
+    // Create effect buses
     const dryGain = audioContext.createGain();
     const wetGain = audioContext.createGain();
+    const postEffectGain = audioContext.createGain();
     
-    currentNode.connect(dryGain);
-    currentNode.connect(wetGain);
+    panner.connect(dryGain);
+    panner.connect(wetGain);
     
-    // Apply reverb if enabled
-    if (globalParams.reverb.enabled && effectsChain.reverb) {
-      const reverbWet = audioContext.createGain();
-      reverbWet.gain.value = globalParams.reverb.mix;
-      wetGain.connect(effectsChain.reverb.convolver);
-      effectsChain.reverb.convolver.connect(reverbWet);
-      reverbWet.connect(masterGain);
+    // Apply effects chain with auto-gain compensation
+    let currentNode = wetGain;
+    let compensationGain = 1;
+    
+    // Bitcrusher
+    if (globalParams.bitcrusher.enabled && effectsChain.bitcrusher) {
+      currentNode.connect(effectsChain.bitcrusher.scriptNode);
+      currentNode = effectsChain.bitcrusher.scriptNode;
+      effectsChain.bitcrusher.setBits(globalParams.bitcrusher.bits);
+      effectsChain.bitcrusher.setDownsample(globalParams.bitcrusher.downsample);
+    }
+    
+    // Distortion
+    if (globalParams.distortion.enabled && effectsChain.distortion) {
+      effectsChain.distortion.inputGain.gain.value = 1 + globalParams.distortion.amount;
+      effectsChain.distortion.outputGain.gain.value = 1 / (1 + globalParams.distortion.amount * 0.5);
+      effectsChain.distortion.toneFilter.gain.value = globalParams.distortion.tone * 12 - 6;
       
-      // Adjust dry gain for reverb mix
-      dryGain.gain.value = 1 - globalParams.reverb.mix;
-    } else {
-      dryGain.gain.value = 1;
+      currentNode.connect(effectsChain.distortion.inputGain);
+      effectsChain.distortion.inputGain.connect(effectsChain.distortion.waveshaper);
+      effectsChain.distortion.waveshaper.connect(effectsChain.distortion.toneFilter);
+      effectsChain.distortion.toneFilter.connect(effectsChain.distortion.outputGain);
+      currentNode = effectsChain.distortion.outputGain;
+      
+      compensationGain *= 0.8; // Compensate for distortion loudness
     }
     
-    // Apply delay if enabled
+    // Filter
+    if (globalParams.filter.enabled && effectsChain.filter) {
+      effectsChain.filter.frequency.value = globalParams.filter.frequency;
+      effectsChain.filter.Q.value = globalParams.filter.resonance;
+      effectsChain.filter.type = globalParams.filter.type;
+      currentNode.connect(effectsChain.filter);
+      currentNode = effectsChain.filter;
+      
+      // Compensate for filter resonance boost
+      if (globalParams.filter.resonance > 5) {
+        compensationGain *= 1 / (1 + (globalParams.filter.resonance - 5) * 0.05);
+      }
+    }
+    
+    // Compression
+    if (globalParams.compression.enabled && effectsChain.compressor) {
+      effectsChain.compressor.threshold.value = globalParams.compression.threshold;
+      effectsChain.compressor.ratio.value = globalParams.compression.ratio;
+      currentNode.connect(effectsChain.compressor);
+      currentNode = effectsChain.compressor;
+      
+      // Makeup gain for compression
+      const reductionDb = Math.abs(globalParams.compression.threshold) / globalParams.compression.ratio;
+      compensationGain *= dbToGain(reductionDb * 0.5);
+    }
+    
+    // Set wet/dry mix
+    dryGain.gain.value = 1;
+    wetGain.gain.value = 1;
+    
+    currentNode.connect(postEffectGain);
+    dryGain.connect(postEffectGain);
+    
+    // Apply auto-gain compensation
+    postEffectGain.gain.value = compensationGain;
+    
+    // Create send effects bus
+    const sendBus = audioContext.createGain();
+    postEffectGain.connect(sendBus);
+    
+    // Reverb send
+    if (globalParams.reverb.enabled && effectsChain.reverb) {
+      const reverbSend = audioContext.createGain();
+      reverbSend.gain.value = globalParams.reverb.mix;
+      
+      // Update reverb preset if needed
+      if (effectsChain.reverb.currentPreset !== globalParams.reverb.preset) {
+        effectsChain.reverb.convolver.buffer = effectsChain.reverb.presets[globalParams.reverb.preset];
+        effectsChain.reverb.currentPreset = globalParams.reverb.preset;
+      }
+      
+      sendBus.connect(reverbSend);
+      reverbSend.connect(effectsChain.reverb.convolver);
+      effectsChain.reverb.convolver.connect(masterGain);
+    }
+    
+    // Delay send
     if (globalParams.delay.enabled && effectsChain.delay) {
-      const delayWet = audioContext.createGain();
-      delayWet.gain.value = 0.3;
-      wetGain.connect(effectsChain.delay.delay);
-      effectsChain.delay.delay.connect(delayWet);
-      delayWet.connect(masterGain);
+      const delaySend = audioContext.createGain();
+      delaySend.gain.value = globalParams.delay.mix;
+      
+      if (globalParams.delay.pingPong) {
+        // Use ping-pong delay
+        sendBus.connect(delaySend);
+        delaySend.connect(effectsChain.delay.splitter);
+        effectsChain.delay.delayL.delayTime.value = globalParams.delay.time / 1000;
+        effectsChain.delay.delayR.delayTime.value = globalParams.delay.time / 1000;
+        effectsChain.delay.feedbackL.gain.value = globalParams.delay.feedback;
+        effectsChain.delay.feedbackR.gain.value = globalParams.delay.feedback;
+        effectsChain.delay.merger.connect(masterGain);
+      } else {
+        // Use normal delay
+        sendBus.connect(delaySend);
+        delaySend.connect(effectsChain.delay.delay);
+        effectsChain.delay.delay.delayTime.value = globalParams.delay.time / 1000;
+        effectsChain.delay.feedback.gain.value = globalParams.delay.feedback;
+        effectsChain.delay.delay.connect(masterGain);
+      }
     }
     
-    dryGain.connect(masterGain);
+    // Chorus send
+    if (globalParams.chorus.enabled && effectsChain.chorus) {
+      const chorusSend = audioContext.createGain();
+      chorusSend.gain.value = globalParams.chorus.mix;
+      
+      effectsChain.chorus.lfo.frequency.value = globalParams.chorus.rate;
+      effectsChain.chorus.lfoGain.gain.value = globalParams.chorus.depth * 0.01;
+      
+      sendBus.connect(chorusSend);
+      chorusSend.connect(effectsChain.chorus.delay);
+      effectsChain.chorus.delay.connect(masterGain);
+    }
     
-    // Generate sound based on instrument type
+    // Stereo width
+    if (globalParams.stereoWidth.enabled && effectsChain.stereoWidth) {
+      const width = globalParams.stereoWidth.width;
+      // M/S processing for width control
+      effectsChain.stereoWidth.midGain.gain.value = 2 - width;
+      effectsChain.stereoWidth.sideGain.gain.value = width;
+    }
+    
+    // Connect to master
+    postEffectGain.connect(masterGain);
+    
+    // Generate sound based on instrument type with proper levels
+    const baseVolume = params.volume * referenceGain;
+    
     switch(instId) {
       case 'kick':
         osc.frequency.setValueAtTime(150 * pitchMultiplier, now);
         osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.5);
-        oscGain.gain.setValueAtTime(params.volume, now);
+        oscGain.gain.setValueAtTime(baseVolume, now);
         oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
         osc.start(now);
         osc.stop(now + 0.5);
@@ -1460,7 +1949,7 @@
       case 'snare':
         // Tone component
         osc.frequency.setValueAtTime(inst.frequency * pitchMultiplier, now);
-        oscGain.gain.setValueAtTime(params.volume * 0.5, now);
+        oscGain.gain.setValueAtTime(baseVolume * 0.5, now);
         oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
         
         // Noise component
@@ -1478,9 +1967,10 @@
         
         noise.connect(noiseGain);
         noiseGain.connect(noisePanner);
-        noisePanner.connect(currentNode);
+        noisePanner.connect(wetGain);
+        noisePanner.connect(dryGain);
         
-        noiseGain.gain.setValueAtTime(params.volume * inst.noiseAmount, now);
+        noiseGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
         noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
         
         osc.start(now);
@@ -1502,10 +1992,11 @@
         
         panner.disconnect();
         panner.connect(hihatFilter);
-        hihatFilter.connect(currentNode);
+        hihatFilter.connect(dryGain);
+        hihatFilter.connect(wetGain);
         
         const duration = instId === 'openhat' ? 0.3 : 0.05;
-        oscGain.gain.setValueAtTime(params.volume * 0.3, now);
+        oscGain.gain.setValueAtTime(baseVolume * 0.3, now);
         oscGain.gain.exponentialRampToValueAtTime(0.01, now + duration);
         osc.start(now);
         osc.stop(now + duration);
@@ -1523,10 +2014,11 @@
           
           clapOsc.connect(clapGain);
           clapGain.connect(clapPanner);
-          clapPanner.connect(currentNode);
+          clapPanner.connect(dryGain);
+          clapPanner.connect(wetGain);
           
           const startTime = now + i * 0.01;
-          clapGain.gain.setValueAtTime(params.volume * 0.3, startTime);
+          clapGain.gain.setValueAtTime(baseVolume * 0.3, startTime);
           clapGain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.02);
           
           clapOsc.start(startTime);
@@ -1561,9 +2053,10 @@
         crashNoise.connect(crashGain);
         crashGain.connect(crashFilter);
         crashFilter.connect(crashPanner);
-        crashPanner.connect(currentNode);
+        crashPanner.connect(dryGain);
+        crashPanner.connect(wetGain);
         
-        crashGain.gain.setValueAtTime(params.volume * 0.7, now);
+        crashGain.gain.setValueAtTime(baseVolume * 0.7, now);
         crashGain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
         
         crashNoise.start(now);
@@ -1589,12 +2082,13 @@
         
         clickOsc.connect(clickGain);
         clickGain.connect(clickPanner);
-        clickPanner.connect(currentNode);
+        clickPanner.connect(dryGain);
+        clickPanner.connect(wetGain);
         
-        clickGain.gain.setValueAtTime(params.volume * 0.2, now);
+        clickGain.gain.setValueAtTime(baseVolume * 0.2, now);
         clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.01);
         
-        oscGain.gain.setValueAtTime(params.volume * 0.5, now);
+        oscGain.gain.setValueAtTime(baseVolume * 0.5, now);
         oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
         
         osc.start(now);
@@ -1614,9 +2108,9 @@
         cowbellOsc2.connect(cowbellGain2);
         cowbellGain2.connect(panner);
         
-        oscGain.gain.setValueAtTime(params.volume * 0.5, now);
+        oscGain.gain.setValueAtTime(baseVolume * 0.5, now);
         oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-        cowbellGain2.gain.setValueAtTime(params.volume * 0.3, now);
+        cowbellGain2.gain.setValueAtTime(baseVolume * 0.3, now);
         cowbellGain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
         
         osc.start(now);
@@ -1627,7 +2121,7 @@
 
       default:
         osc.frequency.value = inst.frequency * pitchMultiplier;
-        oscGain.gain.setValueAtTime(params.volume * 0.5, now);
+        oscGain.gain.setValueAtTime(baseVolume * 0.5, now);
         oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
         osc.start(now);
         osc.stop(now + 0.1);
@@ -1710,6 +2204,82 @@
       }
     });
     updatePattern();
+  }
+
+  // Reset to default settings
+  function resetToDefaults() {
+    if (confirm('Reset all settings to defaults? This will not clear your pattern.')) {
+      // Deep clone default parameters
+      globalParams = JSON.parse(JSON.stringify(defaultGlobalParams));
+      
+      // Re-initialize instrument parameters
+      initializeInstrumentParams();
+      
+      // Update UI to reflect defaults
+      updateAllControls();
+      
+      // If playing, restart to apply changes
+      if (isPlaying) {
+        pause();
+        play();
+      }
+    }
+  }
+
+  // Update all UI controls to match current parameters
+  function updateAllControls() {
+    // Master volume
+    const masterSlider = document.getElementById('dmMasterSlider');
+    const masterValue = document.getElementById('dmMasterValue');
+    if (masterSlider && masterValue) {
+      masterSlider.value = Math.round(globalParams.masterVolume * 100);
+      masterValue.textContent = `${Math.round(globalParams.masterVolume * 100)}%`;
+      if (masterGain) {
+        masterGain.gain.value = globalParams.masterVolume;
+      }
+    }
+    
+    // Effects toggles and values
+    updateEffectUI('Reverb', globalParams.reverb);
+    updateEffectUI('Delay', globalParams.delay);
+    updateEffectUI('Filter', globalParams.filter);
+    updateEffectUI('Comp', globalParams.compression);
+    updateEffectUI('Dist', globalParams.distortion);
+    updateEffectUI('Chorus', globalParams.chorus);
+    updateEffectUI('Bitcrusher', globalParams.bitcrusher);
+    updateEffectUI('StereoWidth', globalParams.stereoWidth);
+    
+    // Recreate mixer channels to update values
+    createMixerChannels();
+  }
+
+  // Update effect UI
+  function updateEffectUI(effectName, params) {
+    const toggle = document.getElementById(`dm${effectName}Toggle`);
+    const unit = document.getElementById(`dm${effectName}Unit`);
+    
+    if (toggle && unit) {
+      if (params.enabled) {
+        toggle.classList.add('active');
+        unit.classList.add('active');
+      } else {
+        toggle.classList.remove('active');
+        unit.classList.remove('active');
+      }
+    }
+    
+    // Update specific effect parameters
+    switch(effectName) {
+      case 'Reverb':
+        const reverbMix = document.getElementById('dmReverbMix');
+        const reverbMixVal = document.getElementById('dmReverbMixVal');
+        if (reverbMix && reverbMixVal) {
+          reverbMix.value = Math.round(params.mix * 100);
+          reverbMixVal.textContent = `${Math.round(params.mix * 100)}%`;
+        }
+        break;
+      // Add other effects as needed
+    }
   }
 
   function loadPreset(presetName) {
@@ -1820,7 +2390,7 @@
     }
   }
 
-  // High-quality WAV export
+  // High-quality WAV export with proper gain staging
   async function downloadLoop() {
     initAudio();
 
@@ -1838,17 +2408,28 @@
 
       const offlineContext = new OfflineAudioContext(numberOfChannels, length, sampleRate);
       
-      // Create master gain in offline context
+      // Create master gain in offline context with proper level
       const offlineMaster = offlineContext.createGain();
-      offlineMaster.gain.value = 0.8;
-      offlineMaster.connect(offlineContext.destination);
+      offlineMaster.gain.value = globalParams.masterVolume;
+      
+      // Create limiter for offline context
+      const offlineLimiter = offlineContext.createDynamicsCompressor();
+      offlineLimiter.threshold.value = -1;
+      offlineLimiter.knee.value = 0;
+      offlineLimiter.ratio.value = 20;
+      offlineLimiter.attack.value = 0.001;
+      offlineLimiter.release.value = 0.01;
+      
+      offlineMaster.connect(offlineLimiter);
+      offlineLimiter.connect(offlineContext.destination);
 
       // Recreate effects chain in offline context
       const offlineEffects = {
         reverb: createOfflineReverb(offlineContext),
         delay: createOfflineDelay(offlineContext),
         filter: createOfflineFilter(offlineContext),
-        compressor: createOfflineCompressor(offlineContext)
+        compressor: createOfflineCompressor(offlineContext),
+        distortion: createOfflineDistortion(offlineContext)
       };
 
       // Render each step
@@ -1863,6 +2444,26 @@
       }
 
       const renderedBuffer = await offlineContext.startRendering();
+      
+      // Normalize to prevent clipping while maintaining dynamics
+      let maxLevel = 0;
+      for (let channel = 0; channel < renderedBuffer.numberOfChannels; channel++) {
+        const channelData = renderedBuffer.getChannelData(channel);
+        for (let i = 0; i < channelData.length; i++) {
+          maxLevel = Math.max(maxLevel, Math.abs(channelData[i]));
+        }
+      }
+      
+      const normalizeGain = maxLevel > 0.95 ? 0.95 / maxLevel : 1;
+      
+      // Apply normalization
+      for (let channel = 0; channel < renderedBuffer.numberOfChannels; channel++) {
+        const channelData = renderedBuffer.getChannelData(channel);
+        for (let i = 0; i < channelData.length; i++) {
+          channelData[i] *= normalizeGain;
+        }
+      }
+      
       const wavBlob = bufferToWave(renderedBuffer, renderedBuffer.length);
 
       const url = URL.createObjectURL(wavBlob);
@@ -1889,13 +2490,33 @@
   // Helper functions for offline rendering
   function createOfflineReverb(context) {
     const convolver = context.createConvolver();
-    const length = context.sampleRate * 2;
+    const preset = globalParams.reverb.preset;
+    let length, decay;
+    
+    switch(preset) {
+      case 'room':
+        length = context.sampleRate * 0.5;
+        decay = 1.5;
+        break;
+      case 'hall':
+        length = context.sampleRate * 2;
+        decay = 2;
+        break;
+      case 'plate':
+        length = context.sampleRate * 1;
+        decay = 0.8;
+        break;
+      default:
+        length = context.sampleRate * 0.5;
+        decay = 1.5;
+    }
+    
     const impulse = context.createBuffer(2, length, context.sampleRate);
     
     for (let channel = 0; channel < 2; channel++) {
       const channelData = impulse.getChannelData(channel);
       for (let i = 0; i < length; i++) {
-        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
       }
     }
     
@@ -1909,8 +2530,8 @@
     const wetGain = context.createGain();
     
     delay.delayTime.value = globalParams.delay.time / 1000;
-    feedback.gain.value = globalParams.delay.feedback;
-    wetGain.gain.value = globalParams.delay.enabled ? 0.3 : 0;
+    feedback.gain.value = Math.min(0.85, globalParams.delay.feedback); // Limit feedback
+    wetGain.gain.value = globalParams.delay.enabled ? globalParams.delay.mix : 0;
     
     delay.connect(feedback);
     feedback.connect(delay);
@@ -1922,7 +2543,7 @@
     const filter = context.createBiquadFilter();
     filter.type = globalParams.filter.type;
     filter.frequency.value = globalParams.filter.frequency;
-    filter.Q.value = 1;
+    filter.Q.value = globalParams.filter.resonance;
     return filter;
   }
 
@@ -1930,13 +2551,37 @@
     const compressor = context.createDynamicsCompressor();
     compressor.threshold.value = globalParams.compression.threshold;
     compressor.ratio.value = globalParams.compression.ratio;
-    compressor.attack.value = 0.003;
-    compressor.release.value = 0.25;
+    compressor.attack.value = globalParams.compression.attack;
+    compressor.release.value = globalParams.compression.release;
     return compressor;
+  }
+
+  function createOfflineDistortion(context) {
+    const waveshaper = context.createWaveShaper();
+    const inputGain = context.createGain();
+    const outputGain = context.createGain();
+    
+    inputGain.gain.value = 1 + globalParams.distortion.amount;
+    outputGain.gain.value = 1 / (1 + globalParams.distortion.amount * 0.5);
+    
+    const samples = 44100;
+    const curve = new Float32Array(samples);
+    const deg = Math.PI / 180;
+    
+    for (let i = 0; i < samples; i++) {
+      const x = (i * 2) / samples - 1;
+      curve[i] = ((3 + 10) * x * 20 * deg) / (Math.PI + 10 * Math.abs(x));
+    }
+    
+    waveshaper.curve = curve;
+    waveshaper.oversample = '4x';
+    
+    return { waveshaper, inputGain, outputGain };
   }
 
   function renderOfflineSound(context, inst, startTime, destination, effects) {
     const params = globalParams.instrumentParams[inst.id];
+    const referenceGain = dbToGain(REFERENCE_LEVEL);
     
     const osc = context.createOscillator();
     const gain = context.createGain();
@@ -1944,7 +2589,7 @@
     
     panner.pan.value = params.pan;
     
-    const pitchMultiplier = Math.pow(2, params.pitch / 12);
+    const pitchMultiplier = Math.pow(2, Math.max(-12, Math.min(12, params.pitch)) / 12);
     
     // Build signal chain
     osc.connect(gain);
@@ -1952,46 +2597,60 @@
     
     let currentNode = panner;
     
-    if (globalParams.filter.enabled) {
+    // Apply effects
+    if (globalParams.distortion.enabled && effects.distortion) {
+      currentNode.connect(effects.distortion.inputGain);
+      effects.distortion.inputGain.connect(effects.distortion.waveshaper);
+      effects.distortion.waveshaper.connect(effects.distortion.outputGain);
+      currentNode = effects.distortion.outputGain;
+    }
+    
+    if (globalParams.filter.enabled && effects.filter) {
       currentNode.connect(effects.filter);
       currentNode = effects.filter;
     }
     
-    if (globalParams.compression.enabled) {
+    if (globalParams.compression.enabled && effects.compressor) {
       currentNode.connect(effects.compressor);
       currentNode = effects.compressor;
     }
     
-    // Apply effects with accurate wet/dry mix
+    // Apply reverb and delay as sends
     const dryGain = context.createGain();
-    const wetGain = context.createGain();
+    const sendGain = context.createGain();
     
     currentNode.connect(dryGain);
+    currentNode.connect(sendGain);
     
-    if (globalParams.reverb.enabled) {
-      currentNode.connect(effects.reverb);
-      const reverbOut = context.createGain();
-      reverbOut.gain.value = globalParams.reverb.mix;
-      effects.reverb.connect(reverbOut);
-      reverbOut.connect(destination);
-      dryGain.gain.value = 1 - globalParams.reverb.mix;
-    } else {
-      dryGain.gain.value = 1;
+    dryGain.gain.value = 1;
+    sendGain.gain.value = 1;
+    
+    if (globalParams.reverb.enabled && effects.reverb) {
+      const reverbSend = context.createGain();
+      reverbSend.gain.value = globalParams.reverb.mix;
+      sendGain.connect(reverbSend);
+      reverbSend.connect(effects.reverb);
+      effects.reverb.connect(destination);
     }
     
-    if (globalParams.delay.enabled) {
-      currentNode.connect(effects.delay.delay);
-      effects.delay.wetGain.connect(destination);
+    if (globalParams.delay.enabled && effects.delay) {
+      const delaySend = context.createGain();
+      delaySend.gain.value = globalParams.delay.mix;
+      sendGain.connect(delaySend);
+      delaySend.connect(effects.delay.delay);
+      effects.delay.delay.connect(destination);
     }
     
     dryGain.connect(destination);
     
     // Generate sound based on type
+    const baseVolume = params.volume * referenceGain;
+    
     switch(inst.id) {
       case 'kick':
         osc.frequency.setValueAtTime(150 * pitchMultiplier, startTime);
         osc.frequency.exponentialRampToValueAtTime(0.01, startTime + 0.5);
-        gain.gain.setValueAtTime(params.volume, startTime);
+        gain.gain.setValueAtTime(baseVolume, startTime);
         gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
         osc.start(startTime);
         osc.stop(startTime + 0.5);
@@ -2000,14 +2659,14 @@
       // Add other instrument cases similar to playSound function
       default:
         osc.frequency.value = inst.frequency * pitchMultiplier;
-        gain.gain.setValueAtTime(params.volume * 0.5, startTime);
+        gain.gain.setValueAtTime(baseVolume * 0.5, startTime);
         gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.1);
         osc.start(startTime);
         osc.stop(startTime + 0.1);
     }
   }
 
-  // Convert AudioBuffer to WAV with high quality
+  // Convert AudioBuffer to WAV
   function bufferToWave(abuffer, len) {
     const numOfChan = abuffer.numberOfChannels;
     const length = len * numOfChan * 2 + 44;
@@ -2065,23 +2724,34 @@
     document.getElementById('dmPlayBtn')?.addEventListener('click', play);
     document.getElementById('dmStopBtn')?.addEventListener('click', stop);
     document.getElementById('dmClearBtn')?.addEventListener('click', clear);
+    document.getElementById('dmResetBtn')?.addEventListener('click', resetToDefaults);
     document.getElementById('dmDownloadBtn')?.addEventListener('click', downloadLoop);
 
-    // Tempo with reduced sensitivity
+    // Master volume
+    const masterSlider = document.getElementById('dmMasterSlider');
+    const masterValue = document.getElementById('dmMasterValue');
+    if (masterSlider) {
+      masterSlider.addEventListener('input', (e) => {
+        const value = parseInt(e.target.value);
+        globalParams.masterVolume = value / 100;
+        if (masterValue) masterValue.textContent = `${value}%`;
+        if (masterGain) {
+          masterGain.gain.value = globalParams.masterVolume;
+        }
+      });
+    }
+
+    // Tempo
     const tempoSlider = document.getElementById('dmTempoSlider');
     const tempoDisplay = document.getElementById('dmTempoDisplay');
     if (tempoSlider) {
-      let lastValue = tempoSlider.value;
       tempoSlider.addEventListener('input', (e) => {
         const tempo = parseInt(e.target.value);
-        if (Math.abs(tempo - lastValue) >= 1) {
-          lastValue = tempo;
-          if (tempoDisplay) tempoDisplay.textContent = `${tempo} BPM`;
-          
-          if (isPlaying) {
-            pause();
-            play();
-          }
+        if (tempoDisplay) tempoDisplay.textContent = `${tempo} BPM`;
+        
+        if (isPlaying) {
+          pause();
+          play();
         }
       });
     }
@@ -2142,6 +2812,83 @@
       }
     });
 
+    // Reverb controls
+    setupEffectToggle('dmReverbToggle', 'reverb');
+    setupEffectSlider('dmReverbMix', 'dmReverbMixVal', (val) => {
+      globalParams.reverb.mix = val / 100;
+      return `${val}%`;
+    });
+    
+    // Reverb preset buttons
+    document.querySelectorAll('[data-preset]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const preset = e.target.dataset.preset;
+        if (preset && globalParams.reverb) {
+          document.querySelectorAll('[data-preset]').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+          globalParams.reverb.preset = preset;
+        }
+      });
+    });
+
+    // Delay controls
+    setupEffectToggle('dmDelayToggle', 'delay');
+    setupEffectSlider('dmDelayTime', 'dmDelayTimeVal', (val) => {
+      globalParams.delay.time = val;
+      if (effectsChain.delay) {
+        effectsChain.delay.delay.delayTime.value = val / 1000;
+        effectsChain.delay.delayL.delayTime.value = val / 1000;
+        effectsChain.delay.delayR.delayTime.value = val / 1000;
+      }
+      return `${val}ms`;
+    });
+    setupEffectSlider('dmDelayFeedback', 'dmDelayFeedbackVal', (val) => {
+      globalParams.delay.feedback = val / 100;
+      if (effectsChain.delay) {
+        effectsChain.delay.feedback.gain.value = val / 100;
+        effectsChain.delay.feedbackL.gain.value = val / 100;
+        effectsChain.delay.feedbackR.gain.value = val / 100;
+      }
+      return `${val}%`;
+    });
+    setupEffectSlider('dmDelayMixSlider', 'dmDelayMixVal', (val) => {
+      globalParams.delay.mix = val / 100;
+      return `${val}%`;
+    });
+    
+    // Delay mode buttons
+    document.querySelectorAll('[data-mode]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const mode = e.target.dataset.mode;
+        if (mode === 'normal' || mode === 'pingpong') {
+          document.querySelectorAll('[data-mode="normal"], [data-mode="pingpong"]').forEach(b => b.classList.remove('active'));
+          e.target.classList.add('active');
+          globalParams.delay.pingPong = (mode === 'pingpong');
+        }
+      });
+    });
+
+    // Filter controls
+    setupEffectToggle('dmFilterToggle', 'filter');
+    setupEffectSlider('dmFilterCutoff', 'dmFilterCutoffVal', (val) => {
+      globalParams.filter.frequency = val;
+      if (effectsChain.filter) {
+        effectsChain.filter.frequency.value = val;
+      }
+      if (val >= 1000) {
+        return `${(val/1000).toFixed(1)}kHz`;
+      } else {
+        return `${val}Hz`;
+      }
+    });
+    setupEffectSlider('dmFilterResonance', 'dmFilterResonanceVal', (val) => {
+      globalParams.filter.resonance = val;
+      if (effectsChain.filter) {
+        effectsChain.filter.Q.value = val;
+      }
+      return val.toFixed(1);
+    });
+    
     // Filter mode selector
     document.querySelectorAll('.dm-filter-mode-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
@@ -2154,52 +2901,77 @@
       });
     });
 
-    // Effects toggles
-    setupEffectToggle('dmReverbToggle', 'reverb');
-    setupEffectToggle('dmDelayToggle', 'delay');
-    setupEffectToggle('dmFilterToggle', 'filter');
+    // Compression controls
     setupEffectToggle('dmCompToggle', 'compression');
-
-    // Effects controls with accurate value mapping
-    setupEffectSlider('dmReverbMix', 'dmReverbMixVal', (val) => {
-      globalParams.reverb.mix = val / 100;
-      return `${val}%`;
-    });
-
-    setupEffectSlider('dmDelayTime', 'dmDelayTimeVal', (val) => {
-      globalParams.delay.time = val;
-      if (effectsChain.delay) {
-        effectsChain.delay.delay.delayTime.value = val / 1000;
-      }
-      return `${val}ms`;
-    });
-
-    setupEffectSlider('dmDelayFeedback', 'dmDelayFeedbackVal', (val) => {
-      globalParams.delay.feedback = val / 100;
-      if (effectsChain.delay) {
-        effectsChain.delay.feedback.gain.value = val / 100;
-      }
-      return `${val}%`;
-    });
-
-    setupEffectSlider('dmFilterCutoff', 'dmFilterCutoffVal', (val) => {
-      globalParams.filter.frequency = val;
-      if (effectsChain.filter) {
-        effectsChain.filter.frequency.value = val;
-      }
-      if (val >= 1000) {
-        return `${(val/1000).toFixed(1)}kHz`;
-      } else {
-        return `${val}Hz`;
-      }
-    });
-
     setupEffectSlider('dmCompThreshold', 'dmCompThresholdVal', (val) => {
       globalParams.compression.threshold = val;
       if (effectsChain.compressor) {
         effectsChain.compressor.threshold.value = val;
       }
       return `${val}dB`;
+    });
+    setupEffectSlider('dmCompRatio', 'dmCompRatioVal', (val) => {
+      globalParams.compression.ratio = val;
+      if (effectsChain.compressor) {
+        effectsChain.compressor.ratio.value = val;
+      }
+      return `${val}:1`;
+    });
+
+    // Distortion controls
+    setupEffectToggle('dmDistToggle', 'distortion');
+    setupEffectSlider('dmDistDrive', 'dmDistDriveVal', (val) => {
+      globalParams.distortion.amount = val / 100;
+      return `${val}%`;
+    });
+    setupEffectSlider('dmDistTone', 'dmDistToneVal', (val) => {
+      globalParams.distortion.tone = val / 100;
+      return `${val}%`;
+    });
+
+    // Chorus controls
+    setupEffectToggle('dmChorusToggle', 'chorus');
+    setupEffectSlider('dmChorusRate', 'dmChorusRateVal', (val) => {
+      globalParams.chorus.rate = val;
+      if (effectsChain.chorus) {
+        effectsChain.chorus.lfo.frequency.value = val;
+      }
+      return `${val}Hz`;
+    });
+    setupEffectSlider('dmChorusDepth', 'dmChorusDepthVal', (val) => {
+      globalParams.chorus.depth = val / 100;
+      if (effectsChain.chorus) {
+        effectsChain.chorus.lfoGain.gain.value = (val / 100) * 0.01;
+      }
+      return `${val}%`;
+    });
+    setupEffectSlider('dmChorusMix', 'dmChorusMixVal', (val) => {
+      globalParams.chorus.mix = val / 100;
+      return `${val}%`;
+    });
+
+    // Bitcrusher controls
+    setupEffectToggle('dmBitcrusherToggle', 'bitcrusher');
+    setupEffectSlider('dmBitcrusherBits', 'dmBitcrusherBitsVal', (val) => {
+      globalParams.bitcrusher.bits = val;
+      if (effectsChain.bitcrusher) {
+        effectsChain.bitcrusher.setBits(val);
+      }
+      return val.toString();
+    });
+    setupEffectSlider('dmBitcrusherDownsample', 'dmBitcrusherDownsampleVal', (val) => {
+      globalParams.bitcrusher.downsample = val;
+      if (effectsChain.bitcrusher) {
+        effectsChain.bitcrusher.setDownsample(val);
+      }
+      return `${val}x`;
+    });
+
+    // Stereo Width controls
+    setupEffectToggle('dmStereoWidthToggle', 'stereoWidth');
+    setupEffectSlider('dmStereoWidth', 'dmStereoWidthVal', (val) => {
+      globalParams.stereoWidth.width = val / 100;
+      return `${val}%`;
     });
   }
 
@@ -2224,7 +2996,6 @@
     const valueDisplay = document.getElementById(valueId);
     
     if (slider && valueDisplay) {
-      // Reduce input event frequency for better performance
       let rafId = null;
       slider.addEventListener('input', (e) => {
         if (rafId) cancelAnimationFrame(rafId);
@@ -2256,6 +3027,7 @@
     play: play,
     stop: stop,
     clear: clear,
-    loadPreset: loadPreset
+    loadPreset: loadPreset,
+    resetToDefaults: resetToDefaults
   };
 })();
