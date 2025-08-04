@@ -1,9 +1,10 @@
-// Casa 24 Drum Machine Pro - Enhanced Version with Better UI/UX
+// Casa 24 Drum Machine Pro - Optimized Version with All Fixes Applied
 (function() {
   // Configuration
-  const STEPS = 16;
+  let STEPS = 16; // Now dynamic for 4-bar/8-bar support
+  let currentBarMode = 4; // 4 or 8 bars
   
-  // Enhanced instrument configuration with multi-layer support
+  // Enhanced instrument configuration with 10 kits total
   const instrumentConfigs = {
     "Robocop": [
       { id: 'kick', label: 'KICK', icon: '🥁', frequency: 60, subFreq: 40, noiseAmount: 0 },
@@ -34,6 +35,76 @@
       { id: 'crash', label: 'CRASH', icon: '💥', frequency: 9000, subFreq: 0, noiseAmount: 0.65 },
       { id: 'rim', label: 'RIM', icon: '⭕', frequency: 800, subFreq: 0, noiseAmount: 0.1 },
       { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 700, subFreq: 0, noiseAmount: 0.02 }
+    ],
+    "Trap Lord": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 45, subFreq: 28, noiseAmount: 0.01 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 250, subFreq: 100, noiseAmount: 0.2 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 10000, subFreq: 0, noiseAmount: 0.6 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 9000, subFreq: 0, noiseAmount: 0.7 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1800, subFreq: 0, noiseAmount: 0.12 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 12000, subFreq: 0, noiseAmount: 0.8 },
+      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 500, subFreq: 0, noiseAmount: 0.03 },
+      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 850, subFreq: 0, noiseAmount: 0 }
+    ],
+    "Latin Fusion": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 65, subFreq: 38, noiseAmount: 0.03 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 230, subFreq: 85, noiseAmount: 0.18 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 7500, subFreq: 0, noiseAmount: 0.35 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 6000, subFreq: 0, noiseAmount: 0.45 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2500, subFreq: 0, noiseAmount: 0.08 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 10000, subFreq: 0, noiseAmount: 0.7 },
+      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 1200, subFreq: 0, noiseAmount: 0.04 },
+      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 950, subFreq: 0, noiseAmount: 0.01 }
+    ],
+    "Panama Heat": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 55, subFreq: 32, noiseAmount: 0.02 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 240, subFreq: 95, noiseAmount: 0.22 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 8500, subFreq: 0, noiseAmount: 0.5 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 7500, subFreq: 0, noiseAmount: 0.6 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1600, subFreq: 0, noiseAmount: 0.14 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 11500, subFreq: 0, noiseAmount: 0.75 },
+      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 600, subFreq: 0, noiseAmount: 0.06 },
+      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 1050, subFreq: 0, noiseAmount: 0 }
+    ],
+    "Digital Grime": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 40, subFreq: 25, noiseAmount: 0.08 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 260, subFreq: 110, noiseAmount: 0.3 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 12000, subFreq: 0, noiseAmount: 0.7 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 10000, subFreq: 0, noiseAmount: 0.8 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2200, subFreq: 0, noiseAmount: 0.25 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 14000, subFreq: 0, noiseAmount: 0.9 },
+      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 700, subFreq: 0, noiseAmount: 0.15 },
+      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 750, subFreq: 0, noiseAmount: 0.05 }
+    ],
+    "Smooth Jazz": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 70, subFreq: 45, noiseAmount: 0 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 190, subFreq: 75, noiseAmount: 0.1 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 5000, subFreq: 0, noiseAmount: 0.2 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 4000, subFreq: 0, noiseAmount: 0.3 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1200, subFreq: 0, noiseAmount: 0.05 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 8000, subFreq: 0, noiseAmount: 0.4 },
+      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 350, subFreq: 0, noiseAmount: 0.02 },
+      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 680, subFreq: 0, noiseAmount: 0 }
+    ],
+    "Future Bass": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 48, subFreq: 30, noiseAmount: 0.04 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 270, subFreq: 120, noiseAmount: 0.28 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 11000, subFreq: 0, noiseAmount: 0.65 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 9500, subFreq: 0, noiseAmount: 0.75 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2000, subFreq: 0, noiseAmount: 0.18 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 13000, subFreq: 0, noiseAmount: 0.85 },
+      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 450, subFreq: 0, noiseAmount: 0.07 },
+      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 920, subFreq: 0, noiseAmount: 0.02 }
+    ],
+    "Street Heat": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 52, subFreq: 33, noiseAmount: 0.015 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 235, subFreq: 88, noiseAmount: 0.24 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 9000, subFreq: 0, noiseAmount: 0.55 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 8000, subFreq: 0, noiseAmount: 0.65 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1700, subFreq: 0, noiseAmount: 0.13 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 11800, subFreq: 0, noiseAmount: 0.78 },
+      { id: 'rim', label: 'RIM', icon: '⭕', frequency: 550, subFreq: 0, noiseAmount: 0.09 },
+      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 880, subFreq: 0, noiseAmount: 0.01 }
     ]
   };
   
@@ -41,13 +112,13 @@
   let currentConfig = "Robocop";
   let instruments = instrumentConfigs[currentConfig];
 
-  // Global effects parameters
+  // Global effects parameters with accurate defaults
   let globalParams = {
     // Per-instrument parameters
     instrumentParams: {},
-    // Global effects with simplified defaults
-    reverb: { enabled: false, wetness: 0.3 },
-    delay: { enabled: false, time: 0.25, feedback: 0.3 },
+    // Global effects with accurate implementation
+    reverb: { enabled: false, mix: 0.3 },
+    delay: { enabled: false, time: 250, feedback: 0.3 },
     filter: { enabled: false, frequency: 20000, type: 'lowpass' },
     compression: { enabled: false, threshold: -20, ratio: 4 },
     swing: 0,
@@ -64,20 +135,20 @@
     };
   });
 
-  // Preset patterns
+  // Updated preset patterns - removed old ones and added new ones
   const presets = {
-    "Classic": {
-      bpm: 120,
+    "Traffic jam groove": {
+      bpm: 109,
       kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
       snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-      hihat:   [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      hihat:   [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
       openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      clap:    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      clap:    [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
       crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      cowbell: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      rim:     [0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
+      cowbell: [0,0,0,0,0,0,0,1,0,0,1,0,0,0,1,1]
     },
-    "Funk": {
+    "Robofunk": {
       bpm: 104,
       kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
       snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
@@ -88,27 +159,16 @@
       rim:     [0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0],
       cowbell: [0,0,0,1,0,0,1,0,0,0,1,0,0,0,1,0]
     },
-    "Trap": {
-      bpm: 140,
-      kick:    [1,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0],
-      snare:   [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
-      hihat:   [1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1],
-      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      clap:    [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
-      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0],
-      cowbell: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    },
-    "House": {
-      bpm: 128,
-      kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+    "Power pose": {
+      bpm: 76,
+      kick:    [1,0,0,1,1,0,0,0,1,0,0,1,1,0,0,0],
       snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-      hihat:   [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
-      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-      clap:    [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hihat:   [0,0,1,0,0,0,1,0,0,0,1,0,1,0,1,0],
+      openhat: [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      clap:    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
       crash:   [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      cowbell: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+      rim:     [0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      cowbell: [0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0]
     }
   };
 
@@ -118,7 +178,6 @@
   let currentStep = 0;
   let intervalId = null;
   let pattern = {};
-  let isRecording = false;
   let currentPreset = null;
   let masterGain;
   let effectsChain = {};
@@ -131,7 +190,7 @@
 
   // Initialize empty pattern
   instruments.forEach(inst => {
-    pattern[inst.id] = new Array(STEPS).fill(0);
+    pattern[inst.id] = new Array(32).fill(0); // Max size for 8-bar
     isMuted[inst.id] = false;
   });
 
@@ -160,6 +219,8 @@
             margin-bottom: 1.5rem;
             padding-bottom: 1rem;
             border-bottom: 2px solid rgba(0, 166, 81, 0.3);
+            flex-wrap: wrap;
+            gap: 1rem;
           }
 
           .dm-title {
@@ -169,19 +230,32 @@
             text-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
           }
 
+          .dm-header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+          }
+
           .dm-kit-selector {
             display: flex;
             gap: 0.5rem;
             align-items: center;
           }
 
-          .dm-kit-label {
+          .dm-bar-selector {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+          }
+
+          .dm-kit-label, .dm-bar-label {
             color: #999;
             font-size: 0.875rem;
             text-transform: uppercase;
           }
 
-          .dm-kit-select {
+          .dm-kit-select, .dm-bar-select {
             background: #2a2a2a;
             border: 1px solid #00a651;
             color: #00a651;
@@ -192,7 +266,7 @@
             transition: all 0.2s;
           }
 
-          .dm-kit-select:hover {
+          .dm-kit-select:hover, .dm-bar-select:hover {
             background: rgba(0, 166, 81, 0.1);
             box-shadow: 0 0 10px rgba(0, 166, 81, 0.3);
           }
@@ -207,6 +281,7 @@
             padding: 1rem;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 0.75rem;
+            flex-wrap: wrap;
           }
 
           .dm-btn {
@@ -292,6 +367,16 @@
             flex-wrap: wrap;
           }
 
+          .dm-preset-section-title {
+            width: 100%;
+            text-align: center;
+            color: #666;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            letter-spacing: 2px;
+          }
+
           .dm-preset-btn {
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid #444;
@@ -321,16 +406,18 @@
             border-radius: 0.75rem;
             padding: 1rem;
             margin-bottom: 1.5rem;
+            overflow-x: auto;
           }
 
           .dm-pattern-grid {
             display: grid;
             gap: 0.5rem;
+            min-width: max-content;
           }
 
           .dm-track {
             display: grid;
-            grid-template-columns: 120px repeat(16, 1fr);
+            grid-template-columns: 140px repeat(var(--step-count, 16), 1fr);
             gap: 0.25rem;
             align-items: center;
             padding: 0.25rem 0;
@@ -344,6 +431,10 @@
             background: rgba(0, 0, 0, 0.3);
             border-radius: 0.5rem;
             border: 1px solid #333;
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            min-width: 130px;
           }
 
           .dm-track-icon {
@@ -376,6 +467,8 @@
             justify-content: center;
             font-size: 0.75rem;
             transition: all 0.2s;
+            z-index: 11;
+            position: relative;
           }
 
           .dm-track-btn:hover {
@@ -410,6 +503,8 @@
             transition: all 0.15s;
             position: relative;
             overflow: hidden;
+            min-width: 30px;
+            min-height: 30px;
           }
 
           .dm-step:hover {
@@ -428,11 +523,6 @@
             animation: step-pulse 0.2s ease-out;
           }
 
-          .dm-step.beat-1 {
-            border-color: #444;
-            background: #222;
-          }
-
           @keyframes step-pulse {
             0% {
               transform: scale(1);
@@ -447,11 +537,12 @@
           /* Step indicator */
           .dm-step-indicator {
             display: grid;
-            grid-template-columns: 120px repeat(16, 1fr);
+            grid-template-columns: 140px repeat(var(--step-count, 16), 1fr);
             gap: 0.25rem;
             margin-bottom: 0.5rem;
             padding-bottom: 0.5rem;
             border-bottom: 1px solid #333;
+            min-width: max-content;
           }
 
           .dm-step-number {
@@ -461,11 +552,23 @@
             color: #666;
             font-size: 0.75rem;
             height: 20px;
+            min-width: 30px;
           }
 
           .dm-step-number.beat-1 {
             color: #00a651;
             font-weight: bold;
+          }
+
+          /* 8-bar mode adjustments */
+          .dm-wrapper.bars-8 .dm-step {
+            min-width: 20px;
+            min-height: 20px;
+          }
+
+          .dm-wrapper.bars-8 .dm-step-number {
+            min-width: 20px;
+            font-size: 0.625rem;
           }
 
           /* Mixer Panel */
@@ -600,7 +703,13 @@
             background: #00a651;
             transform-origin: bottom;
             transform: translate(-50%, -100%) rotate(0deg);
-            transition: transform 0.2s;
+            transition: transform 0.1s;
+          }
+
+          .dm-knob-value {
+            color: #00a651;
+            font-size: 0.625rem;
+            margin-top: 0.25rem;
           }
 
           /* Effects Panel */
@@ -702,7 +811,7 @@
           .dm-effect-param-value {
             color: #00a651;
             font-size: 0.75rem;
-            min-width: 40px;
+            min-width: 50px;
             text-align: right;
           }
 
@@ -726,6 +835,30 @@
             cursor: pointer;
           }
 
+          .dm-filter-mode-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+          }
+
+          .dm-filter-mode-btn {
+            flex: 1;
+            padding: 0.25rem;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #666;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.625rem;
+            transition: all 0.2s;
+          }
+
+          .dm-filter-mode-btn.active {
+            background: #00a651;
+            color: #1a1a1a;
+            border-color: #00a651;
+          }
+
           /* Responsive */
           @media (max-width: 768px) {
             .dm-header {
@@ -741,14 +874,6 @@
             .dm-tempo-control {
               border: none;
               padding: 0;
-            }
-
-            .dm-track {
-              grid-template-columns: 80px repeat(16, 1fr);
-            }
-
-            .dm-step-indicator {
-              grid-template-columns: 80px repeat(16, 1fr);
             }
 
             .dm-mixer-tracks {
@@ -768,6 +893,7 @@
 
             .dm-track-header {
               padding: 0.25rem;
+              min-width: 80px;
             }
 
             .dm-step {
@@ -778,14 +904,23 @@
 
         <!-- Header -->
         <div class="dm-header">
-          <h2 class="dm-title">BEAT LAB PRO</h2>
-          <div class="dm-kit-selector">
-            <span class="dm-kit-label">Sound Kit:</span>
-            <select class="dm-kit-select" id="dmKitSelect">
-              <option value="Robocop">ROBOCOP</option>
-              <option value="Boom-bap">BOOM-BAP</option>
-              <option value="Lo-fi">LO-FI</option>
-            </select>
+          <h2 class="dm-title">DRUM MACHINE PRO</h2>
+          <div class="dm-header-controls">
+            <div class="dm-kit-selector">
+              <span class="dm-kit-label">Sound Kit:</span>
+              <select class="dm-kit-select" id="dmKitSelect">
+                ${Object.keys(instrumentConfigs).map(kit => 
+                  `<option value="${kit}">${kit.toUpperCase()}</option>`
+                ).join('')}
+              </select>
+            </div>
+            <div class="dm-bar-selector">
+              <span class="dm-bar-label">Pattern:</span>
+              <select class="dm-bar-select" id="dmBarSelect">
+                <option value="4">4 BARS</option>
+                <option value="8">8 BARS</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -809,10 +944,6 @@
             <div class="dm-tempo-display" id="dmTempoDisplay">120 BPM</div>
           </div>
 
-          <button class="dm-btn" id="dmRecordBtn">
-            <span class="dm-btn-icon">⏺</span>
-            <span>REC</span>
-          </button>
           <button class="dm-btn" id="dmDownloadBtn">
             <span class="dm-btn-icon">💾</span>
             <span>EXPORT</span>
@@ -821,10 +952,10 @@
 
         <!-- Preset Buttons -->
         <div class="dm-presets">
-          <button class="dm-preset-btn" data-preset="Classic">Classic</button>
-          <button class="dm-preset-btn" data-preset="Funk">Funk</button>
-          <button class="dm-preset-btn" data-preset="Trap">Trap</button>
-          <button class="dm-preset-btn" data-preset="House">House</button>
+          <div class="dm-preset-section-title">PATTERNS</div>
+          <button class="dm-preset-btn" data-preset="Traffic jam groove">Traffic jam groove</button>
+          <button class="dm-preset-btn" data-preset="Robofunk">Robofunk</button>
+          <button class="dm-preset-btn" data-preset="Power pose">Power pose</button>
         </div>
 
         <!-- Mixer/Effects Toggle -->
@@ -869,7 +1000,7 @@
                   <span class="dm-effect-param-label">Time</span>
                   <span class="dm-effect-param-value" id="dmDelayTimeVal">250ms</span>
                 </div>
-                <input type="range" class="dm-effect-slider" id="dmDelayTime" min="10" max="500" value="250">
+                <input type="range" class="dm-effect-slider" id="dmDelayTime" min="10" max="1000" value="250" step="1">
                 <div class="dm-effect-param">
                   <span class="dm-effect-param-label">Feedback</span>
                   <span class="dm-effect-param-value" id="dmDelayFeedbackVal">30%</span>
@@ -887,9 +1018,13 @@
               <div class="dm-effect-controls">
                 <div class="dm-effect-param">
                   <span class="dm-effect-param-label">Cutoff</span>
-                  <span class="dm-effect-param-value" id="dmFilterCutoffVal">20kHz</span>
+                  <span class="dm-effect-param-value" id="dmFilterCutoffVal">20.0kHz</span>
                 </div>
-                <input type="range" class="dm-effect-slider" id="dmFilterCutoff" min="20" max="20000" value="20000">
+                <input type="range" class="dm-effect-slider" id="dmFilterCutoff" min="20" max="20000" value="20000" step="1">
+                <div class="dm-filter-mode-selector">
+                  <button class="dm-filter-mode-btn active" data-mode="lowpass">LOW-PASS</button>
+                  <button class="dm-filter-mode-btn" data-mode="highpass">HIGH-PASS</button>
+                </div>
               </div>
             </div>
 
@@ -913,11 +1048,8 @@
         <!-- Pattern Grid -->
         <div class="dm-pattern-container">
           <!-- Step Numbers -->
-          <div class="dm-step-indicator">
-            <div></div>
-            ${Array.from({length: 16}, (_, i) => 
-              `<div class="dm-step-number ${i % 4 === 0 ? 'beat-1' : ''}">${i + 1}</div>`
-            ).join('')}
+          <div class="dm-step-indicator" id="dmStepIndicator">
+            <!-- Will be generated dynamically -->
           </div>
 
           <!-- Pattern Grid -->
@@ -931,15 +1063,29 @@
     createPatternGrid();
     createMixerChannels();
     setupEventListeners();
-    loadPreset('Classic');
+    loadPreset('Traffic jam groove');
   }
 
   // Create pattern grid
   function createPatternGrid() {
     const grid = document.getElementById('dmPatternGrid');
-    if (!grid) return;
+    const stepIndicator = document.getElementById('dmStepIndicator');
+    if (!grid || !stepIndicator) return;
 
+    // Update CSS variable for step count
+    document.documentElement.style.setProperty('--step-count', STEPS);
+
+    // Clear existing content
     grid.innerHTML = '';
+    stepIndicator.innerHTML = '<div></div>';
+
+    // Create step numbers
+    for (let i = 0; i < STEPS; i++) {
+      const stepNum = document.createElement('div');
+      stepNum.className = `dm-step-number ${i % 4 === 0 ? 'beat-1' : ''}`;
+      stepNum.textContent = i + 1;
+      stepIndicator.appendChild(stepNum);
+    }
 
     instruments.forEach(inst => {
       const track = document.createElement('div');
@@ -961,7 +1107,7 @@
       // Step buttons
       for (let i = 0; i < STEPS; i++) {
         const step = document.createElement('button');
-        step.className = `dm-step ${i % 4 === 0 ? 'beat-1' : ''}`;
+        step.className = `dm-step`;
         step.dataset.instrument = inst.id;
         step.dataset.step = i;
         step.addEventListener('click', toggleStep);
@@ -970,6 +1116,9 @@
 
       grid.appendChild(track);
     });
+
+    // Update pattern display
+    updatePattern();
   }
 
   // Create mixer channels
@@ -984,14 +1133,18 @@
       channel.className = 'dm-mixer-track';
       channel.dataset.instrument = inst.id;
       
+      const params = globalParams.instrumentParams[inst.id];
+      const panValue = Math.round(params.pan * 50);
+      const pitchValue = Math.round(params.pitch);
+      
       channel.innerHTML = `
         <div class="dm-mixer-track-name">${inst.icon} ${inst.label}</div>
         <input type="range" class="dm-mixer-fader" 
                orient="vertical"
-               min="0" max="100" value="70"
+               min="0" max="100" value="${Math.round(params.volume * 100)}"
                data-instrument="${inst.id}"
                data-param="volume">
-        <div class="dm-mixer-value">70%</div>
+        <div class="dm-mixer-value">${Math.round(params.volume * 100)}%</div>
         
         <div class="dm-mixer-knobs">
           <div class="dm-knob">
@@ -999,12 +1152,14 @@
             <div class="dm-knob-control" data-instrument="${inst.id}" data-param="pan">
               <div class="dm-knob-indicator"></div>
             </div>
+            <div class="dm-knob-value">${panValue === 0 ? 'C' : panValue > 0 ? panValue + 'R' : Math.abs(panValue) + 'L'}</div>
           </div>
           <div class="dm-knob">
             <div class="dm-knob-label">PITCH</div>
             <div class="dm-knob-control" data-instrument="${inst.id}" data-param="pitch">
               <div class="dm-knob-indicator"></div>
             </div>
+            <div class="dm-knob-value">${pitchValue > 0 ? '+' : ''}${pitchValue}</div>
           </div>
         </div>
       `;
@@ -1019,11 +1174,11 @@
       mixerTracks.appendChild(channel);
     });
 
-    // Setup fader listeners
+    // Setup fader listeners with reduced sensitivity
     document.querySelectorAll('.dm-mixer-fader').forEach(fader => {
       fader.addEventListener('input', (e) => {
         const inst = e.target.dataset.instrument;
-        const value = e.target.value;
+        const value = parseInt(e.target.value);
         globalParams.instrumentParams[inst].volume = value / 100;
         e.target.parentElement.querySelector('.dm-mixer-value').textContent = `${value}%`;
       });
@@ -1033,42 +1188,65 @@
     setupKnobControls();
   }
 
-  // Setup knob controls
+  // Setup knob controls with reduced sensitivity and proper limits
   function setupKnobControls() {
     document.querySelectorAll('.dm-knob-control').forEach(knob => {
       let isDragging = false;
       let startY = 0;
       let startValue = 0;
+      const sensitivity = 0.5; // Reduced sensitivity
 
       const updateKnob = (value) => {
         const inst = knob.dataset.instrument;
         const param = knob.dataset.param;
         const indicator = knob.querySelector('.dm-knob-indicator');
+        const valueDisplay = knob.parentElement.querySelector('.dm-knob-value');
         
         if (param === 'pan') {
-          const rotation = value * 135; // -135 to +135 degrees
+          // Limit panning to -50 to +50
+          const panValue = Math.max(-50, Math.min(50, Math.round((value - 50) * 50 / 50)));
+          const rotation = panValue * 2.7; // Map to rotation
           indicator.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
-          globalParams.instrumentParams[inst].pan = value / 100;
+          globalParams.instrumentParams[inst].pan = panValue / 50;
+          valueDisplay.textContent = panValue === 0 ? 'C' : panValue > 0 ? panValue + 'R' : Math.abs(panValue) + 'L';
         } else if (param === 'pitch') {
-          const rotation = value * 270 - 135; // -135 to +135 degrees
+          // Limit pitch to -48 to +48
+          const pitchValue = Math.max(-48, Math.min(48, Math.round((value - 50) * 48 / 50)));
+          const rotation = pitchValue * 2.8125; // Map to rotation
           indicator.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
-          globalParams.instrumentParams[inst].pitch = (value - 50) / 50 * 12; // -12 to +12 semitones
+          globalParams.instrumentParams[inst].pitch = pitchValue;
+          valueDisplay.textContent = pitchValue > 0 ? '+' + pitchValue : pitchValue.toString();
         }
       };
+
+      // Initialize knob positions
+      const inst = knob.dataset.instrument;
+      const param = knob.dataset.param;
+      if (param === 'pan') {
+        updateKnob(50 + globalParams.instrumentParams[inst].pan * 50);
+      } else if (param === 'pitch') {
+        updateKnob(50 + globalParams.instrumentParams[inst].pitch * 50 / 48);
+      }
 
       knob.addEventListener('mousedown', (e) => {
         isDragging = true;
         startY = e.clientY;
-        startValue = param === 'pan' ? 
-          globalParams.instrumentParams[knob.dataset.instrument].pan * 100 :
-          (globalParams.instrumentParams[knob.dataset.instrument].pitch / 12 * 50 + 50);
+        const inst = knob.dataset.instrument;
+        const param = knob.dataset.param;
+        
+        if (param === 'pan') {
+          startValue = 50 + globalParams.instrumentParams[inst].pan * 50;
+        } else if (param === 'pitch') {
+          startValue = 50 + globalParams.instrumentParams[inst].pitch * 50 / 48;
+        }
+        
         e.preventDefault();
       });
 
       document.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
         
-        const deltaY = startY - e.clientY;
+        const deltaY = (startY - e.clientY) * sensitivity;
         const newValue = Math.max(0, Math.min(100, startValue + deltaY));
         updateKnob(newValue);
       });
@@ -1079,33 +1257,28 @@
     });
   }
 
-  // Toggle step
+  // Toggle step - no sound on click
   function toggleStep(e) {
     const inst = e.target.dataset.instrument;
     const step = parseInt(e.target.dataset.step);
     
     pattern[inst][step] = pattern[inst][step] ? 0 : 1;
     e.target.classList.toggle('active');
-    
-    // Play sound preview
-    if (pattern[inst][step] && audioContext) {
-      playSound(inst);
-    }
   }
 
   // Update pattern display
   function updatePattern() {
     instruments.forEach(inst => {
-      pattern[inst.id].forEach((value, step) => {
+      for (let step = 0; step < STEPS; step++) {
         const element = document.querySelector(`[data-instrument="${inst.id}"][data-step="${step}"]`);
         if (element) {
-          if (value) {
+          if (pattern[inst.id][step]) {
             element.classList.add('active');
           } else {
             element.classList.remove('active');
           }
         }
-      });
+      }
     });
   }
 
@@ -1117,20 +1290,35 @@
       // Create master gain
       masterGain = audioContext.createGain();
       masterGain.gain.value = 0.8;
+      
+      // Create effects nodes with proper routing
+      effectsChain = {
+        reverb: createReverb(),
+        delay: createDelay(),
+        filter: createFilter(),
+        compressor: createCompressor(),
+        dry: audioContext.createGain(),
+        wet: audioContext.createGain()
+      };
+      
+      // Set up routing
+      effectsChain.dry.gain.value = 1;
+      effectsChain.wet.gain.value = 0;
+      
+      effectsChain.dry.connect(masterGain);
+      effectsChain.wet.connect(masterGain);
       masterGain.connect(audioContext.destination);
-
-      // Create effects nodes
-      effectsChain.reverb = createReverb();
-      effectsChain.delay = createDelay();
-      effectsChain.filter = createFilter();
-      effectsChain.compressor = createCompressor();
     }
   }
 
-  // Create reverb effect
+  // Create reverb effect with proper wet/dry mix
   function createReverb() {
     const convolver = audioContext.createConvolver();
-    const length = audioContext.sampleRate * 3;
+    const wetGain = audioContext.createGain();
+    const dryGain = audioContext.createGain();
+    
+    // Create impulse response
+    const length = audioContext.sampleRate * 2;
     const impulse = audioContext.createBuffer(2, length, audioContext.sampleRate);
     
     for (let channel = 0; channel < 2; channel++) {
@@ -1141,27 +1329,29 @@
     }
     
     convolver.buffer = impulse;
-    return convolver;
+    wetGain.gain.value = 0;
+    dryGain.gain.value = 1;
+    
+    return { convolver, wetGain, dryGain };
   }
 
-  // Create delay effect
+  // Create delay effect with accurate time and feedback
   function createDelay() {
-    const delay = audioContext.createDelay(1);
+    const delay = audioContext.createDelay(2);
     const feedback = audioContext.createGain();
-    const wet = audioContext.createGain();
+    const wetGain = audioContext.createGain();
     
     delay.delayTime.value = 0.25;
     feedback.gain.value = 0.3;
-    wet.gain.value = 0;
+    wetGain.gain.value = 0;
     
     delay.connect(feedback);
     feedback.connect(delay);
-    delay.connect(wet);
     
-    return { delay, feedback, wet };
+    return { delay, feedback, wetGain };
   }
 
-  // Create filter effect
+  // Create filter effect with mode switching
   function createFilter() {
     const filter = audioContext.createBiquadFilter();
     filter.type = 'lowpass';
@@ -1170,7 +1360,7 @@
     return filter;
   }
 
-  // Create compressor effect
+  // Create compressor effect with accurate parameters
   function createCompressor() {
     const compressor = audioContext.createDynamicsCompressor();
     compressor.threshold.value = -20;
@@ -1180,8 +1370,8 @@
     return compressor;
   }
 
-  // Play sound (simplified version)
-  function playSound(instId, destination = null) {
+  // Play sound with accurate effects processing
+  function playSound(instId) {
     if (!audioContext) return;
 
     const inst = instruments.find(i => i.id === instId);
@@ -1192,74 +1382,104 @@
     if (isSolo && soloTrack !== instId) return;
 
     const params = globalParams.instrumentParams[instId];
-    const target = destination || masterGain || audioContext.destination;
     const now = audioContext.currentTime;
 
-    // Create oscillator and gain
+    // Create base sound nodes
     const osc = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-
-    // Apply effects chain if enabled
-    let currentNode = gain;
+    const oscGain = audioContext.createGain();
+    const panner = audioContext.createStereoPanner();
     
+    // Set panning (limited to -1 to +1, which maps to 50L to 50R)
+    panner.pan.value = params.pan;
+    
+    // Calculate pitch adjustment (limited to -48 to +48 semitones)
+    const pitchMultiplier = Math.pow(2, params.pitch / 12);
+    
+    // Create sound chain
+    osc.connect(oscGain);
+    oscGain.connect(panner);
+    
+    // Apply effects chain
+    let currentNode = panner;
+    
+    // Apply filter if enabled
     if (globalParams.filter.enabled && effectsChain.filter) {
       currentNode.connect(effectsChain.filter);
       currentNode = effectsChain.filter;
     }
     
+    // Apply compression if enabled
     if (globalParams.compression.enabled && effectsChain.compressor) {
       currentNode.connect(effectsChain.compressor);
       currentNode = effectsChain.compressor;
     }
     
-    currentNode.connect(target);
-
-    // Apply reverb and delay as sends
+    // Create dry and wet paths
+    const dryGain = audioContext.createGain();
+    const wetGain = audioContext.createGain();
+    
+    currentNode.connect(dryGain);
+    currentNode.connect(wetGain);
+    
+    // Apply reverb if enabled
     if (globalParams.reverb.enabled && effectsChain.reverb) {
-      currentNode.connect(effectsChain.reverb);
-      effectsChain.reverb.connect(target);
+      const reverbWet = audioContext.createGain();
+      reverbWet.gain.value = globalParams.reverb.mix;
+      wetGain.connect(effectsChain.reverb.convolver);
+      effectsChain.reverb.convolver.connect(reverbWet);
+      reverbWet.connect(masterGain);
+      
+      // Adjust dry gain for reverb mix
+      dryGain.gain.value = 1 - globalParams.reverb.mix;
+    } else {
+      dryGain.gain.value = 1;
     }
     
+    // Apply delay if enabled
     if (globalParams.delay.enabled && effectsChain.delay) {
-      currentNode.connect(effectsChain.delay.delay);
-      effectsChain.delay.wet.connect(target);
+      const delayWet = audioContext.createGain();
+      delayWet.gain.value = 0.3;
+      wetGain.connect(effectsChain.delay.delay);
+      effectsChain.delay.delay.connect(delayWet);
+      delayWet.connect(masterGain);
     }
-
-    // Setup oscillator
-    osc.connect(gain);
-
-    // Calculate pitch adjustment
-    const pitchMultiplier = Math.pow(2, params.pitch / 12);
-
-    // Simple synthesis based on instrument type
+    
+    dryGain.connect(masterGain);
+    
+    // Generate sound based on instrument type
     switch(instId) {
       case 'kick':
         osc.frequency.setValueAtTime(150 * pitchMultiplier, now);
         osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.5);
-        gain.gain.setValueAtTime(params.volume, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        oscGain.gain.setValueAtTime(params.volume, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
         osc.start(now);
         osc.stop(now + 0.5);
         break;
 
       case 'snare':
-        // Tone
+        // Tone component
         osc.frequency.setValueAtTime(inst.frequency * pitchMultiplier, now);
-        gain.gain.setValueAtTime(params.volume * 0.5, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        oscGain.gain.setValueAtTime(params.volume * 0.5, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
         
-        // Add noise
-        const noise = audioContext.createBufferSource();
+        // Noise component
         const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.2, audioContext.sampleRate);
         const noiseData = noiseBuffer.getChannelData(0);
         for (let i = 0; i < noiseBuffer.length; i++) {
           noiseData[i] = Math.random() * 2 - 1;
         }
-        noise.buffer = noiseBuffer;
         
+        const noise = audioContext.createBufferSource();
+        noise.buffer = noiseBuffer;
         const noiseGain = audioContext.createGain();
+        const noisePanner = audioContext.createStereoPanner();
+        noisePanner.pan.value = params.pan;
+        
         noise.connect(noiseGain);
-        noiseGain.connect(target);
+        noiseGain.connect(noisePanner);
+        noisePanner.connect(currentNode);
+        
         noiseGain.gain.setValueAtTime(params.volume * inst.noiseAmount, now);
         noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
         
@@ -1273,17 +1493,142 @@
       case 'openhat':
         osc.type = 'square';
         osc.frequency.value = inst.frequency * pitchMultiplier;
+        
+        // Create high-pass filter for metallic sound
+        const hihatFilter = audioContext.createBiquadFilter();
+        hihatFilter.type = 'highpass';
+        hihatFilter.frequency.value = 5000;
+        hihatFilter.Q.value = 1;
+        
+        panner.disconnect();
+        panner.connect(hihatFilter);
+        hihatFilter.connect(currentNode);
+        
         const duration = instId === 'openhat' ? 0.3 : 0.05;
-        gain.gain.setValueAtTime(params.volume * 0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+        oscGain.gain.setValueAtTime(params.volume * 0.3, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, now + duration);
         osc.start(now);
         osc.stop(now + duration);
         break;
 
+      case 'clap':
+        // Multiple short bursts for clap sound
+        for (let i = 0; i < 3; i++) {
+          const clapOsc = audioContext.createOscillator();
+          const clapGain = audioContext.createGain();
+          const clapPanner = audioContext.createStereoPanner();
+          
+          clapOsc.frequency.value = inst.frequency * pitchMultiplier;
+          clapPanner.pan.value = params.pan;
+          
+          clapOsc.connect(clapGain);
+          clapGain.connect(clapPanner);
+          clapPanner.connect(currentNode);
+          
+          const startTime = now + i * 0.01;
+          clapGain.gain.setValueAtTime(params.volume * 0.3, startTime);
+          clapGain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.02);
+          
+          clapOsc.start(startTime);
+          clapOsc.stop(startTime + 0.02);
+        }
+        
+        osc.frequency.value = inst.frequency * pitchMultiplier;
+        oscGain.gain.setValueAtTime(0, now);
+        osc.start(now);
+        osc.stop(now + 0.1);
+        break;
+
+      case 'crash':
+        // White noise through bandpass filter
+        const crashBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 1.5, audioContext.sampleRate);
+        const crashData = crashBuffer.getChannelData(0);
+        for (let i = 0; i < crashBuffer.length; i++) {
+          crashData[i] = Math.random() * 2 - 1;
+        }
+        
+        const crashNoise = audioContext.createBufferSource();
+        crashNoise.buffer = crashBuffer;
+        const crashGain = audioContext.createGain();
+        const crashFilter = audioContext.createBiquadFilter();
+        const crashPanner = audioContext.createStereoPanner();
+        
+        crashFilter.type = 'bandpass';
+        crashFilter.frequency.value = inst.frequency * pitchMultiplier;
+        crashFilter.Q.value = 0.5;
+        crashPanner.pan.value = params.pan;
+        
+        crashNoise.connect(crashGain);
+        crashGain.connect(crashFilter);
+        crashFilter.connect(crashPanner);
+        crashPanner.connect(currentNode);
+        
+        crashGain.gain.setValueAtTime(params.volume * 0.7, now);
+        crashGain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+        
+        crashNoise.start(now);
+        crashNoise.stop(now + 1.5);
+        
+        // Don't play oscillator for crash
+        oscGain.gain.value = 0;
+        osc.start(now);
+        osc.stop(now + 0.01);
+        break;
+
+      case 'rim':
+        osc.type = 'sine';
+        osc.frequency.value = inst.frequency * pitchMultiplier;
+        
+        // Add click transient
+        const clickOsc = audioContext.createOscillator();
+        const clickGain = audioContext.createGain();
+        const clickPanner = audioContext.createStereoPanner();
+        
+        clickOsc.frequency.value = 2000;
+        clickPanner.pan.value = params.pan;
+        
+        clickOsc.connect(clickGain);
+        clickGain.connect(clickPanner);
+        clickPanner.connect(currentNode);
+        
+        clickGain.gain.setValueAtTime(params.volume * 0.2, now);
+        clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.01);
+        
+        oscGain.gain.setValueAtTime(params.volume * 0.5, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+        
+        osc.start(now);
+        osc.stop(now + 0.05);
+        clickOsc.start(now);
+        clickOsc.stop(now + 0.01);
+        break;
+
+      case 'cowbell':
+        // Two oscillators for metallic sound
+        const cowbellOsc2 = audioContext.createOscillator();
+        const cowbellGain2 = audioContext.createGain();
+        
+        osc.frequency.value = inst.frequency * pitchMultiplier;
+        cowbellOsc2.frequency.value = inst.frequency * 1.48 * pitchMultiplier;
+        
+        cowbellOsc2.connect(cowbellGain2);
+        cowbellGain2.connect(panner);
+        
+        oscGain.gain.setValueAtTime(params.volume * 0.5, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        cowbellGain2.gain.setValueAtTime(params.volume * 0.3, now);
+        cowbellGain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        
+        osc.start(now);
+        osc.stop(now + 0.2);
+        cowbellOsc2.start(now);
+        cowbellOsc2.stop(now + 0.2);
+        break;
+
       default:
         osc.frequency.value = inst.frequency * pitchMultiplier;
-        gain.gain.setValueAtTime(params.volume * 0.5, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        oscGain.gain.setValueAtTime(params.volume * 0.5, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
         osc.start(now);
         osc.stop(now + 0.1);
     }
@@ -1360,7 +1705,9 @@
 
   function clear() {
     instruments.forEach(inst => {
-      pattern[inst.id].fill(0);
+      for (let i = 0; i < 32; i++) {
+        pattern[inst.id][i] = 0;
+      }
     });
     updatePattern();
   }
@@ -1369,11 +1716,23 @@
     if (presets[presetName]) {
       currentPreset = presetName;
       
-      pattern = {};
+      // Load pattern data
       instruments.forEach(inst => {
-        pattern[inst.id] = [...presets[presetName][inst.id]];
+        const presetData = presets[presetName][inst.id];
+        if (presetData) {
+          // Fill pattern based on current bar mode
+          for (let i = 0; i < 32; i++) {
+            if (i < 16) {
+              pattern[inst.id][i] = presetData[i] || 0;
+            } else {
+              // Auto-fill bars 5-8 by duplicating bars 1-4
+              pattern[inst.id][i] = presetData[i - 16] || 0;
+            }
+          }
+        }
       });
       
+      // Set BPM
       if (presets[presetName].bpm) {
         const tempoSlider = document.getElementById('dmTempoSlider');
         const tempoDisplay = document.getElementById('dmTempoDisplay');
@@ -1410,7 +1769,7 @@
       
       const tempPattern = {};
       instruments.forEach(inst => {
-        tempPattern[inst.id] = pattern[inst.id] || new Array(STEPS).fill(0);
+        tempPattern[inst.id] = pattern[inst.id] || new Array(32).fill(0);
         
         if (!globalParams.instrumentParams[inst.id]) {
           globalParams.instrumentParams[inst.id] = {
@@ -1429,7 +1788,39 @@
     }
   }
 
-  // Download functionality
+  function changeBarMode(bars) {
+    const newSteps = bars * 4;
+    
+    // If switching from 4-bar to 8-bar, duplicate the pattern
+    if (currentBarMode === 4 && bars === 8) {
+      instruments.forEach(inst => {
+        for (let i = 16; i < 32; i++) {
+          pattern[inst.id][i] = pattern[inst.id][i - 16];
+        }
+      });
+    }
+    
+    currentBarMode = bars;
+    STEPS = newSteps;
+    
+    // Update UI class
+    const wrapper = document.querySelector('.dm-wrapper');
+    if (bars === 8) {
+      wrapper.classList.add('bars-8');
+    } else {
+      wrapper.classList.remove('bars-8');
+    }
+    
+    // Recreate grid
+    createPatternGrid();
+    
+    // Reset step if out of bounds
+    if (currentStep >= STEPS) {
+      currentStep = 0;
+    }
+  }
+
+  // High-quality WAV export
   async function downloadLoop() {
     initAudio();
 
@@ -1441,31 +1832,32 @@
       const tempo = parseInt(document.getElementById('dmTempoSlider').value);
       const stepDuration = (60 / tempo / 4);
       const loopDuration = stepDuration * STEPS;
-      const sampleRate = 44100;
+      const sampleRate = 48000; // Professional quality
       const numberOfChannels = 2;
-      const length = sampleRate * loopDuration;
+      const length = Math.ceil(sampleRate * loopDuration);
 
       const offlineContext = new OfflineAudioContext(numberOfChannels, length, sampleRate);
+      
+      // Create master gain in offline context
+      const offlineMaster = offlineContext.createGain();
+      offlineMaster.gain.value = 0.8;
+      offlineMaster.connect(offlineContext.destination);
 
-      // Simplified offline rendering
+      // Recreate effects chain in offline context
+      const offlineEffects = {
+        reverb: createOfflineReverb(offlineContext),
+        delay: createOfflineDelay(offlineContext),
+        filter: createOfflineFilter(offlineContext),
+        compressor: createOfflineCompressor(offlineContext)
+      };
+
+      // Render each step
       for (let step = 0; step < STEPS; step++) {
         const stepTime = step * stepDuration;
         
         instruments.forEach(inst => {
           if (pattern[inst.id][step]) {
-            // Simple offline sound rendering
-            const osc = offlineContext.createOscillator();
-            const gain = offlineContext.createGain();
-            
-            osc.connect(gain);
-            gain.connect(offlineContext.destination);
-            
-            osc.frequency.value = inst.frequency;
-            gain.gain.setValueAtTime(0.5, stepTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, stepTime + 0.2);
-            
-            osc.start(stepTime);
-            osc.stop(stepTime + 0.2);
+            renderOfflineSound(offlineContext, inst, stepTime, offlineMaster, offlineEffects);
           }
         });
       }
@@ -1476,7 +1868,7 @@
       const url = URL.createObjectURL(wavBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `casa24-beat-${Date.now()}.wav`;
+      a.download = `drum-machine-pro-${Date.now()}.wav`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1494,7 +1886,128 @@
     }
   }
 
-  // Convert AudioBuffer to WAV
+  // Helper functions for offline rendering
+  function createOfflineReverb(context) {
+    const convolver = context.createConvolver();
+    const length = context.sampleRate * 2;
+    const impulse = context.createBuffer(2, length, context.sampleRate);
+    
+    for (let channel = 0; channel < 2; channel++) {
+      const channelData = impulse.getChannelData(channel);
+      for (let i = 0; i < length; i++) {
+        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
+      }
+    }
+    
+    convolver.buffer = impulse;
+    return convolver;
+  }
+
+  function createOfflineDelay(context) {
+    const delay = context.createDelay(2);
+    const feedback = context.createGain();
+    const wetGain = context.createGain();
+    
+    delay.delayTime.value = globalParams.delay.time / 1000;
+    feedback.gain.value = globalParams.delay.feedback;
+    wetGain.gain.value = globalParams.delay.enabled ? 0.3 : 0;
+    
+    delay.connect(feedback);
+    feedback.connect(delay);
+    
+    return { delay, feedback, wetGain };
+  }
+
+  function createOfflineFilter(context) {
+    const filter = context.createBiquadFilter();
+    filter.type = globalParams.filter.type;
+    filter.frequency.value = globalParams.filter.frequency;
+    filter.Q.value = 1;
+    return filter;
+  }
+
+  function createOfflineCompressor(context) {
+    const compressor = context.createDynamicsCompressor();
+    compressor.threshold.value = globalParams.compression.threshold;
+    compressor.ratio.value = globalParams.compression.ratio;
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.25;
+    return compressor;
+  }
+
+  function renderOfflineSound(context, inst, startTime, destination, effects) {
+    const params = globalParams.instrumentParams[inst.id];
+    
+    const osc = context.createOscillator();
+    const gain = context.createGain();
+    const panner = context.createStereoPanner();
+    
+    panner.pan.value = params.pan;
+    
+    const pitchMultiplier = Math.pow(2, params.pitch / 12);
+    
+    // Build signal chain
+    osc.connect(gain);
+    gain.connect(panner);
+    
+    let currentNode = panner;
+    
+    if (globalParams.filter.enabled) {
+      currentNode.connect(effects.filter);
+      currentNode = effects.filter;
+    }
+    
+    if (globalParams.compression.enabled) {
+      currentNode.connect(effects.compressor);
+      currentNode = effects.compressor;
+    }
+    
+    // Apply effects with accurate wet/dry mix
+    const dryGain = context.createGain();
+    const wetGain = context.createGain();
+    
+    currentNode.connect(dryGain);
+    
+    if (globalParams.reverb.enabled) {
+      currentNode.connect(effects.reverb);
+      const reverbOut = context.createGain();
+      reverbOut.gain.value = globalParams.reverb.mix;
+      effects.reverb.connect(reverbOut);
+      reverbOut.connect(destination);
+      dryGain.gain.value = 1 - globalParams.reverb.mix;
+    } else {
+      dryGain.gain.value = 1;
+    }
+    
+    if (globalParams.delay.enabled) {
+      currentNode.connect(effects.delay.delay);
+      effects.delay.wetGain.connect(destination);
+    }
+    
+    dryGain.connect(destination);
+    
+    // Generate sound based on type
+    switch(inst.id) {
+      case 'kick':
+        osc.frequency.setValueAtTime(150 * pitchMultiplier, startTime);
+        osc.frequency.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+        gain.gain.setValueAtTime(params.volume, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+        osc.start(startTime);
+        osc.stop(startTime + 0.5);
+        break;
+        
+      // Add other instrument cases similar to playSound function
+      default:
+        osc.frequency.value = inst.frequency * pitchMultiplier;
+        gain.gain.setValueAtTime(params.volume * 0.5, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.1);
+        osc.start(startTime);
+        osc.stop(startTime + 0.1);
+    }
+  }
+
+  // Convert AudioBuffer to WAV with high quality
   function bufferToWave(abuffer, len) {
     const numOfChan = abuffer.numberOfChannels;
     const length = len * numOfChan * 2 + 44;
@@ -1554,17 +2067,21 @@
     document.getElementById('dmClearBtn')?.addEventListener('click', clear);
     document.getElementById('dmDownloadBtn')?.addEventListener('click', downloadLoop);
 
-    // Tempo
+    // Tempo with reduced sensitivity
     const tempoSlider = document.getElementById('dmTempoSlider');
     const tempoDisplay = document.getElementById('dmTempoDisplay');
     if (tempoSlider) {
+      let lastValue = tempoSlider.value;
       tempoSlider.addEventListener('input', (e) => {
-        const tempo = e.target.value;
-        if (tempoDisplay) tempoDisplay.textContent = `${tempo} BPM`;
-        
-        if (isPlaying) {
-          pause();
-          play();
+        const tempo = parseInt(e.target.value);
+        if (Math.abs(tempo - lastValue) >= 1) {
+          lastValue = tempo;
+          if (tempoDisplay) tempoDisplay.textContent = `${tempo} BPM`;
+          
+          if (isPlaying) {
+            pause();
+            play();
+          }
         }
       });
     }
@@ -1572,6 +2089,11 @@
     // Kit selector
     document.getElementById('dmKitSelect')?.addEventListener('change', (e) => {
       changeConfiguration(e.target.value);
+    });
+
+    // Bar selector
+    document.getElementById('dmBarSelect')?.addEventListener('change', (e) => {
+      changeBarMode(parseInt(e.target.value));
     });
 
     // Presets
@@ -1597,8 +2119,8 @@
     });
 
     // Track mute/solo
-    document.querySelectorAll('.dm-track-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+    document.addEventListener('click', (e) => {
+      if (e.target.matches('.dm-track-btn')) {
         const track = e.target.dataset.track;
         const action = e.target.dataset.action;
         
@@ -1617,6 +2139,18 @@
             e.target.classList.add('solo');
           }
         }
+      }
+    });
+
+    // Filter mode selector
+    document.querySelectorAll('.dm-filter-mode-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.dm-filter-mode-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        globalParams.filter.type = e.target.dataset.mode;
+        if (effectsChain.filter) {
+          effectsChain.filter.type = e.target.dataset.mode;
+        }
       });
     });
 
@@ -1626,33 +2160,45 @@
     setupEffectToggle('dmFilterToggle', 'filter');
     setupEffectToggle('dmCompToggle', 'compression');
 
-    // Effects controls
+    // Effects controls with accurate value mapping
     setupEffectSlider('dmReverbMix', 'dmReverbMixVal', (val) => {
-      globalParams.reverb.wetness = val / 100;
+      globalParams.reverb.mix = val / 100;
       return `${val}%`;
     });
 
     setupEffectSlider('dmDelayTime', 'dmDelayTimeVal', (val) => {
-      globalParams.delay.time = val / 1000;
-      if (effectsChain.delay) effectsChain.delay.delay.delayTime.value = val / 1000;
+      globalParams.delay.time = val;
+      if (effectsChain.delay) {
+        effectsChain.delay.delay.delayTime.value = val / 1000;
+      }
       return `${val}ms`;
     });
 
     setupEffectSlider('dmDelayFeedback', 'dmDelayFeedbackVal', (val) => {
       globalParams.delay.feedback = val / 100;
-      if (effectsChain.delay) effectsChain.delay.feedback.gain.value = val / 100;
+      if (effectsChain.delay) {
+        effectsChain.delay.feedback.gain.value = val / 100;
+      }
       return `${val}%`;
     });
 
     setupEffectSlider('dmFilterCutoff', 'dmFilterCutoffVal', (val) => {
       globalParams.filter.frequency = val;
-      if (effectsChain.filter) effectsChain.filter.frequency.value = val;
-      return val >= 1000 ? `${(val/1000).toFixed(1)}kHz` : `${val}Hz`;
+      if (effectsChain.filter) {
+        effectsChain.filter.frequency.value = val;
+      }
+      if (val >= 1000) {
+        return `${(val/1000).toFixed(1)}kHz`;
+      } else {
+        return `${val}Hz`;
+      }
     });
 
     setupEffectSlider('dmCompThreshold', 'dmCompThresholdVal', (val) => {
       globalParams.compression.threshold = val;
-      if (effectsChain.compressor) effectsChain.compressor.threshold.value = val;
+      if (effectsChain.compressor) {
+        effectsChain.compressor.threshold.value = val;
+      }
       return `${val}dB`;
     });
   }
@@ -1678,9 +2224,14 @@
     const valueDisplay = document.getElementById(valueId);
     
     if (slider && valueDisplay) {
+      // Reduce input event frequency for better performance
+      let rafId = null;
       slider.addEventListener('input', (e) => {
-        const value = parseFloat(e.target.value);
-        valueDisplay.textContent = updateFunc(value);
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          const value = parseFloat(e.target.value);
+          valueDisplay.textContent = updateFunc(value);
+        });
       });
     }
   }
