@@ -52,8 +52,12 @@
     // Set up navigation
     setupNavigation();
 
+    // Check for hash in URL
+    const hash = window.location.hash.substring(1);
+    const initialSection = (hash && config.sections[hash]) ? hash : config.defaultSection;
+
     // Initialize default section
-    showSection(config.defaultSection);
+    showSection(initialSection);
 
     // Handle browser back/forward
     window.addEventListener('popstate', handlePopState);
@@ -108,8 +112,10 @@
       currentContainer.style.display = 'block';
     }
 
-    // Initialize section if needed
-    initializeSection(sectionId);
+    // IMPORTANT: Force re-initialization for components that need visible containers
+    setTimeout(() => {
+      initializeSection(sectionId);
+    }, 0);
 
     // Update URL without page reload
     history.pushState({ section: sectionId }, '', `#${sectionId}`);
@@ -147,14 +153,23 @@
       // Special handling for sections with sort parameters
       if (sectionId === 'life' || sectionId === 'unmastered') {
         module.initialize('newest');
+      } else if (sectionId === 'drum-machine') {
+        // Force re-initialization for drum machine
+        const container = document.getElementById('drum-machine-container');
+        if (container) {
+          container.innerHTML = ''; // Clear existing content
+          module.initialize();
+        }
       } else {
         module.initialize();
       }
     } else if (sectionId === 'collective') {
       // Collective Overview uses React and initializes automatically
-      // Trigger a re-render if needed
+      // Force a re-render
       if (window.CollectiveOverview && window.CollectiveOverview.refresh) {
         window.CollectiveOverview.refresh();
+      } else if (window.CollectiveOverview && window.CollectiveOverview.initialize) {
+        window.CollectiveOverview.initialize();
       }
     }
   }
