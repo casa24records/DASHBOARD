@@ -1,4 +1,3 @@
-```javascript
 /**
  * Drum Machine Pro MVP
  * Complete production-ready implementation with all requested features
