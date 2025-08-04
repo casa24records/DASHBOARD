@@ -27,7 +27,7 @@
         module: 'unmastered',
         active: true
       },
-      drumMachine: {
+      'drum-machine': {
         id: 'drum-machine',
         name: 'Drum Machine',
         module: 'drumMachinePro',
@@ -41,6 +41,7 @@
   // State
   let currentSection = config.defaultSection;
   let initialized = false;
+  let sectionInitialized = {};
 
   /**
    * Initialize the main controller
@@ -112,10 +113,11 @@
       currentContainer.style.display = 'block';
     }
 
-    // IMPORTANT: Force re-initialization for components that need visible containers
-    setTimeout(() => {
+    // Initialize section after making it visible
+    // Use requestAnimationFrame to ensure DOM has updated
+    requestAnimationFrame(() => {
       initializeSection(sectionId);
-    }, 0);
+    });
 
     // Update URL without page reload
     history.pushState({ section: sectionId }, '', `#${sectionId}`);
@@ -149,26 +151,36 @@
 
     const module = window[section.module];
     
+    // Special handling for drum machine since it auto-initializes
+    if (sectionId === 'drum-machine') {
+      const container = document.getElementById('drum-machine-container');
+      if (container) {
+        // Check if already initialized by looking for the wrapper
+        const existingWrapper = container.querySelector('.dm-wrapper');
+        if (!existingWrapper) {
+          // Not initialized yet, the auto-init must have failed
+          // Clear container and force initialization
+          container.innerHTML = '';
+          if (module && typeof module.initialize === 'function') {
+            module.initialize();
+          }
+        }
+        // If already initialized, do nothing - it should already be working
+      }
+      return;
+    }
+    
+    // For other modules
     if (module && typeof module.initialize === 'function') {
       // Special handling for sections with sort parameters
       if (sectionId === 'life' || sectionId === 'unmastered') {
         module.initialize('newest');
-      } else if (sectionId === 'drum-machine') {
-        // Force re-initialization for drum machine
-        const container = document.getElementById('drum-machine-container');
-        if (container) {
-          container.innerHTML = ''; // Clear existing content
-          module.initialize();
-        }
       } else {
         module.initialize();
       }
     } else if (sectionId === 'collective') {
-      // Collective Overview uses React and initializes automatically
-      // Force a re-render
-      if (window.CollectiveOverview && window.CollectiveOverview.refresh) {
-        window.CollectiveOverview.refresh();
-      } else if (window.CollectiveOverview && window.CollectiveOverview.initialize) {
+      // Collective Overview uses React
+      if (window.CollectiveOverview && window.CollectiveOverview.initialize) {
         window.CollectiveOverview.initialize();
       }
     }
@@ -185,6 +197,8 @@
       const hash = window.location.hash.substring(1);
       if (hash && config.sections[hash]) {
         showSection(hash);
+      } else {
+        showSection(config.defaultSection);
       }
     }
   }
