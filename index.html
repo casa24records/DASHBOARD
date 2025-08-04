@@ -113,42 +113,25 @@
   </div>
   
   <!-- Load modular JavaScript files -->
-  <!-- IMPORTANT: Load main controller first -->
-  <script src="js/main.js"></script>
+  <!-- Load CollectiveOverview with Babel FIRST -->
+  <script type="text/babel" src="js/CollectiveOverview.js"></script>
   
-  <!-- Then load section modules after DOM and main.js are ready -->
+  <!-- Load other modules -->
+  <script src="js/life24.js"></script>
+  <script src="js/unmastered.js"></script>
+  <script src="js/drum-machine-pro.js"></script>
+  
+  <!-- Load main controller LAST to ensure all modules are available -->
   <script>
-    // Ensure DOM is ready before loading modules that auto-initialize
-    function loadModules() {
-      // Load CollectiveOverview with Babel
-      const collectiveScript = document.createElement('script');
-      collectiveScript.type = 'text/babel';
-      collectiveScript.src = 'js/CollectiveOverview.js';
-      document.body.appendChild(collectiveScript);
-      
-      // Load other modules
-      const life24Script = document.createElement('script');
-      life24Script.src = 'js/life24.js';
-      document.body.appendChild(life24Script);
-      
-      const unmasteredScript = document.createElement('script');
-      unmasteredScript.src = 'js/unmastered.js';
-      document.body.appendChild(unmasteredScript);
-      
-      // Delay drum machine loading to ensure container exists
-      setTimeout(() => {
-        const drumScript = document.createElement('script');
-        drumScript.src = 'js/drum-machine-pro.js';
-        document.body.appendChild(drumScript);
+    // Use Babel's callback to know when CollectiveOverview is transpiled and ready
+    window.addEventListener('load', function() {
+      // Small delay to ensure Babel has finished all transpilation
+      setTimeout(function() {
+        const mainScript = document.createElement('script');
+        mainScript.src = 'js/main.js';
+        document.body.appendChild(mainScript);
       }, 100);
-    }
-    
-    // Load modules after DOM is ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', loadModules);
-    } else {
-      loadModules();
-    }
+    });
   </script>
   
   <!-- Initialize last updated date -->
