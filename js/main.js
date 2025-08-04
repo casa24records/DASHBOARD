@@ -46,9 +46,13 @@
    * Wait for CollectiveOverview module to be loaded
    */
   function waitForCollectiveOverview(callback) {
-    if (window.CollectiveOverviewLoaded) {
+    // Check if the module is already loaded
+    if (window.CollectiveOverview && window.CollectiveOverview.initialize) {
+      callback();
+    } else if (window.CollectiveOverviewLoaded) {
       callback();
     } else {
+      // Wait and check again
       setTimeout(() => waitForCollectiveOverview(callback), 50);
     }
   }
