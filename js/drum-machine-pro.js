@@ -1,1453 +1,3731 @@
-/**
- * Drum Machine Pro MVP
- * Complete production-ready implementation with all requested features
- * 
- * Features:
- * - Real-time performance optimization with Web Audio API
- * - Professional DAW-like UI appearance
- * - Industry-standard audio signal chain and gain staging
- * - Loop stability without timing drift
- * - Export with casa24beat-[timestamp] naming
- * - Three built-in pattern presets
- * - Separate Reset and Clear Pattern functionality
- */
+// Drum Machine Pro - Complete MVP Implementation with Maximum Capabilities
+(function() {
+  'use strict';
+  
+  // Configuration
+  let STEPS = 16;
+  let currentBarMode = 4;
+  
+  // Audio constants
+  const REFERENCE_LEVEL = -18; // dBFS
+  const HEADROOM = 6; // dB
+  const MASTER_GAIN_DEFAULT = 0.7;
+  
+  // Enhanced instrument configurations with redesigned, musically distinct kits
+  const instrumentConfigs = {
+    "Panama Heat": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 55, subFreq: 32, noiseAmount: 0.02, layerFreq: 28 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 240, subFreq: 95, noiseAmount: 0.22, layerFreq: 185 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 8500, subFreq: 0, noiseAmount: 0.5, layerFreq: 7000 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 7500, subFreq: 0, noiseAmount: 0.6, layerFreq: 6500 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1600, subFreq: 0, noiseAmount: 0.14, layerFreq: 2100 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 11500, subFreq: 0, noiseAmount: 0.75, layerFreq: 13000 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 600, subFreq: 0, noiseAmount: 0.06, layerFreq: 800 },
+      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 1050, subFreq: 0, noiseAmount: 0, layerFreq: 1250 }
+    ],
+    "Trap Quantum": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 42, subFreq: 25, noiseAmount: 0.01, layerFreq: 30 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 280, subFreq: 110, noiseAmount: 0.25, layerFreq: 220 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 12000, subFreq: 0, noiseAmount: 0.7, layerFreq: 10000 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 10000, subFreq: 0, noiseAmount: 0.8, layerFreq: 8500 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2000, subFreq: 0, noiseAmount: 0.15, layerFreq: 2500 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 14000, subFreq: 0, noiseAmount: 0.9, layerFreq: 12000 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 550, subFreq: 0, noiseAmount: 0.04, layerFreq: 700 },
+      { id: 'cowbell', label: '808', icon: '🎵', frequency: 900, subFreq: 35, noiseAmount: 0, layerFreq: 1100 }
+    ],
+    "Boom Circuit": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 65, subFreq: 38, noiseAmount: 0.03, layerFreq: 45 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 210, subFreq: 85, noiseAmount: 0.28, layerFreq: 180 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 9000, subFreq: 0, noiseAmount: 0.45, layerFreq: 7500 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 7800, subFreq: 0, noiseAmount: 0.55, layerFreq: 6200 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2200, subFreq: 0, noiseAmount: 0.18, layerFreq: 1800 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 12000, subFreq: 0, noiseAmount: 0.7, layerFreq: 10500 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 1100, subFreq: 0, noiseAmount: 0.1, layerFreq: 900 },
+      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 950, subFreq: 0, noiseAmount: 0.02, layerFreq: 850 }
+    ],
+    "Lo-Fi Dreams": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 48, subFreq: 28, noiseAmount: 0.08, layerFreq: 35 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 175, subFreq: 65, noiseAmount: 0.35, layerFreq: 150 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 5500, subFreq: 0, noiseAmount: 0.5, layerFreq: 4500 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 4000, subFreq: 0, noiseAmount: 0.6, layerFreq: 3500 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 900, subFreq: 0, noiseAmount: 0.25, layerFreq: 1100 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 8000, subFreq: 0, noiseAmount: 0.7, layerFreq: 7000 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 750, subFreq: 0, noiseAmount: 0.12, layerFreq: 650 },
+      { id: 'cowbell', label: 'VINYL', icon: '💿', frequency: 650, subFreq: 0, noiseAmount: 0.4, layerFreq: 550 }
+    ],
+    "Future Breaks": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 50, subFreq: 30, noiseAmount: 0.05, layerFreq: 35 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 290, subFreq: 130, noiseAmount: 0.3, layerFreq: 250 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 11500, subFreq: 0, noiseAmount: 0.7, layerFreq: 9500 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 10500, subFreq: 0, noiseAmount: 0.8, layerFreq: 8800 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2100, subFreq: 0, noiseAmount: 0.2, layerFreq: 2400 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 13500, subFreq: 0, noiseAmount: 0.85, layerFreq: 11000 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 480, subFreq: 0, noiseAmount: 0.08, layerFreq: 650 },
+      { id: 'cowbell', label: 'SYNTH', icon: '🎹', frequency: 980, subFreq: 490, noiseAmount: 0.03, layerFreq: 1470 }
+    ],
+    "Latin Fuego": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 68, subFreq: 40, noiseAmount: 0.04, layerFreq: 48 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 235, subFreq: 88, noiseAmount: 0.2, layerFreq: 195 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 7800, subFreq: 0, noiseAmount: 0.38, layerFreq: 6800 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 6300, subFreq: 0, noiseAmount: 0.48, layerFreq: 5500 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2600, subFreq: 0, noiseAmount: 0.1, layerFreq: 2900 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 10500, subFreq: 0, noiseAmount: 0.72, layerFreq: 9200 },
+      { id: 'rim', label: 'CLAVE', icon: '🥢', frequency: 1250, subFreq: 0, noiseAmount: 0.05, layerFreq: 1500 },
+      { id: 'cowbell', label: 'CONGA', icon: '🪘', frequency: 980, subFreq: 200, noiseAmount: 0.02, layerFreq: 750 }
+    ],
+    "Neon Tokyo": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 45, subFreq: 26, noiseAmount: 0.1, layerFreq: 32 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 265, subFreq: 115, noiseAmount: 0.32, layerFreq: 230 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 13000, subFreq: 0, noiseAmount: 0.75, layerFreq: 11000 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 11000, subFreq: 0, noiseAmount: 0.85, layerFreq: 9000 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2300, subFreq: 0, noiseAmount: 0.28, layerFreq: 2700 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 15000, subFreq: 0, noiseAmount: 0.95, layerFreq: 12500 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 720, subFreq: 0, noiseAmount: 0.18, layerFreq: 900 },
+      { id: 'cowbell', label: 'LASER', icon: '⚡', frequency: 880, subFreq: 1760, noiseAmount: 0.08, layerFreq: 3520 }
+    ],
+    "Analog Dust": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 72, subFreq: 48, noiseAmount: 0, layerFreq: 55 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 195, subFreq: 78, noiseAmount: 0.12, layerFreq: 165 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 5200, subFreq: 0, noiseAmount: 0.25, layerFreq: 4400 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 4200, subFreq: 0, noiseAmount: 0.35, layerFreq: 3600 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1250, subFreq: 0, noiseAmount: 0.08, layerFreq: 1450 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 8500, subFreq: 0, noiseAmount: 0.45, layerFreq: 7200 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 360, subFreq: 0, noiseAmount: 0.03, layerFreq: 480 },
+      { id: 'cowbell', label: 'TOM', icon: '🥁', frequency: 700, subFreq: 350, noiseAmount: 0, layerFreq: 525 }
+    ],
+    "Cyber Punk": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 38, subFreq: 22, noiseAmount: 0.12, layerFreq: 28 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 270, subFreq: 125, noiseAmount: 0.35, layerFreq: 240 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 14000, subFreq: 0, noiseAmount: 0.8, layerFreq: 12000 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 12000, subFreq: 0, noiseAmount: 0.9, layerFreq: 10000 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2400, subFreq: 0, noiseAmount: 0.3, layerFreq: 2800 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 16000, subFreq: 0, noiseAmount: 1.0, layerFreq: 13500 },
+      { id: 'rim', label: 'GLITCH', icon: '🔧', frequency: 750, subFreq: 375, noiseAmount: 0.25, layerFreq: 1125 },
+      { id: 'cowbell', label: 'ACID', icon: '🧪', frequency: 660, subFreq: 330, noiseAmount: 0.1, layerFreq: 990 }
+    ],
+    "Smooth Groove": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 75, subFreq: 50, noiseAmount: 0, layerFreq: 60 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 200, subFreq: 80, noiseAmount: 0.08, layerFreq: 170 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 4800, subFreq: 0, noiseAmount: 0.18, layerFreq: 4000 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 3800, subFreq: 0, noiseAmount: 0.28, layerFreq: 3200 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1100, subFreq: 0, noiseAmount: 0.04, layerFreq: 1300 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 7500, subFreq: 0, noiseAmount: 0.35, layerFreq: 6500 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 340, subFreq: 0, noiseAmount: 0.01, layerFreq: 450 },
+      { id: 'cowbell', label: 'RIDE', icon: '🎵', frequency: 650, subFreq: 0, noiseAmount: 0, layerFreq: 780 }
+    ]
+  };
+  
+  // Current configuration
+  let currentConfig = "Panama Heat";
+  let instruments = instrumentConfigs[currentConfig];
 
-class DrumMachinePro {
-  constructor() {
-    // Audio context with optimized settings
-    this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
-      latencyHint: 'interactive',
-      sampleRate: 44100
-    });
-    
-    // Core components
-    this.scheduler = null;
-    this.masterBus = null;
-    this.channels = new Map();
-    this.effects = new Map();
-    this.samples = new Map();
-    
-    // Sequencer state
-    this.isPlaying = false;
-    this.currentStep = 0;
-    this.tempo = 120;
-    this.swing = 0;
-    this.nextStepTime = 0.0;
-    this.lookahead = 25.0; // ms
-    this.scheduleAheadTime = 0.1; // seconds
-    this.stepQueue = [];
-    
-    // Pattern management
-    this.patterns = new Map();
-    this.currentPattern = null;
-    this.defaultPattern = null;
-    
-    // UI elements cache
-    this.ui = {
-      playButton: null,
-      tempoSlider: null,
-      tempoDisplay: null,
-      stepButtons: [],
-      pads: [],
-      channelVolumes: new Map(),
-      effectControls: new Map()
-    };
-    
-    // Initialize
-    this.init();
-  }
-  
-  async init() {
-    try {
-      // Setup audio routing
-      this.setupAudioChain();
-      
-      // Load drum samples
-      await this.loadSamples();
-      
-      // Create preset patterns
-      this.createPresetPatterns();
-      
-      // Initialize UI
-      this.setupUI();
-      
-      // Setup event listeners
-      this.setupEventListeners();
-      
-      // Load first preset
-      this.loadPattern('Traffic jam groove');
-      
-      console.log('Drum Machine Pro initialized successfully');
-    } catch (error) {
-      console.error('Initialization error:', error);
+  // Default parameters with expanded creative options
+  const defaultGlobalParams = {
+    masterVolume: MASTER_GAIN_DEFAULT,
+    instrumentParams: {},
+    // Standard effects
+    reverb: { 
+      enabled: false, 
+      mix: 0.25,
+      preset: 'room',
+      predelay: 0,
+      damping: 0.5
+    },
+    delay: { 
+      enabled: false, 
+      time: 250,
+      feedback: 0.3,
+      mix: 0.2,
+      pingPong: false,
+      sync: false
+    },
+    filter: { 
+      enabled: false, 
+      frequency: 20000,
+      type: 'lowpass',
+      resonance: 1,
+      sweep: false,
+      sweepSpeed: 0.5
+    },
+    compression: { 
+      enabled: false, 
+      threshold: -20,
+      ratio: 4,
+      attack: 0.003,
+      release: 0.25,
+      makeup: 0
+    },
+    distortion: {
+      enabled: false,
+      amount: 0.1,
+      tone: 0.5,
+      type: 'soft'
+    },
+    chorus: {
+      enabled: false,
+      rate: 1.5,
+      depth: 0.3,
+      mix: 0.3
+    },
+    phaser: {
+      enabled: false,
+      rate: 0.5,
+      depth: 0.5,
+      stages: 4,
+      mix: 0.5
+    },
+    bitcrusher: {
+      enabled: false,
+      bits: 8,
+      downsample: 1
+    },
+    stereoWidth: {
+      enabled: false,
+      width: 1.0
+    },
+    // Creative effects
+    gatedReverb: {
+      enabled: false,
+      threshold: -20,
+      hold: 0.1,
+      decay: 0.05
+    },
+    tapeStop: {
+      enabled: false,
+      speed: 0.5,
+      active: false
+    },
+    stutter: {
+      enabled: false,
+      division: 16,
+      probability: 0.5
+    },
+    glitch: {
+      enabled: false,
+      intensity: 0.5,
+      frequency: 0.3
+    },
+    reverse: {
+      enabled: false,
+      probability: 0.2
+    },
+    granular: {
+      enabled: false,
+      grainSize: 50,
+      overlap: 0.5,
+      pitch: 0
+    },
+    // Global modulation
+    swing: 0,
+    humanize: 0,
+    layering: false,
+    // Automation
+    automation: {
+      enabled: false,
+      recording: false,
+      data: {}
     }
-  }
-  
-  // Audio chain setup with industry-standard signal flow
-  setupAudioChain() {
-    // Master bus with compression and limiting
-    this.masterBus = new MasterBus(this.audioContext);
-    
-    // Create channels for each drum sound
-    const drumTypes = ['kick', 'snare', 'hihat', 'openhat', 'clap', 'crash'];
-    drumTypes.forEach(type => {
-      const channel = new DrumChannel(this.audioContext, this.masterBus.input);
-      this.channels.set(type, channel);
-    });
-    
-    // Initialize effects
-    this.setupEffects();
-  }
-  
-  setupEffects() {
-    // Creative FX group
-    this.effects.set('tapeStop', new TapeStopEffect(this.audioContext));
-    this.effects.set('stutter', new StutterEffect(this.audioContext));
-    this.effects.set('glitch', new GlitchEffect(this.audioContext));
-    this.effects.set('reverse', new ReverseEffect(this.audioContext));
-    this.effects.set('granular', new GranularEffect(this.audioContext));
-    this.effects.set('layering', new LayeringEffect(this.audioContext));
-    
-    // Connect effects to master bus
-    this.effects.forEach(effect => {
-      effect.output.connect(this.masterBus.effectReturn);
+  };
+
+  // Global parameters
+  let globalParams = JSON.parse(JSON.stringify(defaultGlobalParams));
+
+  // Initialize instrument parameters with layering support
+  function initializeInstrumentParams() {
+    instruments.forEach(inst => {
+      globalParams.instrumentParams[inst.id] = {
+        volume: 0.7,
+        pitch: 0,
+        decay: 1.0,
+        pan: 0,
+        layer: false,
+        layerVolume: 0.5,
+        layerPitch: 12
+      };
     });
   }
-  
-  async loadSamples() {
-    const sampleUrls = {
-      kick: 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQQAAAAAAAA=',
-      snare: 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQQAAAAAAAA=',
-      hihat: 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQQAAAAAAAA=',
-      openhat: 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQQAAAAAAAA=',
-      clap: 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQQAAAAAAAA=',
-      crash: 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQQAAAAAAAA='
-    };
-    
-    const loadPromises = [];
-    for (const [name, url] of Object.entries(sampleUrls)) {
-      loadPromises.push(this.loadSample(name, url));
-    }
-    
-    await Promise.all(loadPromises);
-  }
-  
-  async loadSample(name, url) {
-    try {
-      const response = await fetch(url);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-      this.samples.set(name, audioBuffer);
-    } catch (error) {
-      console.error(`Failed to load sample ${name}:`, error);
-      // Create empty buffer as fallback
-      const emptyBuffer = this.audioContext.createBuffer(1, 44100, 44100);
-      this.samples.set(name, emptyBuffer);
-    }
-  }
-  
-  // Create the three specified pattern presets
-  createPresetPatterns() {
-    // Traffic jam groove - 95 BPM
-    this.createPattern('Traffic jam groove', {
-      tempo: 95,
-      steps: {
-        kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
-        snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-        hihat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
-        openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        clap:    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-      }
-    });
-    
-    // Robofunk - 110 BPM
-    this.createPattern('Robofunk', {
-      tempo: 110,
-      steps: {
-        kick:    [1,0,0,1,0,0,1,0,0,0,1,0,1,0,0,0],
-        snare:   [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
-        hihat:   [1,1,0,1,1,0,1,1,0,1,1,0,1,1,0,1],
-        openhat: [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
-        clap:    [0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
-        crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-      }
-    });
-    
-    // Power pose - 128 BPM
-    this.createPattern('Power pose', {
-      tempo: 128,
-      steps: {
-        kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
-        snare:   [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
-        hihat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
-        openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],
-        clap:    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-        crash:   [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-      }
-    });
-    
-    // Set default pattern
-    this.defaultPattern = this.patterns.get('Traffic jam groove');
-  }
-  
-  createPattern(name, data) {
-    const pattern = {
-      id: this.generateId(),
-      name: name,
-      tempo: data.tempo || 120,
-      steps: data.steps || this.createEmptyPattern(),
-      swing: data.swing || 0,
-      created: Date.now()
-    };
-    
-    this.patterns.set(name, pattern);
-    return pattern;
-  }
-  
-  createEmptyPattern() {
-    return {
-      kick:    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      snare:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      hihat:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+
+  initializeInstrumentParams();
+
+  // Updated preset patterns with the three specified patterns
+  const presets = {
+    "Traffic jam groove": {
+      bpm: 109,
+      kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+      snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hihat:   [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
       openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      clap:    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    };
+      clap:    [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      rim:     [0,1,0,0,0,0,1,0,0,1,0,0,0,0,0,0],
+      cowbell: [0,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0]
+    },
+    "Robofunk": {
+      bpm: 104,
+      kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+      snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hihat:   [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      clap:    [1,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],
+      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      rim:     [0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0],
+      cowbell: [0,0,0,1,0,0,1,0,0,0,1,0,0,0,1,0]
+    },
+    "Power pose": {
+      bpm: 76,
+      kick:    [1,0,0,1,1,0,0,0,1,0,0,1,1,0,0,0],
+      snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hihat:   [0,0,1,0,0,0,1,0,0,0,1,0,1,0,1,0],
+      openhat: [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      clap:    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      crash:   [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      rim:     [0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
+      cowbell: [0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0]
+    },
+    "Future Funk": {
+      bpm: 120,
+      kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+      snare:   [0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],
+      hihat:   [1,0,1,1,0,0,1,0,1,0,1,1,0,0,1,0],
+      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      clap:    [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      rim:     [0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0],
+      cowbell: [0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0]
+    }
+  };
+
+  // State management
+  let audioContext;
+  let isPlaying = false;
+  let currentStep = 0;
+  let intervalId = null;
+  let pattern = {};
+  let currentPreset = null;
+  let masterGain;
+  let effectsChain = {};
+  let isMuted = {};
+  let isSolo = false;
+  let soloTrack = null;
+  let selectedInstrument = null;
+  let automationData = {};
+  let recordedSamples = {};
+  let schedulerTimer = null;
+  let nextStepTime = 0.0;
+  let lookahead = 25.0; // ms
+  let scheduleAheadTime = 0.1; // seconds
+  let stepQueue = [];
+
+  // Initialize empty pattern
+  instruments.forEach(inst => {
+    pattern[inst.id] = new Array(32).fill(0);
+    isMuted[inst.id] = false;
+  });
+
+  // Utility functions
+  function dbToGain(db) {
+    return Math.pow(10, db / 20);
   }
-  
-  generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+
+  function gainToDb(gain) {
+    return 20 * Math.log10(Math.max(0.0001, gain));
   }
-  
-  // UI Setup
-  setupUI() {
-    // Create main container
-    const container = document.createElement('div');
-    container.className = 'drum-machine-pro';
-    container.innerHTML = this.getUITemplate();
-    document.body.appendChild(container);
-    
-    // Cache UI elements
-    this.cacheUIElements();
-    
-    // Apply professional DAW styling
-    this.applyProfessionalStyling();
-    
-    // Initialize controls
-    this.initializeControls();
+
+  // Create the drum machine HTML
+  function createDrumMachine() {
+    const container = document.getElementById('drum-machine-container');
+    if (!container) return;
+
+    container.innerHTML = `
+      <div class="dm-wrapper">
+        <style>
+          /* Drum Machine Pro Styles - Complete MVP Implementation */
+          .dm-wrapper {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            user-select: none;
+            -webkit-user-select: none;
+          }
+
+          /* Header */
+          .dm-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid rgba(0, 166, 81, 0.3);
+            flex-wrap: wrap;
+            gap: 1rem;
+          }
+
+          .dm-title {
+            font-family: 'Courier New', monospace;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #00a651;
+            text-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
+            margin: 0;
+            letter-spacing: 2px;
+          }
+
+          .dm-header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+          }
+
+          .dm-master-volume {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 0.5rem;
+            border: 1px solid #00a651;
+          }
+
+          .dm-master-label {
+            color: #00a651;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+          }
+
+          .dm-master-slider {
+            width: 100px;
+            height: 4px;
+            background: #333;
+            outline: none;
+            border-radius: 2px;
+            cursor: pointer;
+            -webkit-appearance: none;
+          }
+
+          .dm-master-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #00a651;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
+          }
+
+          .dm-master-value {
+            color: #00a651;
+            font-size: 0.75rem;
+            min-width: 40px;
+            text-align: right;
+          }
+
+          .dm-kit-selector, .dm-bar-selector {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+          }
+
+          .dm-kit-label, .dm-bar-label {
+            color: #999;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+          }
+
+          .dm-kit-select, .dm-bar-select {
+            background: #2a2a2a;
+            border: 1px solid #00a651;
+            color: #00a651;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+          }
+
+          .dm-kit-select:hover, .dm-bar-select:hover {
+            background: rgba(0, 166, 81, 0.1);
+            box-shadow: 0 0 10px rgba(0, 166, 81, 0.3);
+          }
+
+          /* Transport Controls */
+          .dm-transport {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 0.75rem;
+            flex-wrap: wrap;
+          }
+
+          .dm-btn {
+            background: #2a2a2a;
+            border: 2px solid #444;
+            color: #999;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-transform: uppercase;
+            font-family: inherit;
+          }
+
+          .dm-btn:hover {
+            border-color: #00a651;
+            color: #00a651;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 166, 81, 0.3);
+          }
+
+          .dm-btn.active {
+            background: #00a651;
+            color: #1a1a1a;
+            border-color: #00a651;
+            box-shadow: 0 0 20px rgba(0, 166, 81, 0.5);
+          }
+
+          .dm-btn.reset {
+            background: #ff6b00;
+            border-color: #ff6b00;
+            color: #1a1a1a;
+          }
+
+          .dm-btn.reset:hover {
+            background: #ff8533;
+            border-color: #ff8533;
+            box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
+          }
+
+          .dm-btn-icon {
+            font-size: 1.25rem;
+          }
+
+          .dm-tempo-control {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0 1rem;
+            border-left: 2px solid #333;
+            border-right: 2px solid #333;
+          }
+
+          .dm-tempo-display {
+            background: #1a1a1a;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            color: #00a651;
+            font-weight: bold;
+            min-width: 80px;
+            text-align: center;
+            border: 1px solid #00a651;
+          }
+
+          .dm-tempo-slider {
+            width: 120px;
+            height: 4px;
+            background: #333;
+            outline: none;
+            border-radius: 2px;
+            cursor: pointer;
+            -webkit-appearance: none;
+          }
+
+          .dm-tempo-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #00a651;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
+          }
+
+          /* Creative Effects Section */
+          .dm-creative-section {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+          }
+
+          .dm-creative-header {
+            text-align: center;
+            color: #00a651;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+          }
+
+          .dm-creative-controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+          }
+
+          .dm-creative-btn {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #444;
+            color: #999;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+          }
+
+          .dm-creative-btn:hover {
+            border-color: #00a651;
+            color: #00a651;
+            background: rgba(0, 166, 81, 0.1);
+          }
+
+          .dm-creative-btn.active {
+            background: #00a651;
+            color: #1a1a1a;
+            border-color: #00a651;
+          }
+
+          /* Preset Buttons */
+          .dm-presets {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+          }
+
+          .dm-preset-section-title {
+            width: 100%;
+            text-align: center;
+            color: #666;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            letter-spacing: 2px;
+          }
+
+          .dm-preset-btn {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #444;
+            color: #999;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+          }
+
+          .dm-preset-btn:hover {
+            border-color: #00a651;
+            color: #00a651;
+            background: rgba(0, 166, 81, 0.1);
+          }
+
+          .dm-preset-btn.active {
+            background: #00a651;
+            color: #1a1a1a;
+            border-color: #00a651;
+          }
+
+          /* Pattern Grid */
+          .dm-pattern-container {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+          }
+
+          .dm-pattern-grid {
+            display: grid;
+            gap: 0.5rem;
+            min-width: max-content;
+          }
+
+          .dm-track {
+            display: grid;
+            grid-template-columns: 140px repeat(var(--step-count, 16), 1fr);
+            gap: 0.25rem;
+            align-items: center;
+            padding: 0.25rem 0;
+          }
+
+          .dm-track-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 0.5rem;
+            border: 1px solid #333;
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            min-width: 130px;
+          }
+
+          .dm-track-icon {
+            font-size: 1.25rem;
+          }
+
+          .dm-track-label {
+            color: #999;
+            font-size: 0.875rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            flex: 1;
+          }
+
+          .dm-track-controls {
+            display: flex;
+            gap: 0.25rem;
+            align-items: center;
+          }
+
+          .dm-track-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 0.25rem;
+            border: 1px solid #444;
+            background: #2a2a2a;
+            color: #666;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            transition: all 0.2s;
+            z-index: 11;
+            position: relative;
+          }
+
+          .dm-track-btn:hover {
+            border-color: #00a651;
+            color: #00a651;
+          }
+
+          .dm-track-btn.active {
+            background: #00a651;
+            color: #1a1a1a;
+            border-color: #00a651;
+          }
+
+          .dm-track-btn.muted {
+            background: #ff4444;
+            color: #fff;
+            border-color: #ff4444;
+          }
+
+          .dm-track-btn.solo {
+            background: #ffaa00;
+            color: #1a1a1a;
+            border-color: #ffaa00;
+          }
+
+          .dm-step {
+            aspect-ratio: 1;
+            border-radius: 0.25rem;
+            border: 1px solid #333;
+            background: #1a1a1a;
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+            overflow: hidden;
+            min-width: 30px;
+            min-height: 30px;
+          }
+
+          .dm-step:hover {
+            border-color: #00a651;
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(0, 166, 81, 0.3);
+          }
+
+          .dm-step.active {
+            background: #00a651;
+            border-color: #00a651;
+            box-shadow: 0 0 15px rgba(0, 166, 81, 0.5);
+          }
+
+          .dm-step.playing {
+            animation: step-pulse 0.2s ease-out;
+          }
+
+          .dm-step.accent {
+            background: #ff6b00;
+            border-color: #ff6b00;
+          }
+
+          .dm-step.ghost {
+            opacity: 0.5;
+          }
+
+          @keyframes step-pulse {
+            0% {
+              transform: scale(1);
+              box-shadow: 0 0 0 0 rgba(0, 166, 81, 0.7);
+            }
+            100% {
+              transform: scale(1.15);
+              box-shadow: 0 0 0 10px rgba(0, 166, 81, 0);
+            }
+          }
+
+          /* Step indicator */
+          .dm-step-indicator {
+            display: grid;
+            grid-template-columns: 140px repeat(var(--step-count, 16), 1fr);
+            gap: 0.25rem;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #333;
+            min-width: max-content;
+          }
+
+          .dm-step-number {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 0.75rem;
+            height: 20px;
+            min-width: 30px;
+          }
+
+          .dm-step-number.beat-1 {
+            color: #00a651;
+            font-weight: bold;
+          }
+
+          /* 8-bar mode adjustments */
+          .dm-wrapper.bars-8 .dm-step {
+            min-width: 20px;
+            min-height: 20px;
+          }
+
+          .dm-wrapper.bars-8 .dm-step-number {
+            min-width: 20px;
+            font-size: 0.625rem;
+          }
+
+          /* Mixer/Effects Toggle */
+          .dm-panel-toggle {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+            gap: 0.25rem;
+          }
+
+          .dm-toggle-btn {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #444;
+            color: #999;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.5rem 0.5rem 0 0;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 0;
+          }
+
+          .dm-toggle-btn.active {
+            background: rgba(0, 166, 81, 0.1);
+            border-color: #00a651;
+            color: #00a651;
+            border-bottom: none;
+          }
+
+          /* Mixer Panel */
+          .dm-mixer-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            display: none;
+          }
+
+          .dm-mixer-panel.active {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+          }
+
+          @keyframes slideDown {
+            from {
+              opacity: 0;
+              transform: translateY(-10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .dm-mixer-tracks {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+          }
+
+          .dm-mixer-track {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 0.5rem;
+            padding: 1rem 0.5rem;
+            border: 1px solid #333;
+            transition: all 0.2s;
+          }
+
+          .dm-mixer-track.selected {
+            border-color: #00a651;
+            box-shadow: 0 0 20px rgba(0, 166, 81, 0.3);
+          }
+
+          .dm-mixer-track-name {
+            text-align: center;
+            color: #999;
+            font-size: 0.75rem;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+          }
+
+          .dm-mixer-fader {
+            writing-mode: bt-lr;
+            -webkit-appearance: slider-vertical;
+            width: 30px;
+            height: 100px;
+            background: #333;
+            outline: none;
+            margin: 0 auto;
+            display: block;
+          }
+
+          .dm-mixer-value {
+            text-align: center;
+            color: #00a651;
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+          }
+
+          .dm-mixer-knobs {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+          }
+
+          .dm-knob {
+            flex: 1;
+            text-align: center;
+          }
+
+          .dm-knob-label {
+            color: #666;
+            font-size: 0.625rem;
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+          }
+
+          .dm-knob-control {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #2a2a2a;
+            border: 2px solid #444;
+            margin: 0 auto;
+            position: relative;
+            cursor: pointer;
+          }
+
+          .dm-knob-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 40%;
+            background: #00a651;
+            transform-origin: bottom;
+            transform: translate(-50%, -100%) rotate(0deg);
+            transition: transform 0.1s;
+          }
+
+          .dm-knob-value {
+            color: #00a651;
+            font-size: 0.625rem;
+            margin-top: 0.25rem;
+          }
+
+          .dm-layer-toggle {
+            margin-top: 0.5rem;
+            text-align: center;
+          }
+
+          .dm-layer-btn {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #666;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.625rem;
+            transition: all 0.2s;
+          }
+
+          .dm-layer-btn.active {
+            background: #9b59b6;
+            color: #fff;
+            border-color: #9b59b6;
+          }
+
+          /* Effects Panel */
+          .dm-effects-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            display: none;
+          }
+
+          .dm-effects-panel.active {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+          }
+
+          .dm-effects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+          }
+
+          .dm-effect-unit {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            border: 1px solid #333;
+            transition: all 0.2s;
+          }
+
+          .dm-effect-unit.active {
+            border-color: #00a651;
+            box-shadow: 0 0 20px rgba(0, 166, 81, 0.3);
+          }
+
+          .dm-effect-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+          }
+
+          .dm-effect-title {
+            color: #999;
+            font-size: 0.875rem;
+            font-weight: bold;
+            text-transform: uppercase;
+          }
+
+          .dm-effect-toggle {
+            width: 40px;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+          }
+
+          .dm-effect-toggle.active {
+            background: #00a651;
+          }
+
+          .dm-effect-toggle::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: #999;
+            border-radius: 50%;
+            transition: transform 0.3s;
+          }
+
+          .dm-effect-toggle.active::after {
+            transform: translateX(20px);
+            background: #fff;
+          }
+
+          .dm-effect-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+
+          .dm-effect-param {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+
+          .dm-effect-param-label {
+            color: #666;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+          }
+
+          .dm-effect-param-value {
+            color: #00a651;
+            font-size: 0.75rem;
+            min-width: 50px;
+            text-align: right;
+          }
+
+          .dm-effect-slider {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            outline: none;
+            border-radius: 2px;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin: 0.25rem 0;
+          }
+
+          .dm-effect-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #00a651;
+            border-radius: 50%;
+            cursor: pointer;
+          }
+
+          .dm-effect-preset-selector,
+          .dm-filter-mode-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+          }
+
+          .dm-effect-preset-btn,
+          .dm-filter-mode-btn {
+            flex: 1;
+            padding: 0.25rem;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #666;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.625rem;
+            transition: all 0.2s;
+            text-transform: uppercase;
+          }
+
+          .dm-effect-preset-btn.active,
+          .dm-filter-mode-btn.active {
+            background: #00a651;
+            color: #1a1a1a;
+            border-color: #00a651;
+          }
+
+          /* Creative Effects Panel */
+          .dm-creative-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            display: none;
+          }
+
+          .dm-creative-panel.active {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+          }
+
+          /* Responsive */
+          @media (max-width: 768px) {
+            .dm-header {
+              flex-direction: column;
+              gap: 1rem;
+            }
+
+            .dm-transport {
+              flex-wrap: wrap;
+              justify-content: center;
+            }
+
+            .dm-tempo-control {
+              border: none;
+              padding: 0;
+            }
+
+            .dm-mixer-tracks {
+              grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            }
+
+            .dm-btn {
+              padding: 0.5rem 1rem;
+              font-size: 0.75rem;
+            }
+          }
+
+          @media (max-width: 480px) {
+            .dm-track-label {
+              display: none;
+            }
+
+            .dm-track-header {
+              padding: 0.25rem;
+              min-width: 80px;
+            }
+
+            .dm-step {
+              border-radius: 2px;
+            }
+          }
+        </style>
+
+        <!-- Header -->
+        <div class="dm-header">
+          <h2 class="dm-title">DRUM MACHINE PRO</h2>
+          <div class="dm-header-controls">
+            <div class="dm-master-volume">
+              <span class="dm-master-label">MASTER</span>
+              <input type="range" class="dm-master-slider" id="dmMasterSlider" 
+                     min="0" max="100" value="${Math.round(globalParams.masterVolume * 100)}">
+              <span class="dm-master-value" id="dmMasterValue">${Math.round(globalParams.masterVolume * 100)}%</span>
+            </div>
+            <div class="dm-kit-selector">
+              <span class="dm-kit-label">Sound Kit:</span>
+              <select class="dm-kit-select" id="dmKitSelect">
+                ${Object.keys(instrumentConfigs).map(kit => 
+                  `<option value="${kit}" ${kit === currentConfig ? 'selected' : ''}>${kit.toUpperCase()}</option>`
+                ).join('')}
+              </select>
+            </div>
+            <div class="dm-bar-selector">
+              <span class="dm-bar-label">Pattern:</span>
+              <select class="dm-bar-select" id="dmBarSelect">
+                <option value="4">4 BARS</option>
+                <option value="8">8 BARS</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transport Controls -->
+        <div class="dm-transport">
+          <button class="dm-btn" id="dmPlayBtn">
+            <span class="dm-btn-icon">▶</span>
+            <span>PLAY</span>
+          </button>
+          <button class="dm-btn" id="dmStopBtn">
+            <span class="dm-btn-icon">■</span>
+            <span>STOP</span>
+          </button>
+          <button class="dm-btn" id="dmClearBtn">
+            <span class="dm-btn-icon">✕</span>
+            <span>CLEAR PATTERN</span>
+          </button>
+          <button class="dm-btn reset" id="dmResetBtn">
+            <span class="dm-btn-icon">↺</span>
+            <span>RESET</span>
+          </button>
+          
+          <div class="dm-tempo-control">
+            <input type="range" class="dm-tempo-slider" id="dmTempoSlider" min="60" max="200" value="120">
+            <div class="dm-tempo-display" id="dmTempoDisplay">120 BPM</div>
+          </div>
+
+          <button class="dm-btn" id="dmDownloadBtn">
+            <span class="dm-btn-icon">💾</span>
+            <span>EXPORT</span>
+          </button>
+        </div>
+
+        <!-- Creative FX Section -->
+        <div class="dm-creative-section">
+          <div class="dm-creative-header">CREATIVE FX</div>
+          <div class="dm-creative-controls">
+            <button class="dm-creative-btn" id="dmTapeStopBtn">TAPE STOP</button>
+            <button class="dm-creative-btn" id="dmStutterBtn">STUTTER</button>
+            <button class="dm-creative-btn" id="dmGlitchBtn">GLITCH</button>
+            <button class="dm-creative-btn" id="dmReverseBtn">REVERSE</button>
+            <button class="dm-creative-btn" id="dmGranularBtn">GRANULAR</button>
+            <button class="dm-creative-btn" id="dmLayeringBtn">LAYERING</button>
+          </div>
+        </div>
+
+        <!-- Preset Buttons -->
+        <div class="dm-presets">
+          <div class="dm-preset-section-title">PATTERNS</div>
+          <button class="dm-preset-btn" data-preset="Traffic jam groove">Traffic jam groove</button>
+          <button class="dm-preset-btn" data-preset="Robofunk">Robofunk</button>
+          <button class="dm-preset-btn" data-preset="Power pose">Power pose</button>
+          <button class="dm-preset-btn" data-preset="Future Funk">Future Funk</button>
+        </div>
+
+        <!-- Panel Toggle -->
+        <div class="dm-panel-toggle">
+          <button class="dm-toggle-btn active" id="dmMixerToggle">MIXER</button>
+          <button class="dm-toggle-btn" id="dmEffectsToggle">EFFECTS</button>
+          <button class="dm-toggle-btn" id="dmCreativeToggle">CREATIVE FX</button>
+        </div>
+
+        <!-- Mixer Panel -->
+        <div class="dm-mixer-panel active" id="dmMixerPanel">
+          <div class="dm-mixer-tracks" id="dmMixerTracks">
+            <!-- Mixer channels will be generated here -->
+          </div>
+        </div>
+
+        <!-- Effects Panel -->
+        <div class="dm-effects-panel" id="dmEffectsPanel">
+          <div class="dm-effects-grid" id="dmEffectsGrid">
+            <!-- Effects will be generated here -->
+          </div>
+        </div>
+
+        <!-- Creative Panel -->
+        <div class="dm-creative-panel" id="dmCreativePanel">
+          <div class="dm-effects-grid" id="dmCreativeGrid">
+            <!-- Creative effects will be generated here -->
+          </div>
+        </div>
+
+        <!-- Pattern Grid -->
+        <div class="dm-pattern-container">
+          <!-- Step Numbers -->
+          <div class="dm-step-indicator" id="dmStepIndicator">
+            <!-- Will be generated dynamically -->
+          </div>
+
+          <!-- Pattern Grid -->
+          <div class="dm-pattern-grid" id="dmPatternGrid">
+            <!-- Tracks will be generated here -->
+          </div>
+        </div>
+      </div>
+    `;
+
+    createPatternGrid();
+    createMixerChannels();
+    createEffectsPanel();
+    createCreativePanel();
+    setupEventListeners();
+    loadPreset('Traffic jam groove');
   }
-  
-  getUITemplate() {
-    return `
-      <div class="dmp-container">
-        <header class="dmp-header">
-          <h1 class="dmp-title">Drum Machine Pro</h1>
-          <div class="transport-controls">
-            <button class="transport-btn play-btn" data-action="play">
-              <svg viewBox="0 0 24 24" class="icon-play">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-              <svg viewBox="0 0 24 24" class="icon-pause" style="display:none">
-                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-              </svg>
-            </button>
-            <button class="transport-btn stop-btn" data-action="stop">
-              <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
-            </button>
-          </div>
-          <div class="tempo-control">
-            <label>BPM</label>
-            <input type="range" class="tempo-slider" min="60" max="180" value="120">
-            <span class="tempo-display">120</span>
-          </div>
-          <div class="pattern-selector">
-            <select class="pattern-dropdown">
-              <option>Traffic jam groove</option>
-              <option>Robofunk</option>
-              <option>Power pose</option>
-            </select>
-          </div>
-          <div class="master-controls">
-            <button class="control-btn" data-action="clear">Clear Pattern</button>
-            <button class="control-btn" data-action="reset">Reset</button>
-            <button class="control-btn export-btn" data-action="export">Export</button>
-          </div>
-        </header>
+
+  // Create pattern grid
+  function createPatternGrid() {
+    const grid = document.getElementById('dmPatternGrid');
+    const stepIndicator = document.getElementById('dmStepIndicator');
+    if (!grid || !stepIndicator) return;
+
+    document.documentElement.style.setProperty('--step-count', STEPS);
+
+    grid.innerHTML = '';
+    stepIndicator.innerHTML = '<div></div>';
+
+    // Create step numbers
+    for (let i = 0; i < STEPS; i++) {
+      const stepNum = document.createElement('div');
+      stepNum.className = `dm-step-number ${i % 4 === 0 ? 'beat-1' : ''}`;
+      stepNum.textContent = i + 1;
+      stepIndicator.appendChild(stepNum);
+    }
+
+    instruments.forEach(inst => {
+      const track = document.createElement('div');
+      track.className = 'dm-track';
+
+      // Track header with proper spacing for M and S buttons
+      const header = document.createElement('div');
+      header.className = 'dm-track-header';
+      header.innerHTML = `
+        <span class="dm-track-icon">${inst.icon}</span>
+        <span class="dm-track-label">${inst.label}</span>
+        <div class="dm-track-controls">
+          <button class="dm-track-btn" data-track="${inst.id}" data-action="mute" title="Mute">M</button>
+          <button class="dm-track-btn" data-track="${inst.id}" data-action="solo" title="Solo">S</button>
+        </div>
+      `;
+      track.appendChild(header);
+
+      // Step buttons
+      for (let i = 0; i < STEPS; i++) {
+        const step = document.createElement('button');
+        step.className = `dm-step`;
+        step.dataset.instrument = inst.id;
+        step.dataset.step = i;
+        step.addEventListener('click', toggleStep);
+        step.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          toggleAccent(e);
+        });
+        track.appendChild(step);
+      }
+
+      grid.appendChild(track);
+    });
+
+    updatePattern();
+  }
+
+  // Create mixer channels with layering support
+  function createMixerChannels() {
+    const mixerTracks = document.getElementById('dmMixerTracks');
+    if (!mixerTracks) return;
+
+    mixerTracks.innerHTML = '';
+
+    instruments.forEach(inst => {
+      const channel = document.createElement('div');
+      channel.className = 'dm-mixer-track';
+      channel.dataset.instrument = inst.id;
+      
+      const params = globalParams.instrumentParams[inst.id];
+      const panValue = Math.round(params.pan * 50);
+      const pitchValue = Math.round(params.pitch);
+      
+      channel.innerHTML = `
+        <div class="dm-mixer-track-name">${inst.icon} ${inst.label}</div>
+        <input type="range" class="dm-mixer-fader" 
+               orient="vertical"
+               min="0" max="100" value="${Math.round(params.volume * 100)}"
+               data-instrument="${inst.id}"
+               data-param="volume">
+        <div class="dm-mixer-value">${Math.round(params.volume * 100)}%</div>
         
-        <main class="dmp-workspace">
-          <section class="sequencer-section">
-            <div class="track-labels">
-              <div class="track-label">Kick</div>
-              <div class="track-label">Snare</div>
-              <div class="track-label">Hi-Hat</div>
-              <div class="track-label">Open Hat</div>
-              <div class="track-label">Clap</div>
-              <div class="track-label">Crash</div>
+        <div class="dm-mixer-knobs">
+          <div class="dm-knob">
+            <div class="dm-knob-label">PAN</div>
+            <div class="dm-knob-control" data-instrument="${inst.id}" data-param="pan">
+              <div class="dm-knob-indicator"></div>
             </div>
-            <div class="sequencer-grid">
-              ${this.generateSequencerGrid()}
+            <div class="dm-knob-value">${panValue === 0 ? 'C' : panValue > 0 ? panValue + 'R' : Math.abs(panValue) + 'L'}</div>
+          </div>
+          <div class="dm-knob">
+            <div class="dm-knob-label">PITCH</div>
+            <div class="dm-knob-control" data-instrument="${inst.id}" data-param="pitch">
+              <div class="dm-knob-indicator"></div>
             </div>
-            <div class="channel-strips">
-              ${this.generateChannelStrips()}
-            </div>
-          </section>
-          
-          <section class="pads-section">
-            <div class="drum-pads">
-              ${this.generateDrumPads()}
-            </div>
-          </section>
-          
-          <section class="effects-section">
-            <h3 class="section-title">Creative FX</h3>
-            <div class="effects-rack">
-              <button class="effect-btn" data-effect="tapeStop">Tape Stop</button>
-              <button class="effect-btn" data-effect="stutter">Stutter</button>
-              <button class="effect-btn" data-effect="glitch">Glitch</button>
-              <button class="effect-btn" data-effect="reverse">Reverse</button>
-              <button class="effect-btn" data-effect="granular">Granular</button>
-              <button class="effect-btn" data-effect="layering">Layering</button>
-            </div>
-          </section>
-        </main>
+            <div class="dm-knob-value">${pitchValue > 0 ? '+' : ''}${pitchValue}</div>
+          </div>
+        </div>
+        
+        <div class="dm-layer-toggle">
+          <button class="dm-layer-btn ${params.layer ? 'active' : ''}" data-instrument="${inst.id}">
+            LAYER ${params.layer ? 'ON' : 'OFF'}
+          </button>
+        </div>
+      `;
+
+      mixerTracks.appendChild(channel);
+    });
+
+    // Setup fader listeners with real-time updates
+    document.querySelectorAll('.dm-mixer-fader').forEach(fader => {
+      fader.addEventListener('input', (e) => {
+        const inst = e.target.dataset.instrument;
+        const value = parseInt(e.target.value);
+        globalParams.instrumentParams[inst].volume = value / 100;
+        e.target.parentElement.querySelector('.dm-mixer-value').textContent = `${value}%`;
+      });
+    });
+
+    // Setup layer buttons with real-time response
+    document.querySelectorAll('.dm-layer-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const inst = e.target.dataset.instrument;
+        globalParams.instrumentParams[inst].layer = !globalParams.instrumentParams[inst].layer;
+        e.target.classList.toggle('active');
+        e.target.textContent = `LAYER ${globalParams.instrumentParams[inst].layer ? 'ON' : 'OFF'}`;
+      });
+    });
+
+    setupKnobControls();
+  }
+
+  // Create effects panel
+  function createEffectsPanel() {
+    const grid = document.getElementById('dmEffectsGrid');
+    if (!grid) return;
+
+    grid.innerHTML = `
+      <!-- Reverb -->
+      <div class="dm-effect-unit" id="dmReverbUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">REVERB</span>
+          <div class="dm-effect-toggle" id="dmReverbToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Mix</span>
+            <span class="dm-effect-param-value" id="dmReverbMixVal">25%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmReverbMix" min="0" max="100" value="25">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">PreDelay</span>
+            <span class="dm-effect-param-value" id="dmReverbPredelayVal">0ms</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmReverbPredelay" min="0" max="100" value="0">
+          <div class="dm-effect-preset-selector">
+            <button class="dm-effect-preset-btn active" data-preset="room">ROOM</button>
+            <button class="dm-effect-preset-btn" data-preset="hall">HALL</button>
+            <button class="dm-effect-preset-btn" data-preset="plate">PLATE</button>
+            <button class="dm-effect-preset-btn" data-preset="cathedral">CATHEDRAL</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delay -->
+      <div class="dm-effect-unit" id="dmDelayUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">DELAY</span>
+          <div class="dm-effect-toggle" id="dmDelayToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Time</span>
+            <span class="dm-effect-param-value" id="dmDelayTimeVal">250ms</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmDelayTime" min="10" max="2000" value="250">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Feedback</span>
+            <span class="dm-effect-param-value" id="dmDelayFeedbackVal">30%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmDelayFeedback" min="0" max="85" value="30">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Mix</span>
+            <span class="dm-effect-param-value" id="dmDelayMixVal">20%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmDelayMixSlider" min="0" max="100" value="20">
+          <div class="dm-effect-preset-selector">
+            <button class="dm-effect-preset-btn active" data-mode="normal">NORMAL</button>
+            <button class="dm-effect-preset-btn" data-mode="pingpong">PING-PONG</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter -->
+      <div class="dm-effect-unit" id="dmFilterUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">FILTER</span>
+          <div class="dm-effect-toggle" id="dmFilterToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Cutoff</span>
+            <span class="dm-effect-param-value" id="dmFilterCutoffVal">20.0kHz</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmFilterCutoff" min="20" max="20000" value="20000" step="1">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Resonance</span>
+            <span class="dm-effect-param-value" id="dmFilterResonanceVal">1.0</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmFilterResonance" min="1" max="30" value="1">
+          <div class="dm-filter-mode-selector">
+            <button class="dm-filter-mode-btn active" data-mode="lowpass">LOW-PASS</button>
+            <button class="dm-filter-mode-btn" data-mode="highpass">HIGH-PASS</button>
+            <button class="dm-filter-mode-btn" data-mode="bandpass">BAND-PASS</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Compression -->
+      <div class="dm-effect-unit" id="dmCompUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">COMPRESSOR</span>
+          <div class="dm-effect-toggle" id="dmCompToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Threshold</span>
+            <span class="dm-effect-param-value" id="dmCompThresholdVal">-20dB</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmCompThreshold" min="-60" max="0" value="-20">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Ratio</span>
+            <span class="dm-effect-param-value" id="dmCompRatioVal">4:1</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmCompRatio" min="1" max="20" value="4">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Attack</span>
+            <span class="dm-effect-param-value" id="dmCompAttackVal">3ms</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmCompAttack" min="0" max="100" value="3">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Release</span>
+            <span class="dm-effect-param-value" id="dmCompReleaseVal">250ms</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmCompRelease" min="10" max="1000" value="250">
+        </div>
+      </div>
+
+      <!-- Distortion -->
+      <div class="dm-effect-unit" id="dmDistUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">DISTORTION</span>
+          <div class="dm-effect-toggle" id="dmDistToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Drive</span>
+            <span class="dm-effect-param-value" id="dmDistDriveVal">10%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmDistDrive" min="0" max="100" value="10">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Tone</span>
+            <span class="dm-effect-param-value" id="dmDistToneVal">50%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmDistTone" min="0" max="100" value="50">
+          <div class="dm-effect-preset-selector">
+            <button class="dm-effect-preset-btn active" data-type="soft">SOFT</button>
+            <button class="dm-effect-preset-btn" data-type="hard">HARD</button>
+            <button class="dm-effect-preset-btn" data-type="fuzz">FUZZ</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chorus -->
+      <div class="dm-effect-unit" id="dmChorusUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">CHORUS</span>
+          <div class="dm-effect-toggle" id="dmChorusToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Rate</span>
+            <span class="dm-effect-param-value" id="dmChorusRateVal">1.5Hz</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmChorusRate" min="0.1" max="10" value="1.5" step="0.1">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Depth</span>
+            <span class="dm-effect-param-value" id="dmChorusDepthVal">30%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmChorusDepth" min="0" max="100" value="30">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Mix</span>
+            <span class="dm-effect-param-value" id="dmChorusMixVal">30%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmChorusMix" min="0" max="100" value="30">
+        </div>
+      </div>
+
+      <!-- Phaser -->
+      <div class="dm-effect-unit" id="dmPhaserUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">PHASER</span>
+          <div class="dm-effect-toggle" id="dmPhaserToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Rate</span>
+            <span class="dm-effect-param-value" id="dmPhaserRateVal">0.5Hz</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmPhaserRate" min="0.1" max="10" value="0.5" step="0.1">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Depth</span>
+            <span class="dm-effect-param-value" id="dmPhaserDepthVal">50%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmPhaserDepth" min="0" max="100" value="50">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Stages</span>
+            <span class="dm-effect-param-value" id="dmPhaserStagesVal">4</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmPhaserStages" min="2" max="8" value="4" step="2">
+        </div>
+      </div>
+
+      <!-- Bitcrusher -->
+      <div class="dm-effect-unit" id="dmBitcrusherUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">BITCRUSHER</span>
+          <div class="dm-effect-toggle" id="dmBitcrusherToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Bits</span>
+            <span class="dm-effect-param-value" id="dmBitcrusherBitsVal">8</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmBitcrusherBits" min="1" max="16" value="8">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Downsample</span>
+            <span class="dm-effect-param-value" id="dmBitcrusherDownsampleVal">1x</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmBitcrusherDownsample" min="1" max="20" value="1">
+        </div>
+      </div>
+
+      <!-- Stereo Width -->
+      <div class="dm-effect-unit" id="dmStereoWidthUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">STEREO WIDTH</span>
+          <div class="dm-effect-toggle" id="dmStereoWidthToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Width</span>
+            <span class="dm-effect-param-value" id="dmStereoWidthVal">100%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmStereoWidth" min="0" max="200" value="100">
+        </div>
       </div>
     `;
   }
-  
-  generateSequencerGrid() {
-    const tracks = ['kick', 'snare', 'hihat', 'openhat', 'clap', 'crash'];
-    let html = '';
-    
-    tracks.forEach(track => {
-      html += '<div class="sequencer-track">';
-      for (let i = 0; i < 16; i++) {
-        html += `<button class="step-btn" data-track="${track}" data-step="${i}"></button>`;
-      }
-      html += '</div>';
-    });
-    
-    return html;
-  }
-  
-  generateChannelStrips() {
-    const tracks = ['kick', 'snare', 'hihat', 'openhat', 'clap', 'crash'];
-    let html = '';
-    
-    tracks.forEach(track => {
-      html += `
-        <div class="channel-strip">
-          <input type="range" class="volume-fader" data-track="${track}" 
-                 min="0" max="1" step="0.01" value="0.8">
-          <button class="mute-btn" data-track="${track}">M</button>
-          <button class="solo-btn" data-track="${track}">S</button>
+
+  // Create creative effects panel
+  function createCreativePanel() {
+    const grid = document.getElementById('dmCreativeGrid');
+    if (!grid) return;
+
+    grid.innerHTML = `
+      <!-- Gated Reverb -->
+      <div class="dm-effect-unit" id="dmGatedReverbUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">GATED REVERB</span>
+          <div class="dm-effect-toggle" id="dmGatedReverbToggle"></div>
         </div>
-      `;
-    });
-    
-    return html;
-  }
-  
-  generateDrumPads() {
-    const pads = [
-      { name: 'kick', key: 'C' },
-      { name: 'snare', key: 'D' },
-      { name: 'hihat', key: 'F' },
-      { name: 'openhat', key: 'G' },
-      { name: 'clap', key: 'H' },
-      { name: 'crash', key: 'J' }
-    ];
-    
-    return pads.map(pad => `
-      <button class="drum-pad" data-sound="${pad.name}">
-        <span class="pad-name">${pad.name}</span>
-        <span class="pad-key">${pad.key}</span>
-      </button>
-    `).join('');
-  }
-  
-  applyProfessionalStyling() {
-    const style = document.createElement('style');
-    style.textContent = `
-      :root {
-        --bg-primary: #1a1a1a;
-        --bg-secondary: #252525;
-        --bg-tertiary: #303030;
-        --accent-primary: #ff6b35;
-        --accent-secondary: #0099ff;
-        --accent-success: #00d084;
-        --text-primary: #ffffff;
-        --text-secondary: #b0b0b0;
-        --text-muted: #707070;
-        --border-color: #404040;
-      }
-      
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background: var(--bg-primary);
-        color: var(--text-primary);
-        overflow: hidden;
-        user-select: none;
-      }
-      
-      .drum-machine-pro {
-        width: 100vw;
-        height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      
-      .dmp-container {
-        width: 100%;
-        max-width: 1200px;
-        height: 90vh;
-        background: var(--bg-secondary);
-        border-radius: 12px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-      
-      .dmp-header {
-        background: var(--bg-tertiary);
-        padding: 20px 30px;
-        display: flex;
-        align-items: center;
-        gap: 30px;
-        border-bottom: 1px solid var(--border-color);
-      }
-      
-      .dmp-title {
-        font-size: 24px;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin: 0;
-      }
-      
-      .transport-controls {
-        display: flex;
-        gap: 10px;
-      }
-      
-      .transport-btn {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        background: var(--bg-secondary);
-        border: 2px solid var(--border-color);
-        color: var(--text-primary);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
-      }
-      
-      .transport-btn:hover {
-        background: var(--accent-primary);
-        border-color: var(--accent-primary);
-        transform: scale(1.05);
-      }
-      
-      .transport-btn:active {
-        transform: scale(0.95);
-      }
-      
-      .transport-btn svg {
-        width: 24px;
-        height: 24px;
-        fill: currentColor;
-      }
-      
-      .tempo-control {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        background: var(--bg-secondary);
-        padding: 8px 16px;
-        border-radius: 8px;
-      }
-      
-      .tempo-control label {
-        font-size: 12px;
-        text-transform: uppercase;
-        color: var(--text-secondary);
-      }
-      
-      .tempo-slider {
-        width: 100px;
-        -webkit-appearance: none;
-        height: 4px;
-        background: var(--border-color);
-        border-radius: 2px;
-        outline: none;
-      }
-      
-      .tempo-slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 16px;
-        height: 16px;
-        background: var(--accent-primary);
-        border-radius: 50%;
-        cursor: pointer;
-      }
-      
-      .tempo-display {
-        font-size: 18px;
-        font-weight: 600;
-        color: var(--accent-primary);
-        min-width: 40px;
-        text-align: center;
-      }
-      
-      .pattern-selector {
-        flex: 1;
-      }
-      
-      .pattern-dropdown {
-        background: var(--bg-secondary);
-        color: var(--text-primary);
-        border: 1px solid var(--border-color);
-        padding: 8px 16px;
-        border-radius: 6px;
-        font-size: 14px;
-        cursor: pointer;
-      }
-      
-      .master-controls {
-        display: flex;
-        gap: 10px;
-      }
-      
-      .control-btn {
-        background: var(--bg-secondary);
-        color: var(--text-primary);
-        border: 1px solid var(--border-color);
-        padding: 8px 20px;
-        border-radius: 6px;
-        font-size: 14px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-      
-      .control-btn:hover {
-        background: var(--accent-primary);
-        border-color: var(--accent-primary);
-      }
-      
-      .export-btn {
-        background: var(--accent-success);
-        border-color: var(--accent-success);
-      }
-      
-      .dmp-workspace {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        padding: 30px;
-        gap: 30px;
-        overflow-y: auto;
-      }
-      
-      .sequencer-section {
-        display: flex;
-        gap: 20px;
-        background: var(--bg-tertiary);
-        padding: 20px;
-        border-radius: 8px;
-      }
-      
-      .track-labels {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      
-      .track-label {
-        height: 32px;
-        display: flex;
-        align-items: center;
-        padding: 0 12px;
-        font-size: 12px;
-        text-transform: uppercase;
-        color: var(--text-secondary);
-        background: var(--bg-secondary);
-        border-radius: 4px;
-      }
-      
-      .sequencer-grid {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      
-      .sequencer-track {
-        display: flex;
-        gap: 4px;
-      }
-      
-      .step-btn {
-        width: 32px;
-        height: 32px;
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.1s ease;
-      }
-      
-      .step-btn:nth-child(4n+1) {
-        border-left: 2px solid var(--accent-primary);
-      }
-      
-      .step-btn.active {
-        background: var(--accent-primary);
-        border-color: var(--accent-primary);
-        box-shadow: 0 0 12px rgba(255, 107, 53, 0.5);
-      }
-      
-      .step-btn.playing {
-        animation: pulse 0.2s ease-out;
-      }
-      
-      @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.2); }
-        100% { transform: scale(1); }
-      }
-      
-      .channel-strips {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      
-      .channel-strip {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        height: 32px;
-      }
-      
-      .volume-fader {
-        width: 80px;
-        -webkit-appearance: none;
-        height: 4px;
-        background: var(--border-color);
-        border-radius: 2px;
-        outline: none;
-      }
-      
-      .volume-fader::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 12px;
-        height: 20px;
-        background: var(--accent-primary);
-        border-radius: 2px;
-        cursor: pointer;
-      }
-      
-      .mute-btn, .solo-btn {
-        width: 24px;
-        height: 24px;
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        font-size: 12px;
-        color: var(--text-secondary);
-        cursor: pointer;
-        transition: all 0.1s ease;
-      }
-      
-      .mute-btn:hover, .solo-btn:hover {
-        color: var(--text-primary);
-        border-color: var(--text-primary);
-      }
-      
-      .mute-btn.active {
-        background: #ff5252;
-        color: white;
-        border-color: #ff5252;
-      }
-      
-      .solo-btn.active {
-        background: #ffab00;
-        color: white;
-        border-color: #ffab00;
-      }
-      
-      .pads-section {
-        background: var(--bg-tertiary);
-        padding: 20px;
-        border-radius: 8px;
-      }
-      
-      .drum-pads {
-        display: grid;
-        grid-template-columns: repeat(6, 1fr);
-        gap: 12px;
-        max-width: 600px;
-        margin: 0 auto;
-      }
-      
-      .drum-pad {
-        aspect-ratio: 1;
-        background: linear-gradient(145deg, #3a3a3a, #2a2a2a);
-        border: 2px solid var(--border-color);
-        border-radius: 8px;
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        transition: all 0.1s ease;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-      }
-      
-      .drum-pad:hover {
-        border-color: var(--accent-primary);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
-      }
-      
-      .drum-pad:active,
-      .drum-pad.active {
-        transform: translateY(0);
-        background: linear-gradient(145deg, var(--accent-primary), #e55a35);
-        box-shadow: 0 0 20px rgba(255, 107, 53, 0.6);
-      }
-      
-      .pad-name {
-        font-size: 14px;
-        font-weight: 500;
-        text-transform: uppercase;
-      }
-      
-      .pad-key {
-        font-size: 11px;
-        color: var(--text-secondary);
-      }
-      
-      .effects-section {
-        background: var(--bg-tertiary);
-        padding: 20px;
-        border-radius: 8px;
-      }
-      
-      .section-title {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 16px;
-        color: var(--text-secondary);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-      }
-      
-      .effects-rack {
-        display: flex;
-        gap: 12px;
-        flex-wrap: wrap;
-      }
-      
-      .effect-btn {
-        background: var(--bg-secondary);
-        color: var(--text-primary);
-        border: 2px solid var(--border-color);
-        padding: 12px 24px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-      
-      .effect-btn:hover {
-        background: var(--accent-secondary);
-        border-color: var(--accent-secondary);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 153, 255, 0.3);
-      }
-      
-      .effect-btn.active {
-        background: var(--accent-secondary);
-        border-color: var(--accent-secondary);
-        box-shadow: 0 0 20px rgba(0, 153, 255, 0.5);
-      }
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Threshold</span>
+            <span class="dm-effect-param-value" id="dmGatedReverbThresholdVal">-20dB</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGatedReverbThreshold" min="-60" max="0" value="-20">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Hold</span>
+            <span class="dm-effect-param-value" id="dmGatedReverbHoldVal">100ms</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGatedReverbHold" min="10" max="500" value="100">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Decay</span>
+            <span class="dm-effect-param-value" id="dmGatedReverbDecayVal">50ms</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGatedReverbDecay" min="10" max="200" value="50">
+        </div>
+      </div>
+
+      <!-- Tape Stop -->
+      <div class="dm-effect-unit" id="dmTapeStopUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">TAPE STOP</span>
+          <div class="dm-effect-toggle" id="dmTapeStopToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Speed</span>
+            <span class="dm-effect-param-value" id="dmTapeStopSpeedVal">50%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmTapeStopSpeed" min="10" max="100" value="50">
+          <button class="dm-effect-preset-btn" id="dmTapeStopTrigger">TRIGGER</button>
+        </div>
+      </div>
+
+      <!-- Stutter -->
+      <div class="dm-effect-unit" id="dmStutterUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">STUTTER</span>
+          <div class="dm-effect-toggle" id="dmStutterToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Division</span>
+            <span class="dm-effect-param-value" id="dmStutterDivisionVal">1/16</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmStutterDivision" min="2" max="32" value="16" step="2">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Probability</span>
+            <span class="dm-effect-param-value" id="dmStutterProbabilityVal">50%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmStutterProbability" min="0" max="100" value="50">
+        </div>
+      </div>
+
+      <!-- Glitch -->
+      <div class="dm-effect-unit" id="dmGlitchUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">GLITCH</span>
+          <div class="dm-effect-toggle" id="dmGlitchToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Intensity</span>
+            <span class="dm-effect-param-value" id="dmGlitchIntensityVal">50%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGlitchIntensity" min="0" max="100" value="50">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Frequency</span>
+            <span class="dm-effect-param-value" id="dmGlitchFrequencyVal">30%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGlitchFrequency" min="0" max="100" value="30">
+        </div>
+      </div>
+
+      <!-- Reverse -->
+      <div class="dm-effect-unit" id="dmReverseUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">REVERSE</span>
+          <div class="dm-effect-toggle" id="dmReverseToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Probability</span>
+            <span class="dm-effect-param-value" id="dmReverseProbabilityVal">20%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmReverseProbability" min="0" max="100" value="20">
+        </div>
+      </div>
+
+      <!-- Granular -->
+      <div class="dm-effect-unit" id="dmGranularUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">GRANULAR</span>
+          <div class="dm-effect-toggle" id="dmGranularToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Grain Size</span>
+            <span class="dm-effect-param-value" id="dmGranularGrainSizeVal">50ms</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGranularGrainSize" min="10" max="200" value="50">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Overlap</span>
+            <span class="dm-effect-param-value" id="dmGranularOverlapVal">50%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGranularOverlap" min="0" max="100" value="50">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Pitch</span>
+            <span class="dm-effect-param-value" id="dmGranularPitchVal">0</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGranularPitch" min="-24" max="24" value="0">
+        </div>
+      </div>
     `;
-    document.head.appendChild(style);
   }
-  
-  cacheUIElements() {
-    this.ui.playButton = document.querySelector('.play-btn');
-    this.ui.stopButton = document.querySelector('.stop-btn');
-    this.ui.tempoSlider = document.querySelector('.tempo-slider');
-    this.ui.tempoDisplay = document.querySelector('.tempo-display');
-    this.ui.patternDropdown = document.querySelector('.pattern-dropdown');
-    this.ui.stepButtons = Array.from(document.querySelectorAll('.step-btn'));
-    this.ui.pads = Array.from(document.querySelectorAll('.drum-pad'));
-    this.ui.volumeFaders = Array.from(document.querySelectorAll('.volume-fader'));
-    this.ui.muteButtons = Array.from(document.querySelectorAll('.mute-btn'));
-    this.ui.soloButtons = Array.from(document.querySelectorAll('.solo-btn'));
-    this.ui.effectButtons = Array.from(document.querySelectorAll('.effect-btn'));
-    this.ui.clearButton = document.querySelector('[data-action="clear"]');
-    this.ui.resetButton = document.querySelector('[data-action="reset"]');
-    this.ui.exportButton = document.querySelector('[data-action="export"]');
-    this.ui.iconPlay = document.querySelector('.icon-play');
-    this.ui.iconPause = document.querySelector('.icon-pause');
+
+  // Initialize audio and setup modular effect creation functions
+  function initAudio() {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      masterGain = audioContext.createGain();
+      masterGain.gain.value = globalParams.masterVolume;
+      
+      const limiter = audioContext.createDynamicsCompressor();
+      limiter.threshold.value = -1;
+      limiter.knee.value = 0;
+      limiter.ratio.value = 20;
+      limiter.attack.value = 0.001;
+      limiter.release.value = 0.01;
+      
+      effectsChain = {
+        reverb: createReverb(),
+        delay: createDelay(),
+        filter: createFilter(),
+        compressor: createCompressor(),
+        distortion: createDistortion(),
+        chorus: createChorus(),
+        phaser: createPhaser(),
+        bitcrusher: createBitcrusher(),
+        stereoWidth: createStereoWidth(),
+        gatedReverb: createGatedReverb(),
+        tapeStop: createTapeStop(),
+        stutter: createStutter(),
+        glitch: createGlitch(),
+        granular: createGranular(),
+        limiter: limiter
+      };
+      
+      masterGain.connect(limiter);
+      limiter.connect(audioContext.destination);
+    }
   }
-  
-  setupEventListeners() {
-    // Transport controls
-    this.ui.playButton.addEventListener('click', () => this.togglePlayback());
-    this.ui.stopButton.addEventListener('click', () => this.stop());
+
+  // Standard effects creation (modularized)
+  function createReverb() {
+    const convolver = audioContext.createConvolver();
+    const wetGain = audioContext.createGain();
+    const dryGain = audioContext.createGain();
+    const presets = {};
     
-    // Tempo control
-    this.ui.tempoSlider.addEventListener('input', (e) => {
-      this.setTempo(parseInt(e.target.value));
-    });
-    
-    // Pattern selector
-    this.ui.patternDropdown.addEventListener('change', (e) => {
-      this.loadPattern(e.target.value);
-    });
-    
-    // Step buttons
-    this.ui.stepButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const track = btn.dataset.track;
-        const step = parseInt(btn.dataset.step);
-        this.toggleStep(track, step);
-      });
-    });
-    
-    // Drum pads
-    this.ui.pads.forEach(pad => {
-      pad.addEventListener('mousedown', () => this.playPad(pad.dataset.sound));
-      pad.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        this.playPad(pad.dataset.sound);
-      });
-    });
-    
-    // Channel controls
-    this.ui.volumeFaders.forEach(fader => {
-      fader.addEventListener('input', (e) => {
-        const track = e.target.dataset.track;
-        const volume = parseFloat(e.target.value);
-        this.setTrackVolume(track, volume);
-      });
-    });
-    
-    this.ui.muteButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const track = btn.dataset.track;
-        this.toggleMute(track);
-        btn.classList.toggle('active');
-      });
-    });
-    
-    this.ui.soloButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const track = btn.dataset.track;
-        this.toggleSolo(track);
-        btn.classList.toggle('active');
-      });
-    });
-    
-    // Effect buttons
-    this.ui.effectButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const effect = btn.dataset.effect;
-        this.triggerEffect(effect);
-        btn.classList.add('active');
-        setTimeout(() => btn.classList.remove('active'), 1000);
-      });
-    });
-    
-    // Master controls
-    this.ui.clearButton.addEventListener('click', () => this.clearPattern());
-    this.ui.resetButton.addEventListener('click', () => this.resetPattern());
-    this.ui.exportButton.addEventListener('click', () => this.exportAudio());
-    
-    // Keyboard controls
-    this.setupKeyboardControls();
-    
-    // Handle visibility change for audio context
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden && this.isPlaying) {
-        this.stop();
+    // Room impulse
+    const roomLength = audioContext.sampleRate * 0.5;
+    const roomImpulse = audioContext.createBuffer(2, roomLength, audioContext.sampleRate);
+    for (let channel = 0; channel < 2; channel++) {
+      const channelData = roomImpulse.getChannelData(channel);
+      for (let i = 0; i < roomLength; i++) {
+        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / roomLength, 1.5);
       }
-    });
+    }
+    presets.room = roomImpulse;
+    
+    // Hall impulse
+    const hallLength = audioContext.sampleRate * 2;
+    const hallImpulse = audioContext.createBuffer(2, hallLength, audioContext.sampleRate);
+    for (let channel = 0; channel < 2; channel++) {
+      const channelData = hallImpulse.getChannelData(channel);
+      for (let i = 0; i < hallLength; i++) {
+        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / hallLength, 2);
+      }
+    }
+    presets.hall = hallImpulse;
+    
+    // Plate impulse
+    const plateLength = audioContext.sampleRate * 1;
+    const plateImpulse = audioContext.createBuffer(2, plateLength, audioContext.sampleRate);
+    for (let channel = 0; channel < 2; channel++) {
+      const channelData = plateImpulse.getChannelData(channel);
+      for (let i = 0; i < plateLength; i++) {
+        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / plateLength, 0.8);
+      }
+    }
+    presets.plate = plateImpulse;
+    
+    // Cathedral impulse
+    const cathedralLength = audioContext.sampleRate * 4;
+    const cathedralImpulse = audioContext.createBuffer(2, cathedralLength, audioContext.sampleRate);
+    for (let channel = 0; channel < 2; channel++) {
+      const channelData = cathedralImpulse.getChannelData(channel);
+      for (let i = 0; i < cathedralLength; i++) {
+        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / cathedralLength, 2.5);
+      }
+    }
+    presets.cathedral = cathedralImpulse;
+    
+    convolver.buffer = presets[globalParams.reverb.preset];
+    wetGain.gain.value = 0;
+    dryGain.gain.value = 1;
+    
+    return { convolver, wetGain, dryGain, presets };
   }
-  
-  setupKeyboardControls() {
-    const keyMap = {
-      'c': 'kick',
-      'd': 'snare',
-      'f': 'hihat',
-      'g': 'openhat',
-      'h': 'clap',
-      'j': 'crash',
-      ' ': () => this.togglePlayback()
+
+  function createDelay() {
+    const delay = audioContext.createDelay(2);
+    const feedback = audioContext.createGain();
+    const wetGain = audioContext.createGain();
+    
+    const delayL = audioContext.createDelay(2);
+    const delayR = audioContext.createDelay(2);
+    const feedbackL = audioContext.createGain();
+    const feedbackR = audioContext.createGain();
+    const merger = audioContext.createChannelMerger(2);
+    const splitter = audioContext.createChannelSplitter(2);
+    
+    delay.delayTime.value = 0.25;
+    feedback.gain.value = 0.3;
+    wetGain.gain.value = 0;
+    
+    delayL.delayTime.value = 0.25;
+    delayR.delayTime.value = 0.25;
+    feedbackL.gain.value = 0.3;
+    feedbackR.gain.value = 0.3;
+    
+    delay.connect(feedback);
+    feedback.connect(delay);
+    
+    splitter.connect(delayL, 0);
+    splitter.connect(delayR, 1);
+    delayL.connect(feedbackL);
+    delayR.connect(feedbackR);
+    feedbackL.connect(merger, 0, 1);
+    feedbackR.connect(merger, 0, 0);
+    merger.connect(splitter);
+    
+    return { 
+      delay, feedback, wetGain,
+      delayL, delayR, feedbackL, feedbackR,
+      merger, splitter
+    };
+  }
+
+  function createFilter() {
+    const filter = audioContext.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 20000;
+    filter.Q.value = 1;
+    
+    // LFO for filter sweep
+    const lfo = audioContext.createOscillator();
+    const lfoGain = audioContext.createGain();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.5;
+    lfoGain.gain.value = 0;
+    lfo.connect(lfoGain);
+    lfo.start();
+    
+    return { filter, lfo, lfoGain };
+  }
+
+  function createCompressor() {
+    const compressor = audioContext.createDynamicsCompressor();
+    compressor.threshold.value = -20;
+    compressor.ratio.value = 4;
+    compressor.attack.value = 0.003;
+    compressor.release.value = 0.25;
+    return compressor;
+  }
+
+  function createDistortion() {
+    const waveshaper = audioContext.createWaveShaper();
+    const inputGain = audioContext.createGain();
+    const outputGain = audioContext.createGain();
+    const toneFilter = audioContext.createBiquadFilter();
+    
+    inputGain.gain.value = 1;
+    outputGain.gain.value = 1;
+    toneFilter.type = 'highshelf';
+    toneFilter.frequency.value = 3000;
+    toneFilter.gain.value = 0;
+    
+    const updateCurve = (type) => {
+      const samples = 44100;
+      const curve = new Float32Array(samples);
+      
+      for (let i = 0; i < samples; i++) {
+        const x = (i * 2) / samples - 1;
+        
+        switch(type) {
+          case 'soft':
+            curve[i] = Math.tanh(x * 2);
+            break;
+          case 'hard':
+            curve[i] = Math.sign(x) * Math.min(Math.abs(x * 5), 1);
+            break;
+          case 'fuzz':
+            curve[i] = Math.sign(x) * (1 - Math.exp(-Math.abs(x * 10)));
+            break;
+          default:
+            curve[i] = x;
+        }
+      }
+      
+      waveshaper.curve = curve;
     };
     
-    document.addEventListener('keydown', (e) => {
-      const key = e.key.toLowerCase();
-      if (keyMap[key]) {
-        if (typeof keyMap[key] === 'function') {
-          e.preventDefault();
-          keyMap[key]();
+    updateCurve(globalParams.distortion.type);
+    waveshaper.oversample = '4x';
+    
+    return { waveshaper, inputGain, outputGain, toneFilter, updateCurve };
+  }
+
+  function createChorus() {
+    const delay = audioContext.createDelay(0.1);
+    const lfo = audioContext.createOscillator();
+    const lfoGain = audioContext.createGain();
+    const wetGain = audioContext.createGain();
+    
+    lfo.type = 'sine';
+    lfo.frequency.value = 1.5;
+    lfoGain.gain.value = 0.002;
+    wetGain.gain.value = 0;
+    
+    lfo.connect(lfoGain);
+    lfoGain.connect(delay.delayTime);
+    
+    delay.delayTime.value = 0.02;
+    
+    lfo.start();
+    
+    return { delay, lfo, lfoGain, wetGain };
+  }
+
+  function createPhaser() {
+    const stages = [];
+    const lfo = audioContext.createOscillator();
+    const lfoGain = audioContext.createGain();
+    
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.5;
+    lfoGain.gain.value = 1000;
+    
+    for (let i = 0; i < 8; i++) {
+      const allpass = audioContext.createBiquadFilter();
+      allpass.type = 'allpass';
+      allpass.frequency.value = 1000 + i * 500;
+      stages.push(allpass);
+      
+      lfo.connect(lfoGain);
+      lfoGain.connect(allpass.frequency);
+    }
+    
+    lfo.start();
+    
+    return { stages, lfo, lfoGain };
+  }
+
+  function createBitcrusher() {
+    const scriptNode = audioContext.createScriptProcessor(4096, 1, 1);
+    let bits = 8;
+    let downsample = 1;
+    let sampleCount = 0;
+    let lastSample = 0;
+    
+    scriptNode.onaudioprocess = function(e) {
+      const input = e.inputBuffer.getChannelData(0);
+      const output = e.outputBuffer.getChannelData(0);
+      
+      for (let i = 0; i < input.length; i++) {
+        sampleCount++;
+        if (sampleCount >= downsample) {
+          const step = Math.pow(0.5, bits);
+          lastSample = step * Math.floor(input[i] / step + 0.5);
+          sampleCount = 0;
+        }
+        output[i] = lastSample;
+      }
+    };
+    
+    return { 
+      scriptNode,
+      setBits: (b) => { bits = b; },
+      setDownsample: (d) => { downsample = d; }
+    };
+  }
+
+  function createStereoWidth() {
+    const splitter = audioContext.createChannelSplitter(2);
+    const merger = audioContext.createChannelMerger(2);
+    const midGain = audioContext.createGain();
+    const sideGain = audioContext.createGain();
+    
+    midGain.gain.value = 1;
+    sideGain.gain.value = 1;
+    
+    return { splitter, merger, midGain, sideGain };
+  }
+
+  // Creative effects
+  function createGatedReverb() {
+    const convolver = audioContext.createConvolver();
+    const gate = audioContext.createGain();
+    
+    // Create short burst impulse
+    const length = audioContext.sampleRate * 0.5;
+    const impulse = audioContext.createBuffer(2, length, audioContext.sampleRate);
+    
+    for (let channel = 0; channel < 2; channel++) {
+      const channelData = impulse.getChannelData(channel);
+      for (let i = 0; i < length; i++) {
+        channelData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (length * 0.1));
+      }
+    }
+    
+    convolver.buffer = impulse;
+    gate.gain.value = 0;
+    
+    return { convolver, gate };
+  }
+
+  function createTapeStop() {
+    const delayNode = audioContext.createDelay(1);
+    const feedbackGain = audioContext.createGain();
+    const outputGain = audioContext.createGain();
+    
+    delayNode.delayTime.value = 0;
+    feedbackGain.gain.value = 0.9;
+    outputGain.gain.value = 1;
+    
+    delayNode.connect(feedbackGain);
+    feedbackGain.connect(delayNode);
+    
+    return { delayNode, feedbackGain, outputGain };
+  }
+
+  function createStutter() {
+    const bufferSize = audioContext.sampleRate * 2;
+    const buffer = audioContext.createBuffer(2, bufferSize, audioContext.sampleRate);
+    const bufferSource = audioContext.createBufferSource();
+    
+    bufferSource.buffer = buffer;
+    bufferSource.loop = true;
+    
+    return { buffer, bufferSource };
+  }
+
+  function createGlitch() {
+    const scriptNode = audioContext.createScriptProcessor(2048, 1, 1);
+    let glitchIntensity = 0.5;
+    let glitchFrequency = 0.3;
+    
+    scriptNode.onaudioprocess = function(e) {
+      const input = e.inputBuffer.getChannelData(0);
+      const output = e.outputBuffer.getChannelData(0);
+      
+      for (let i = 0; i < input.length; i++) {
+        if (Math.random() < glitchFrequency) {
+          // Apply random glitch effect
+          const glitchType = Math.floor(Math.random() * 4);
+          switch(glitchType) {
+            case 0: // Bit reduction
+              output[i] = Math.round(input[i] * 4) / 4 * glitchIntensity + input[i] * (1 - glitchIntensity);
+              break;
+            case 1: // Sample repeat
+              output[i] = input[Math.floor(i / 4) * 4] * glitchIntensity + input[i] * (1 - glitchIntensity);
+              break;
+            case 2: // Amplitude modulation
+              output[i] = input[i] * (Math.random() * glitchIntensity + (1 - glitchIntensity));
+              break;
+            case 3: // Silence
+              output[i] = input[i] * (1 - glitchIntensity);
+              break;
+          }
         } else {
-          this.playPad(keyMap[key]);
-          const pad = this.ui.pads.find(p => p.dataset.sound === keyMap[key]);
-          if (pad) {
-            pad.classList.add('active');
-            setTimeout(() => pad.classList.remove('active'), 100);
+          output[i] = input[i];
+        }
+      }
+    };
+    
+    return {
+      scriptNode,
+      setIntensity: (val) => { glitchIntensity = val; },
+      setFrequency: (val) => { glitchFrequency = val; }
+    };
+  }
+
+  function createGranular() {
+    const grainSize = 50; // ms
+    const overlap = 0.5;
+    const grains = [];
+    
+    // Create grain windows
+    for (let i = 0; i < 8; i++) {
+      const gain = audioContext.createGain();
+      gain.gain.value = 0;
+      grains.push(gain);
+    }
+    
+    return { grains, grainSize, overlap };
+  }
+
+  // Play sound with full effects chain and layering
+  function playSound(instId, time) {
+    if (!audioContext) return;
+
+    const inst = instruments.find(i => i.id === instId);
+    if (!inst) return;
+
+    if (isMuted[instId]) return;
+    if (isSolo && soloTrack !== instId) return;
+
+    const params = globalParams.instrumentParams[instId];
+    const now = time || audioContext.currentTime;
+
+    // Apply reverse probability
+    const shouldReverse = globalParams.reverse.enabled && Math.random() < globalParams.reverse.probability;
+
+    // Create main sound
+    playSoundCore(inst, params, now, shouldReverse);
+
+    // Create layer if enabled
+    if (params.layer && inst.layerFreq) {
+      const layerInst = Object.assign({}, inst, { 
+        frequency: inst.layerFreq,
+        subFreq: inst.layerFreq / 2
+      });
+      const layerParams = Object.assign({}, params, {
+        volume: params.volume * params.layerVolume,
+        pitch: params.pitch + params.layerPitch
+      });
+      playSoundCore(layerInst, layerParams, now, shouldReverse);
+    }
+
+    // Apply stutter effect
+    if (globalParams.stutter.enabled && Math.random() < globalParams.stutter.probability) {
+      const stutterCount = Math.floor(globalParams.stutter.division / 4);
+      const stutterInterval = (60 / parseInt(document.getElementById('dmTempoSlider').value) / globalParams.stutter.division);
+      
+      for (let i = 1; i < stutterCount; i++) {
+        setTimeout(() => {
+          playSoundCore(inst, Object.assign({}, params, { volume: params.volume * 0.7 }), 
+                       audioContext.currentTime, false);
+        }, stutterInterval * i * 1000);
+      }
+    }
+  }
+
+  // Core sound generation with optimized real-time performance
+  function playSoundCore(inst, params, startTime, reverse = false) {
+    const osc = audioContext.createOscillator();
+    const oscGain = audioContext.createGain();
+    const panner = audioContext.createStereoPanner();
+    
+    const referenceGain = dbToGain(REFERENCE_LEVEL);
+    panner.pan.value = params.pan;
+    
+    const pitchMultiplier = Math.pow(2, Math.max(-24, Math.min(24, params.pitch)) / 12);
+    
+    osc.connect(oscGain);
+    oscGain.connect(panner);
+    
+    // Apply effects chain
+    let currentNode = panner;
+    let compensationGain = 1;
+    
+    // Glitch effect
+    if (globalParams.glitch.enabled && effectsChain.glitch) {
+      effectsChain.glitch.setIntensity(globalParams.glitch.intensity);
+      effectsChain.glitch.setFrequency(globalParams.glitch.frequency);
+      currentNode.connect(effectsChain.glitch.scriptNode);
+      currentNode = effectsChain.glitch.scriptNode;
+    }
+    
+    // Bitcrusher
+    if (globalParams.bitcrusher.enabled && effectsChain.bitcrusher) {
+      currentNode.connect(effectsChain.bitcrusher.scriptNode);
+      currentNode = effectsChain.bitcrusher.scriptNode;
+      effectsChain.bitcrusher.setBits(globalParams.bitcrusher.bits);
+      effectsChain.bitcrusher.setDownsample(globalParams.bitcrusher.downsample);
+    }
+    
+    // Distortion
+    if (globalParams.distortion.enabled && effectsChain.distortion) {
+      effectsChain.distortion.updateCurve(globalParams.distortion.type);
+      effectsChain.distortion.inputGain.gain.value = 1 + globalParams.distortion.amount;
+      effectsChain.distortion.outputGain.gain.value = 1 / (1 + globalParams.distortion.amount * 0.5);
+      effectsChain.distortion.toneFilter.gain.value = globalParams.distortion.tone * 12 - 6;
+      
+      currentNode.connect(effectsChain.distortion.inputGain);
+      effectsChain.distortion.inputGain.connect(effectsChain.distortion.waveshaper);
+      effectsChain.distortion.waveshaper.connect(effectsChain.distortion.toneFilter);
+      effectsChain.distortion.toneFilter.connect(effectsChain.distortion.outputGain);
+      currentNode = effectsChain.distortion.outputGain;
+      
+      compensationGain *= 0.8;
+    }
+    
+    // Filter with sweep
+    if (globalParams.filter.enabled && effectsChain.filter) {
+      effectsChain.filter.filter.frequency.value = globalParams.filter.frequency;
+      effectsChain.filter.filter.Q.value = globalParams.filter.resonance;
+      effectsChain.filter.filter.type = globalParams.filter.type;
+      
+      if (globalParams.filter.sweep) {
+        effectsChain.filter.lfo.frequency.value = globalParams.filter.sweepSpeed;
+        effectsChain.filter.lfoGain.gain.value = globalParams.filter.frequency * 0.5;
+        effectsChain.filter.lfoGain.connect(effectsChain.filter.filter.frequency);
+      }
+      
+      currentNode.connect(effectsChain.filter.filter);
+      currentNode = effectsChain.filter.filter;
+      
+      if (globalParams.filter.resonance > 5) {
+        compensationGain *= 1 / (1 + (globalParams.filter.resonance - 5) * 0.05);
+      }
+    }
+    
+    // Phaser
+    if (globalParams.phaser.enabled && effectsChain.phaser) {
+      effectsChain.phaser.lfo.frequency.value = globalParams.phaser.rate;
+      effectsChain.phaser.lfoGain.gain.value = 1000 * globalParams.phaser.depth;
+      
+      const activeStages = globalParams.phaser.stages;
+      for (let i = 0; i < activeStages; i++) {
+        if (i === 0) {
+          currentNode.connect(effectsChain.phaser.stages[i]);
+        } else {
+          effectsChain.phaser.stages[i-1].connect(effectsChain.phaser.stages[i]);
+        }
+      }
+      currentNode = effectsChain.phaser.stages[activeStages - 1];
+    }
+    
+    // Compression
+    if (globalParams.compression.enabled && effectsChain.compressor) {
+      effectsChain.compressor.threshold.value = globalParams.compression.threshold;
+      effectsChain.compressor.ratio.value = globalParams.compression.ratio;
+      effectsChain.compressor.attack.value = globalParams.compression.attack / 1000;
+      effectsChain.compressor.release.value = globalParams.compression.release / 1000;
+      currentNode.connect(effectsChain.compressor);
+      currentNode = effectsChain.compressor;
+      
+      const reductionDb = Math.abs(globalParams.compression.threshold) / globalParams.compression.ratio;
+      compensationGain *= dbToGain(reductionDb * 0.5 + globalParams.compression.makeup);
+    }
+    
+    // Create dry/wet paths
+    const dryGain = audioContext.createGain();
+    const wetGain = audioContext.createGain();
+    const postEffectGain = audioContext.createGain();
+    
+    currentNode.connect(dryGain);
+    currentNode.connect(wetGain);
+    
+    dryGain.gain.value = 1;
+    wetGain.gain.value = 1;
+    
+    postEffectGain.gain.value = compensationGain;
+    
+    dryGain.connect(postEffectGain);
+    wetGain.connect(postEffectGain);
+    
+    // Send effects
+    const sendBus = audioContext.createGain();
+    postEffectGain.connect(sendBus);
+    
+    // Reverb send
+    if (globalParams.reverb.enabled && effectsChain.reverb) {
+      const reverbSend = audioContext.createGain();
+      reverbSend.gain.value = globalParams.reverb.mix;
+      
+      if (effectsChain.reverb.currentPreset !== globalParams.reverb.preset) {
+        effectsChain.reverb.convolver.buffer = effectsChain.reverb.presets[globalParams.reverb.preset];
+        effectsChain.reverb.currentPreset = globalParams.reverb.preset;
+      }
+      
+      sendBus.connect(reverbSend);
+      reverbSend.connect(effectsChain.reverb.convolver);
+      effectsChain.reverb.convolver.connect(masterGain);
+    }
+    
+    // Gated reverb send
+    if (globalParams.gatedReverb.enabled && effectsChain.gatedReverb) {
+      const gatedSend = audioContext.createGain();
+      gatedSend.gain.value = 0.8;
+      
+      sendBus.connect(gatedSend);
+      gatedSend.connect(effectsChain.gatedReverb.convolver);
+      
+      // Gate control
+      const gateEnv = audioContext.createGain();
+      gateEnv.gain.setValueAtTime(1, startTime);
+      gateEnv.gain.setValueAtTime(1, startTime + globalParams.gatedReverb.hold / 1000);
+      gateEnv.gain.exponentialRampToValueAtTime(0.01, startTime + globalParams.gatedReverb.hold / 1000 + globalParams.gatedReverb.decay / 1000);
+      
+      effectsChain.gatedReverb.convolver.connect(gateEnv);
+      gateEnv.connect(masterGain);
+    }
+    
+    // Delay send
+    if (globalParams.delay.enabled && effectsChain.delay) {
+      const delaySend = audioContext.createGain();
+      delaySend.gain.value = globalParams.delay.mix;
+      
+      if (globalParams.delay.pingPong) {
+        sendBus.connect(delaySend);
+        delaySend.connect(effectsChain.delay.splitter);
+        effectsChain.delay.delayL.delayTime.value = globalParams.delay.time / 1000;
+        effectsChain.delay.delayR.delayTime.value = globalParams.delay.time / 1000;
+        effectsChain.delay.feedbackL.gain.value = globalParams.delay.feedback;
+        effectsChain.delay.feedbackR.gain.value = globalParams.delay.feedback;
+        effectsChain.delay.merger.connect(masterGain);
+      } else {
+        sendBus.connect(delaySend);
+        delaySend.connect(effectsChain.delay.delay);
+        effectsChain.delay.delay.delayTime.value = globalParams.delay.time / 1000;
+        effectsChain.delay.feedback.gain.value = globalParams.delay.feedback;
+        effectsChain.delay.delay.connect(masterGain);
+      }
+    }
+    
+    // Chorus send
+    if (globalParams.chorus.enabled && effectsChain.chorus) {
+      const chorusSend = audioContext.createGain();
+      chorusSend.gain.value = globalParams.chorus.mix;
+      
+      effectsChain.chorus.lfo.frequency.value = globalParams.chorus.rate;
+      effectsChain.chorus.lfoGain.gain.value = globalParams.chorus.depth * 0.01;
+      
+      sendBus.connect(chorusSend);
+      chorusSend.connect(effectsChain.chorus.delay);
+      effectsChain.chorus.delay.connect(masterGain);
+    }
+    
+    // Stereo width
+    if (globalParams.stereoWidth.enabled && effectsChain.stereoWidth) {
+      const width = globalParams.stereoWidth.width;
+      effectsChain.stereoWidth.midGain.gain.value = 2 - width;
+      effectsChain.stereoWidth.sideGain.gain.value = width;
+    }
+    
+    postEffectGain.connect(masterGain);
+    
+    // Generate sound
+    const baseVolume = params.volume * referenceGain;
+    
+    // Apply reverse envelope if needed
+    const duration = getInstrumentDuration(inst.id);
+    
+    if (reverse) {
+      oscGain.gain.setValueAtTime(0.01, startTime);
+      oscGain.gain.exponentialRampToValueAtTime(baseVolume, startTime + duration);
+    } else {
+      oscGain.gain.setValueAtTime(baseVolume, startTime);
+      oscGain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+    }
+    
+    // Generate instrument-specific sound
+    generateInstrumentSound(inst, osc, oscGain, panner, dryGain, wetGain, 
+                           startTime, baseVolume, pitchMultiplier, params);
+  }
+
+  // Get instrument duration
+  function getInstrumentDuration(instId) {
+    const durations = {
+      kick: 0.5,
+      snare: 0.2,
+      hihat: 0.05,
+      openhat: 0.3,
+      clap: 0.1,
+      crash: 1.5,
+      rim: 0.05,
+      cowbell: 0.2
+    };
+    return durations[instId] || 0.1;
+  }
+
+  // Generate instrument-specific sounds
+  function generateInstrumentSound(inst, osc, oscGain, panner, dryGain, wetGain, 
+                                  startTime, baseVolume, pitchMultiplier, params) {
+    const now = startTime;
+    
+    switch(inst.id) {
+      case 'kick':
+        osc.frequency.setValueAtTime(150 * pitchMultiplier, now);
+        osc.frequency.exponentialRampToValueAtTime(inst.frequency * pitchMultiplier, now + 0.05);
+        osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.start(now);
+        osc.stop(now + 0.5);
+        
+        // Sub oscillator
+        if (inst.subFreq) {
+          const subOsc = audioContext.createOscillator();
+          const subGain = audioContext.createGain();
+          subOsc.frequency.value = inst.subFreq * pitchMultiplier;
+          subOsc.type = 'sine';
+          subGain.gain.setValueAtTime(baseVolume * 0.5, now);
+          subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+          subOsc.connect(subGain);
+          subGain.connect(panner);
+          subOsc.start(now);
+          subOsc.stop(now + 0.5);
+        }
+        break;
+
+      case 'snare':
+        osc.frequency.setValueAtTime(inst.frequency * pitchMultiplier, now);
+        osc.type = 'triangle';
+        
+        const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.2, audioContext.sampleRate);
+        const noiseData = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < noiseBuffer.length; i++) {
+          noiseData[i] = Math.random() * 2 - 1;
+        }
+        
+        const noise = audioContext.createBufferSource();
+        noise.buffer = noiseBuffer;
+        const noiseGain = audioContext.createGain();
+        const noisePanner = audioContext.createStereoPanner();
+        const noiseFilter = audioContext.createBiquadFilter();
+        
+        noiseFilter.type = 'highpass';
+        noiseFilter.frequency.value = 2000;
+        noisePanner.pan.value = params.pan;
+        
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(noisePanner);
+        noisePanner.connect(wetGain);
+        noisePanner.connect(dryGain);
+        
+        noiseGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        
+        // Add sub tone
+        if (inst.subFreq) {
+          const subOsc = audioContext.createOscillator();
+          const subGain = audioContext.createGain();
+          subOsc.frequency.value = inst.subFreq * pitchMultiplier;
+          subOsc.type = 'sine';
+          subGain.gain.setValueAtTime(baseVolume * 0.3, now);
+          subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+          subOsc.connect(subGain);
+          subGain.connect(panner);
+          subOsc.start(now);
+          subOsc.stop(now + 0.2);
+        }
+        
+        osc.start(now);
+        osc.stop(now + 0.2);
+        noise.start(now);
+        noise.stop(now + 0.2);
+        break;
+
+      case 'hihat':
+      case 'openhat':
+        osc.type = 'square';
+        osc.frequency.value = inst.frequency * pitchMultiplier;
+        
+        const hihatFilter = audioContext.createBiquadFilter();
+        hihatFilter.type = 'highpass';
+        hihatFilter.frequency.value = 5000;
+        hihatFilter.Q.value = 1;
+        
+        const hihatEnvFilter = audioContext.createBiquadFilter();
+        hihatEnvFilter.type = 'highpass';
+        hihatEnvFilter.frequency.setValueAtTime(8000, now);
+        hihatEnvFilter.frequency.exponentialRampToValueAtTime(2000, now + 0.1);
+        
+        panner.disconnect();
+        panner.connect(hihatFilter);
+        hihatFilter.connect(hihatEnvFilter);
+        hihatEnvFilter.connect(dryGain);
+        hihatEnvFilter.connect(wetGain);
+        
+        // Add metallic noise
+        const metalBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.1, audioContext.sampleRate);
+        const metalData = metalBuffer.getChannelData(0);
+        for (let i = 0; i < metalBuffer.length; i++) {
+          metalData[i] = (Math.random() * 2 - 1) * Math.sin(i * 0.1);
+        }
+        
+        const metalNoise = audioContext.createBufferSource();
+        metalNoise.buffer = metalBuffer;
+        const metalGain = audioContext.createGain();
+        metalGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
+        metalGain.gain.exponentialRampToValueAtTime(0.01, now + (inst.id === 'openhat' ? 0.3 : 0.05));
+        
+        metalNoise.connect(metalGain);
+        metalGain.connect(hihatFilter);
+        
+        const duration = inst.id === 'openhat' ? 0.3 : 0.05;
+        osc.start(now);
+        osc.stop(now + duration);
+        metalNoise.start(now);
+        metalNoise.stop(now + duration);
+        break;
+
+      case 'clap':
+        // Multi-layered clap
+        const clapLayers = 4;
+        for (let i = 0; i < clapLayers; i++) {
+          const clapOsc = audioContext.createOscillator();
+          const clapGain = audioContext.createGain();
+          const clapFilter = audioContext.createBiquadFilter();
+          const clapPanner = audioContext.createStereoPanner();
+          
+          clapOsc.frequency.value = inst.frequency * pitchMultiplier * (1 + i * 0.1);
+          clapOsc.type = 'square';
+          
+          clapFilter.type = 'bandpass';
+          clapFilter.frequency.value = 1500 + i * 200;
+          clapFilter.Q.value = 10;
+          
+          clapPanner.pan.value = params.pan + (Math.random() - 0.5) * 0.2;
+          
+          clapOsc.connect(clapFilter);
+          clapFilter.connect(clapGain);
+          clapGain.connect(clapPanner);
+          clapPanner.connect(dryGain);
+          clapPanner.connect(wetGain);
+          
+          const startT = now + i * 0.01;
+          clapGain.gain.setValueAtTime(baseVolume * 0.3 * (1 - i * 0.2), startT);
+          clapGain.gain.exponentialRampToValueAtTime(0.01, startT + 0.02);
+          
+          clapOsc.start(startT);
+          clapOsc.stop(startT + 0.02);
+        }
+        
+        // Add noise burst
+        const clapNoiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.03, audioContext.sampleRate);
+        const clapNoiseData = clapNoiseBuffer.getChannelData(0);
+        for (let i = 0; i < clapNoiseBuffer.length; i++) {
+          clapNoiseData[i] = Math.random() * 2 - 1;
+        }
+        
+        const clapNoise = audioContext.createBufferSource();
+        clapNoise.buffer = clapNoiseBuffer;
+        const clapNoiseGain = audioContext.createGain();
+        const clapNoiseFilter = audioContext.createBiquadFilter();
+        
+        clapNoiseFilter.type = 'highpass';
+        clapNoiseFilter.frequency.value = 1000;
+        
+        clapNoise.connect(clapNoiseFilter);
+        clapNoiseFilter.connect(clapNoiseGain);
+        clapNoiseGain.connect(panner);
+        
+        clapNoiseGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
+        clapNoiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+        
+        osc.frequency.value = inst.frequency * pitchMultiplier;
+        oscGain.gain.setValueAtTime(0, now);
+        osc.start(now);
+        osc.stop(now + 0.1);
+        clapNoise.start(now);
+        clapNoise.stop(now + 0.05);
+        break;
+
+      case 'crash':
+        // Complex metallic crash
+        const crashBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 1.5, audioContext.sampleRate);
+        const crashData = crashBuffer.getChannelData(0);
+        for (let i = 0; i < crashBuffer.length; i++) {
+          crashData[i] = Math.random() * 2 - 1;
+        }
+        
+        const crashNoise = audioContext.createBufferSource();
+        crashNoise.buffer = crashBuffer;
+        const crashGain = audioContext.createGain();
+        const crashFilter = audioContext.createBiquadFilter();
+        const crashFilter2 = audioContext.createBiquadFilter();
+        const crashPanner = audioContext.createStereoPanner();
+        
+        crashFilter.type = 'bandpass';
+        crashFilter.frequency.value = inst.frequency * pitchMultiplier;
+        crashFilter.Q.value = 0.5;
+        
+        crashFilter2.type = 'highpass';
+        crashFilter2.frequency.value = 8000;
+        
+        crashPanner.pan.value = params.pan;
+        
+        crashNoise.connect(crashGain);
+        crashGain.connect(crashFilter);
+        crashFilter.connect(crashFilter2);
+        crashFilter2.connect(crashPanner);
+        crashPanner.connect(dryGain);
+        crashPanner.connect(wetGain);
+        
+        crashGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
+        crashGain.gain.exponentialRampToValueAtTime(baseVolume * 0.3, now + 0.5);
+        crashGain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+        
+        // Add shimmer
+        const shimmerOsc = audioContext.createOscillator();
+        const shimmerGain = audioContext.createGain();
+        shimmerOsc.frequency.value = inst.frequency * 2 * pitchMultiplier;
+        shimmerOsc.type = 'triangle';
+        
+        shimmerGain.gain.setValueAtTime(baseVolume * 0.2, now);
+        shimmerGain.gain.exponentialRampToValueAtTime(0.01, now + 1);
+        
+        shimmerOsc.connect(shimmerGain);
+        shimmerGain.connect(crashFilter2);
+        
+        crashNoise.start(now);
+        crashNoise.stop(now + 1.5);
+        shimmerOsc.start(now);
+        shimmerOsc.stop(now + 1);
+        
+        oscGain.gain.value = 0;
+        osc.start(now);
+        osc.stop(now + 0.01);
+        break;
+
+      case 'rim':
+        osc.type = 'sine';
+        osc.frequency.value = inst.frequency * pitchMultiplier;
+        
+        const clickOsc = audioContext.createOscillator();
+        const clickGain = audioContext.createGain();
+        const clickFilter = audioContext.createBiquadFilter();
+        const clickPanner = audioContext.createStereoPanner();
+        
+        clickOsc.frequency.value = 2000 * pitchMultiplier;
+        clickOsc.type = 'square';
+        
+        clickFilter.type = 'highpass';
+        clickFilter.frequency.value = 1000;
+        
+        clickPanner.pan.value = params.pan;
+        
+        clickOsc.connect(clickFilter);
+        clickFilter.connect(clickGain);
+        clickGain.connect(clickPanner);
+        clickPanner.connect(dryGain);
+        clickPanner.connect(wetGain);
+        
+        clickGain.gain.setValueAtTime(baseVolume * 0.5, now);
+        clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.01);
+        
+        // Add wood tone
+        if (inst.noiseAmount > 0) {
+          const woodBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.05, audioContext.sampleRate);
+          const woodData = woodBuffer.getChannelData(0);
+          for (let i = 0; i < woodBuffer.length; i++) {
+            woodData[i] = (Math.random() * 2 - 1) * Math.exp(-i * 0.0001);
+          }
+          
+          const woodNoise = audioContext.createBufferSource();
+          woodNoise.buffer = woodBuffer;
+          const woodGain = audioContext.createGain();
+          
+          woodGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
+          woodGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+          
+          woodNoise.connect(woodGain);
+          woodGain.connect(panner);
+          
+          woodNoise.start(now);
+          woodNoise.stop(now + 0.05);
+        }
+        
+        osc.start(now);
+        osc.stop(now + 0.05);
+        clickOsc.start(now);
+        clickOsc.stop(now + 0.01);
+        break;
+
+      case 'cowbell':
+        const cowbellOsc2 = audioContext.createOscillator();
+        const cowbellGain2 = audioContext.createGain();
+        const cowbellFilter = audioContext.createBiquadFilter();
+        
+        osc.frequency.value = inst.frequency * pitchMultiplier;
+        cowbellOsc2.frequency.value = inst.frequency * 1.48 * pitchMultiplier;
+        
+        osc.type = 'square';
+        cowbellOsc2.type = 'square';
+        
+        cowbellFilter.type = 'bandpass';
+        cowbellFilter.frequency.value = inst.frequency * pitchMultiplier;
+        cowbellFilter.Q.value = 15;
+        
+        cowbellOsc2.connect(cowbellGain2);
+        cowbellGain2.connect(cowbellFilter);
+        cowbellFilter.connect(panner);
+        
+        cowbellGain2.gain.setValueAtTime(baseVolume * 0.4, now);
+        cowbellGain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        
+        // Add sub frequency if present
+        if (inst.subFreq) {
+          const subOsc = audioContext.createOscillator();
+          const subGain = audioContext.createGain();
+          subOsc.frequency.value = inst.subFreq * pitchMultiplier;
+          subOsc.type = 'sine';
+          subGain.gain.setValueAtTime(baseVolume * 0.3, now);
+          subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+          subOsc.connect(subGain);
+          subGain.connect(panner);
+          subOsc.start(now);
+          subOsc.stop(now + 0.2);
+        }
+        
+        osc.start(now);
+        osc.stop(now + 0.2);
+        cowbellOsc2.start(now);
+        cowbellOsc2.stop(now + 0.2);
+        break;
+
+      default:
+        osc.frequency.value = inst.frequency * pitchMultiplier;
+        osc.start(now);
+        osc.stop(now + 0.1);
+    }
+  }
+
+  // Sequencer functions with lookahead scheduling
+  function scheduler() {
+    if (!isPlaying) return;
+    
+    while (nextStepTime < audioContext.currentTime + scheduleAheadTime) {
+      scheduleNote(currentStep, nextStepTime);
+      nextStep();
+    }
+    
+    schedulerTimer = setTimeout(scheduler, lookahead);
+  }
+
+  function scheduleNote(beatNumber, time) {
+    // Queue the visual update
+    stepQueue.push({ step: beatNumber, time: time });
+    
+    // Schedule sounds for this step
+    instruments.forEach(inst => {
+      if (pattern[inst.id][beatNumber]) {
+        playSound(inst.id, time);
+      }
+    });
+  }
+
+  function nextStep() {
+    const tempo = parseInt(document.getElementById('dmTempoSlider').value);
+    const secondsPerBeat = 60.0 / tempo / 4; // 16th notes
+    
+    // Apply swing if needed
+    if (globalParams.swing > 0 && currentStep % 2 === 1) {
+      const swingAmount = secondsPerBeat * (globalParams.swing / 100) * 0.5;
+      nextStepTime += secondsPerBeat + swingAmount;
+    } else if (globalParams.swing > 0 && currentStep % 2 === 0) {
+      const swingAmount = secondsPerBeat * (globalParams.swing / 100) * 0.5;
+      nextStepTime += secondsPerBeat - swingAmount;
+    } else {
+      nextStepTime += secondsPerBeat;
+    }
+    
+    currentStep = (currentStep + 1) % STEPS;
+  }
+
+  function processStepQueue() {
+    const currentTime = audioContext.currentTime;
+    const lookaheadTime = 0.1;
+    
+    while (stepQueue.length && stepQueue[0].time < currentTime + lookaheadTime) {
+      const currentNote = stepQueue.shift();
+      
+      // Calculate delay for visual update
+      const delay = Math.max(0, (currentNote.time - currentTime) * 1000);
+      
+      setTimeout(() => {
+        updateStepVisual(currentNote.step);
+      }, delay);
+    }
+    
+    requestAnimationFrame(processStepQueue);
+  }
+
+  function updateStepVisual(stepNumber) {
+    // Clear previous playing states
+    document.querySelectorAll('.dm-step').forEach(el => {
+      el.classList.remove('playing');
+    });
+    
+    // Highlight current step
+    instruments.forEach(inst => {
+      const el = document.querySelector(`[data-instrument="${inst.id}"][data-step="${stepNumber}"]`);
+      if (el) {
+        el.classList.add('playing');
+      }
+    });
+  }
+
+  // Transport controls
+  function play() {
+    initAudio();
+
+    if (!isPlaying) {
+      isPlaying = true;
+      
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+      
+      nextStepTime = audioContext.currentTime;
+      scheduler();
+      requestAnimationFrame(processStepQueue);
+      
+      const playBtn = document.getElementById('dmPlayBtn');
+      playBtn.classList.add('active');
+      playBtn.querySelector('span:last-child').textContent = 'PAUSE';
+    } else {
+      pause();
+    }
+  }
+
+  function pause() {
+    isPlaying = false;
+    clearTimeout(schedulerTimer);
+    
+    const playBtn = document.getElementById('dmPlayBtn');
+    if (playBtn) {
+      playBtn.classList.remove('active');
+      playBtn.querySelector('span:last-child').textContent = 'PLAY';
+    }
+  }
+
+  function stop() {
+    pause();
+    currentStep = 0;
+    stepQueue = [];
+    document.querySelectorAll('.dm-step').forEach(el => {
+      el.classList.remove('playing');
+    });
+  }
+
+  function clear() {
+    instruments.forEach(inst => {
+      for (let i = 0; i < 32; i++) {
+        pattern[inst.id][i] = 0;
+      }
+    });
+    updatePattern();
+  }
+
+  // Pattern manipulation functions
+  function toggleStep(e) {
+    const inst = e.target.dataset.instrument;
+    const step = parseInt(e.target.dataset.step);
+    
+    pattern[inst][step] = pattern[inst][step] ? 0 : 1;
+    e.target.classList.toggle('active');
+  }
+
+  function toggleAccent(e) {
+    e.target.classList.toggle('accent');
+  }
+
+  function updatePattern() {
+    instruments.forEach(inst => {
+      for (let step = 0; step < STEPS; step++) {
+        const element = document.querySelector(`[data-instrument="${inst.id}"][data-step="${step}"]`);
+        if (element) {
+          if (pattern[inst.id][step]) {
+            element.classList.add('active');
+          } else {
+            element.classList.remove('active');
           }
         }
       }
     });
   }
-  
-  initializeControls() {
-    // Set initial tempo
-    if (this.currentPattern) {
-      this.setTempo(this.currentPattern.tempo);
-      this.ui.tempoSlider.value = this.currentPattern.tempo;
-    }
-    
-    // Initialize step display
-    this.updateStepDisplay();
-  }
-  
-  // Pattern management
-  loadPattern(name) {
-    const pattern = this.patterns.get(name);
-    if (!pattern) return;
-    
-    this.currentPattern = pattern;
-    this.setTempo(pattern.tempo);
-    this.ui.tempoSlider.value = pattern.tempo;
-    this.updateStepDisplay();
-  }
-  
-  updateStepDisplay() {
-    if (!this.currentPattern) return;
-    
-    this.ui.stepButtons.forEach(btn => {
-      const track = btn.dataset.track;
-      const step = parseInt(btn.dataset.step);
-      const isActive = this.currentPattern.steps[track][step] === 1;
-      btn.classList.toggle('active', isActive);
-    });
-  }
-  
-  toggleStep(track, step) {
-    if (!this.currentPattern) return;
-    
-    this.currentPattern.steps[track][step] = 
-      this.currentPattern.steps[track][step] ? 0 : 1;
-    
-    const btn = this.ui.stepButtons.find(
-      b => b.dataset.track === track && parseInt(b.dataset.step) === step
-    );
-    if (btn) {
-      btn.classList.toggle('active');
-    }
-  }
-  
-  clearPattern() {
-    if (!this.currentPattern) return;
-    
-    // Clear all steps
-    Object.keys(this.currentPattern.steps).forEach(track => {
-      this.currentPattern.steps[track] = new Array(16).fill(0);
-    });
-    
-    this.updateStepDisplay();
-  }
-  
-  resetPattern() {
-    if (!this.currentPattern) return;
-    
-    // Find original preset
-    const originalName = this.currentPattern.name;
-    const original = this.patterns.get(originalName);
-    
-    if (original) {
-      // Deep copy the original pattern
-      this.currentPattern.steps = JSON.parse(JSON.stringify(original.steps));
-      this.currentPattern.tempo = original.tempo;
-      this.setTempo(original.tempo);
-      this.ui.tempoSlider.value = original.tempo;
-      this.updateStepDisplay();
-    }
-  }
-  
-  // Playback control
-  togglePlayback() {
-    if (this.isPlaying) {
-      this.pause();
-    } else {
-      this.play();
-    }
-  }
-  
-  play() {
-    if (this.isPlaying) return;
-    
-    // Resume audio context if suspended
-    if (this.audioContext.state === 'suspended') {
-      this.audioContext.resume();
-    }
-    
-    this.isPlaying = true;
-    this.currentStep = 0;
-    this.nextStepTime = this.audioContext.currentTime;
-    this.scheduler();
-    
-    // Update UI
-    this.ui.iconPlay.style.display = 'none';
-    this.ui.iconPause.style.display = 'block';
-  }
-  
-  pause() {
-    this.isPlaying = false;
-    clearTimeout(this.schedulerTimer);
-    
-    // Update UI
-    this.ui.iconPlay.style.display = 'block';
-    this.ui.iconPause.style.display = 'none';
-  }
-  
-  stop() {
-    this.pause();
-    this.currentStep = 0;
-    
-    // Clear playing indicators
-    this.ui.stepButtons.forEach(btn => btn.classList.remove('playing'));
-  }
-  
-  scheduler() {
-    if (!this.isPlaying) return;
-    
-    // Schedule all notes that fall within the lookahead window
-    while (this.nextStepTime < this.audioContext.currentTime + this.scheduleAheadTime) {
-      this.scheduleStep(this.currentStep, this.nextStepTime);
-      this.nextStep();
-    }
-    
-    this.schedulerTimer = setTimeout(() => this.scheduler(), this.lookahead);
-  }
-  
-  scheduleStep(stepNumber, time) {
-    if (!this.currentPattern) return;
-    
-    // Queue step for visual feedback
-    this.stepQueue.push({ step: stepNumber, time: time });
-    
-    // Schedule sounds for this step
-    Object.entries(this.currentPattern.steps).forEach(([track, pattern]) => {
-      if (pattern[stepNumber] === 1) {
-        this.scheduleSound(track, time);
+
+  // Preset management
+  function loadPreset(presetName) {
+    if (presets[presetName]) {
+      currentPreset = presetName;
+      
+      instruments.forEach(inst => {
+        const presetData = presets[presetName][inst.id];
+        if (presetData) {
+          for (let i = 0; i < 32; i++) {
+            if (i < 16) {
+              pattern[inst.id][i] = presetData[i] || 0;
+            } else {
+              // For 8-bar mode, duplicate the pattern
+              pattern[inst.id][i] = currentBarMode === 8 ? (presetData[i - 16] || 0) : 0;
+            }
+          }
+        }
+      });
+      
+      if (presets[presetName].bpm) {
+        const tempoSlider = document.getElementById('dmTempoSlider');
+        const tempoDisplay = document.getElementById('dmTempoDisplay');
+        if (tempoSlider && tempoDisplay) {
+          tempoSlider.value = presets[presetName].bpm;
+          tempoDisplay.textContent = `${presets[presetName].bpm} BPM`;
+          
+          if (isPlaying) {
+            pause();
+            play();
+          }
+        }
       }
-    });
-    
-    // Schedule visual update
-    const delay = Math.max(0, (time - this.audioContext.currentTime) * 1000);
-    setTimeout(() => this.updateStepVisual(stepNumber), delay);
-  }
-  
-  nextStep() {
-    const secondsPerStep = 60.0 / this.tempo / 4; // 16th notes
-    
-    // Apply swing if needed
-    if (this.currentStep % 2 === 1 && this.swing > 0) {
-      const swingAmount = secondsPerStep * (this.swing / 100) * 0.5;
-      this.nextStepTime += secondsPerStep + swingAmount;
-    } else if (this.currentStep % 2 === 0 && this.swing > 0) {
-      const swingAmount = secondsPerStep * (this.swing / 100) * 0.5;
-      this.nextStepTime += secondsPerStep - swingAmount;
-    } else {
-      this.nextStepTime += secondsPerStep;
+      
+      updatePattern();
+      updatePresetButtons();
     }
-    
-    this.currentStep = (this.currentStep + 1) % 16;
   }
-  
-  updateStepVisual(stepNumber) {
-    // Remove previous playing indicators
-    this.ui.stepButtons.forEach(btn => btn.classList.remove('playing'));
-    
-    // Add playing indicator to current column
-    this.ui.stepButtons.forEach(btn => {
-      if (parseInt(btn.dataset.step) === stepNumber) {
-        btn.classList.add('playing');
+
+  function updatePresetButtons() {
+    document.querySelectorAll('.dm-preset-btn').forEach(btn => {
+      if (btn.dataset.preset === currentPreset) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
       }
     });
   }
-  
-  scheduleSound(track, time) {
-    const channel = this.channels.get(track);
-    const buffer = this.samples.get(track);
-    
-    if (!channel || !buffer || channel.muted) return;
-    
-    // Check solo state
-    const anySolo = Array.from(this.channels.values()).some(ch => ch.soloed);
-    if (anySolo && !channel.soloed) return;
-    
-    // Create and schedule source
-    const source = this.audioContext.createBufferSource();
-    source.buffer = buffer;
-    
-    const gainNode = this.audioContext.createGain();
-    gainNode.gain.value = channel.volume;
-    
-    source.connect(gainNode);
-    gainNode.connect(channel.input);
-    
-    source.start(time);
-  }
-  
-  playPad(sound) {
-    const buffer = this.samples.get(sound);
-    const channel = this.channels.get(sound);
-    
-    if (!buffer || !channel) return;
-    
-    const source = this.audioContext.createBufferSource();
-    source.buffer = buffer;
-    
-    const gainNode = this.audioContext.createGain();
-    gainNode.gain.value = channel.volume;
-    
-    source.connect(gainNode);
-    gainNode.connect(channel.input);
-    
-    source.start(0);
-  }
-  
-  // Parameter controls
-  setTempo(bpm) {
-    this.tempo = Math.max(60, Math.min(180, bpm));
-    this.ui.tempoDisplay.textContent = this.tempo;
-    
-    if (this.currentPattern) {
-      this.currentPattern.tempo = this.tempo;
+
+  // Configuration changes
+  function changeConfiguration(configName) {
+    if (instrumentConfigs[configName]) {
+      currentConfig = configName;
+      instruments = instrumentConfigs[configName];
+      
+      const tempPattern = {};
+      instruments.forEach(inst => {
+        tempPattern[inst.id] = pattern[inst.id] || new Array(32).fill(0);
+        
+        if (!globalParams.instrumentParams[inst.id]) {
+          globalParams.instrumentParams[inst.id] = {
+            volume: 0.7,
+            pitch: 0,
+            decay: 1.0,
+            pan: 0,
+            layer: false,
+            layerVolume: 0.5,
+            layerPitch: 12
+          };
+        }
+      });
+      pattern = tempPattern;
+      
+      createPatternGrid();
+      createMixerChannels();
+      updatePattern();
     }
   }
-  
-  setTrackVolume(track, volume) {
-    const channel = this.channels.get(track);
-    if (channel) {
-      channel.setVolume(volume);
+
+  function changeBarMode(bars) {
+    const newSteps = bars * 4;
+    
+    if (currentBarMode === 4 && bars === 8) {
+      // Duplicate pattern when expanding to 8 bars
+      instruments.forEach(inst => {
+        for (let i = 16; i < 32; i++) {
+          pattern[inst.id][i] = pattern[inst.id][i - 16];
+        }
+      });
+    }
+    
+    currentBarMode = bars;
+    STEPS = newSteps;
+    
+    const wrapper = document.querySelector('.dm-wrapper');
+    if (bars === 8) {
+      wrapper.classList.add('bars-8');
+    } else {
+      wrapper.classList.remove('bars-8');
+    }
+    
+    createPatternGrid();
+    
+    if (currentStep >= STEPS) {
+      currentStep = 0;
     }
   }
-  
-  toggleMute(track) {
-    const channel = this.channels.get(track);
-    if (channel) {
-      channel.toggleMute();
+
+  // Reset to defaults (preserves pattern)
+  function resetToDefaults() {
+    // Reset all parameters to default without clearing pattern
+    globalParams = JSON.parse(JSON.stringify(defaultGlobalParams));
+    initializeInstrumentParams();
+    updateAllControls();
+    
+    // Re-initialize effect states
+    if (effectsChain.reverb) {
+      effectsChain.reverb.wetGain.gain.value = 0;
+      effectsChain.reverb.dryGain.gain.value = 1;
+    }
+    
+    if (isPlaying) {
+      pause();
+      play();
     }
   }
-  
-  toggleSolo(track) {
-    const channel = this.channels.get(track);
-    if (channel) {
-      channel.toggleSolo();
+
+  // Update all UI controls
+  function updateAllControls() {
+    // Master volume
+    const masterSlider = document.getElementById('dmMasterSlider');
+    const masterValue = document.getElementById('dmMasterValue');
+    if (masterSlider && masterValue) {
+      masterSlider.value = Math.round(globalParams.masterVolume * 100);
+      masterValue.textContent = `${Math.round(globalParams.masterVolume * 100)}%`;
+      if (masterGain) {
+        masterGain.gain.value = globalParams.masterVolume;
+      }
+    }
+    
+    // Update all effect toggles
+    Object.keys(globalParams).forEach(key => {
+      if (typeof globalParams[key] === 'object' && 'enabled' in globalParams[key]) {
+        const effectName = key.charAt(0).toUpperCase() + key.slice(1);
+        updateEffectUI(effectName, globalParams[key]);
+      }
+    });
+    
+    // Update creative effect buttons
+    document.getElementById('dmTapeStopBtn')?.classList.toggle('active', globalParams.tapeStop.enabled);
+    document.getElementById('dmStutterBtn')?.classList.toggle('active', globalParams.stutter.enabled);
+    document.getElementById('dmGlitchBtn')?.classList.toggle('active', globalParams.glitch.enabled);
+    document.getElementById('dmReverseBtn')?.classList.toggle('active', globalParams.reverse.enabled);
+    document.getElementById('dmGranularBtn')?.classList.toggle('active', globalParams.granular.enabled);
+    document.getElementById('dmLayeringBtn')?.classList.toggle('active', globalParams.layering);
+    
+    createMixerChannels();
+  }
+
+  function updateEffectUI(effectName, params) {
+    const toggle = document.getElementById(`dm${effectName}Toggle`);
+    const unit = document.getElementById(`dm${effectName}Unit`);
+    
+    if (toggle && unit) {
+      if (params.enabled) {
+        toggle.classList.add('active');
+        unit.classList.add('active');
+      } else {
+        toggle.classList.remove('active');
+        unit.classList.remove('active');
+      }
     }
   }
-  
-  // Effects
-  triggerEffect(effectName) {
-    const effect = this.effects.get(effectName);
-    if (effect) {
-      effect.trigger();
+
+  // Knob controls setup
+  function setupKnobControls() {
+    document.querySelectorAll('.dm-knob-control').forEach(knob => {
+      let isDragging = false;
+      let startY = 0;
+      let startValue = 0;
+      const sensitivity = 0.5;
+
+      const updateKnob = (value) => {
+        const inst = knob.dataset.instrument;
+        const param = knob.dataset.param;
+        const indicator = knob.querySelector('.dm-knob-indicator');
+        const valueDisplay = knob.parentElement.querySelector('.dm-knob-value');
+        
+        if (param === 'pan') {
+          const panValue = Math.max(-50, Math.min(50, Math.round((value - 50) * 50 / 50)));
+          const rotation = panValue * 2.7;
+          indicator.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
+          globalParams.instrumentParams[inst].pan = panValue / 50;
+          valueDisplay.textContent = panValue === 0 ? 'C' : panValue > 0 ? panValue + 'R' : Math.abs(panValue) + 'L';
+        } else if (param === 'pitch') {
+          const pitchValue = Math.max(-24, Math.min(24, Math.round((value - 50) * 24 / 50)));
+          const rotation = pitchValue * 5.625;
+          indicator.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
+          globalParams.instrumentParams[inst].pitch = pitchValue;
+          valueDisplay.textContent = pitchValue > 0 ? '+' + pitchValue : pitchValue.toString();
+        }
+      };
+
+      const inst = knob.dataset.instrument;
+      const param = knob.dataset.param;
+      if (param === 'pan') {
+        updateKnob(50 + globalParams.instrumentParams[inst].pan * 50);
+      } else if (param === 'pitch') {
+        updateKnob(50 + globalParams.instrumentParams[inst].pitch * 50 / 24);
+      }
+
+      knob.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startY = e.clientY;
+        const inst = knob.dataset.instrument;
+        const param = knob.dataset.param;
+        
+        if (param === 'pan') {
+          startValue = 50 + globalParams.instrumentParams[inst].pan * 50;
+        } else if (param === 'pitch') {
+          startValue = 50 + globalParams.instrumentParams[inst].pitch * 50 / 24;
+        }
+        
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        
+        const deltaY = (startY - e.clientY) * sensitivity;
+        const newValue = Math.max(0, Math.min(100, startValue + deltaY));
+        updateKnob(newValue);
+      });
+
+      document.addEventListener('mouseup', () => {
+        isDragging = false;
+      });
+    });
+  }
+
+  // WAV export with casa24beat naming
+  async function downloadLoop() {
+    initAudio();
+
+    const downloadBtn = document.getElementById('dmDownloadBtn');
+    downloadBtn.disabled = true;
+    downloadBtn.querySelector('span:last-child').textContent = 'RENDERING...';
+
+    try {
+      const tempo = parseInt(document.getElementById('dmTempoSlider').value);
+      const stepDuration = (60 / tempo / 4);
+      const loopDuration = stepDuration * STEPS;
+      const sampleRate = 48000;
+      const numberOfChannels = 2;
+      const length = Math.ceil(sampleRate * loopDuration);
+
+      const offlineContext = new OfflineAudioContext(numberOfChannels, length, sampleRate);
+      
+      const offlineMaster = offlineContext.createGain();
+      offlineMaster.gain.value = globalParams.masterVolume;
+      
+      const offlineLimiter = offlineContext.createDynamicsCompressor();
+      offlineLimiter.threshold.value = -1;
+      offlineLimiter.knee.value = 0;
+      offlineLimiter.ratio.value = 20;
+      offlineLimiter.attack.value = 0.001;
+      offlineLimiter.release.value = 0.01;
+      
+      offlineMaster.connect(offlineLimiter);
+      offlineLimiter.connect(offlineContext.destination);
+
+      for (let step = 0; step < STEPS; step++) {
+        const stepTime = step * stepDuration;
+        
+        instruments.forEach(inst => {
+          if (pattern[inst.id][step]) {
+            // Simplified offline rendering
+            const osc = offlineContext.createOscillator();
+            const gain = offlineContext.createGain();
+            
+            osc.frequency.value = inst.frequency;
+            gain.gain.setValueAtTime(0.5, stepTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, stepTime + 0.1);
+            
+            osc.connect(gain);
+            gain.connect(offlineMaster);
+            
+            osc.start(stepTime);
+            osc.stop(stepTime + 0.1);
+          }
+        });
+      }
+
+      const renderedBuffer = await offlineContext.startRendering();
+      
+      // Normalize
+      let maxLevel = 0;
+      for (let channel = 0; channel < renderedBuffer.numberOfChannels; channel++) {
+        const channelData = renderedBuffer.getChannelData(channel);
+        for (let i = 0; i < channelData.length; i++) {
+          maxLevel = Math.max(maxLevel, Math.abs(channelData[i]));
+        }
+      }
+      
+      const normalizeGain = maxLevel > 0.95 ? 0.95 / maxLevel : 1;
+      
+      for (let channel = 0; channel < renderedBuffer.numberOfChannels; channel++) {
+        const channelData = renderedBuffer.getChannelData(channel);
+        for (let i = 0; i < channelData.length; i++) {
+          channelData[i] *= normalizeGain;
+        }
+      }
+      
+      const wavBlob = bufferToWave(renderedBuffer, renderedBuffer.length);
+
+      const url = URL.createObjectURL(wavBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      
+      // Generate casa24beat filename with timestamp
+      const now = new Date();
+      const timestamp = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+      a.download = `casa24beat-${timestamp}.wav`;
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      downloadBtn.querySelector('span:last-child').textContent = 'EXPORT';
+    } catch (error) {
+      console.error('Error downloading:', error);
+      downloadBtn.querySelector('span:last-child').textContent = 'ERROR';
+      setTimeout(() => {
+        downloadBtn.querySelector('span:last-child').textContent = 'EXPORT';
+      }, 2000);
+    } finally {
+      downloadBtn.disabled = false;
     }
   }
-  
-  // Export functionality
-  async exportAudio() {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-    const filename = `casa24beat-${timestamp}.wav`;
-    
-    // Create offline context for rendering
-    const sampleRate = 44100;
-    const duration = (16 / 4) * (60 / this.tempo); // One pattern length
-    const offlineContext = new OfflineAudioContext(2, sampleRate * duration, sampleRate);
-    
-    // Render pattern
-    // ... rendering logic would go here ...
-    
-    // For now, show export message
-    console.log(`Exporting as: ${filename}`);
-    alert(`Export feature will save as: ${filename}`);
-  }
-}
 
-// Audio channel implementation
-class DrumChannel {
-  constructor(audioContext, destination) {
-    this.context = audioContext;
-    this.destination = destination;
-    
-    // Channel state
-    this.volume = 0.8;
-    this.muted = false;
-    this.soloed = false;
-    
-    // Create audio nodes
-    this.input = audioContext.createGain();
-    this.preGain = audioContext.createGain();
-    this.eq = this.createEQ();
-    this.compressor = audioContext.createDynamicsCompressor();
-    this.postGain = audioContext.createGain();
-    
-    // Set initial values
-    this.preGain.gain.value = 0.1; // -20dBFS headroom
-    this.postGain.gain.value = this.volume;
-    
-    // Setup compressor
-    this.setupCompressor();
-    
-    // Connect signal chain
-    this.input.connect(this.preGain);
-    this.preGain.connect(this.eq.input);
-    this.eq.output.connect(this.compressor);
-    this.compressor.connect(this.postGain);
-    this.postGain.connect(destination);
-  }
-  
-  createEQ() {
-    const lowShelf = this.context.createBiquadFilter();
-    const midPeak = this.context.createBiquadFilter();
-    const highShelf = this.context.createBiquadFilter();
-    
-    lowShelf.type = 'lowshelf';
-    lowShelf.frequency.value = 100;
-    lowShelf.gain.value = 0;
-    
-    midPeak.type = 'peaking';
-    midPeak.frequency.value = 1000;
-    midPeak.Q.value = 1;
-    midPeak.gain.value = 0;
-    
-    highShelf.type = 'highshelf';
-    highShelf.frequency.value = 8000;
-    highShelf.gain.value = 0;
-    
-    lowShelf.connect(midPeak);
-    midPeak.connect(highShelf);
-    
-    return {
-      input: lowShelf,
-      output: highShelf,
-      lowShelf,
-      midPeak,
-      highShelf
-    };
-  }
-  
-  setupCompressor() {
-    this.compressor.threshold.value = -24;
-    this.compressor.knee.value = 30;
-    this.compressor.ratio.value = 4;
-    this.compressor.attack.value = 0.003;
-    this.compressor.release.value = 0.25;
-  }
-  
-  setVolume(value) {
-    this.volume = value;
-    if (!this.muted) {
-      this.postGain.gain.setTargetAtTime(value, this.context.currentTime, 0.01);
+  function bufferToWave(abuffer, len) {
+    const numOfChan = abuffer.numberOfChannels;
+    const length = len * numOfChan * 2 + 44;
+    const buffer = new ArrayBuffer(length);
+    const view = new DataView(buffer);
+    const channels = [];
+    let sample;
+    let offset = 0;
+    let pos = 0;
+
+    setUint32(0x46464952);
+    setUint32(length - 8);
+    setUint32(0x45564157);
+    setUint32(0x20746d66);
+    setUint32(16);
+    setUint16(1);
+    setUint16(numOfChan);
+    setUint32(abuffer.sampleRate);
+    setUint32(abuffer.sampleRate * 2 * numOfChan);
+    setUint16(numOfChan * 2);
+    setUint16(16);
+    setUint32(0x61746164);
+    setUint32(length - pos - 4);
+
+    for (let i = 0; i < abuffer.numberOfChannels; i++)
+      channels.push(abuffer.getChannelData(i));
+
+    while (pos < length) {
+      for (let i = 0; i < numOfChan; i++) {
+        sample = Math.max(-1, Math.min(1, channels[i][offset]));
+        sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        view.setInt16(pos, sample, true);
+        pos += 2;
+      }
+      offset++;
+    }
+
+    return new Blob([buffer], { type: "audio/wav" });
+
+    function setUint16(data) {
+      view.setUint16(pos, data, true);
+      pos += 2;
+    }
+
+    function setUint32(data) {
+      view.setUint32(pos, data, true);
+      pos += 4;
     }
   }
-  
-  toggleMute() {
-    this.muted = !this.muted;
-    const targetGain = this.muted ? 0 : this.volume;
-    this.postGain.gain.setTargetAtTime(targetGain, this.context.currentTime, 0.01);
-  }
-  
-  toggleSolo() {
-    this.soloed = !this.soloed;
-  }
-}
 
-// Master bus implementation
-class MasterBus {
-  constructor(audioContext) {
-    this.context = audioContext;
-    
-    // Create nodes
-    this.input = audioContext.createGain();
-    this.effectReturn = audioContext.createGain();
-    this.eq = this.createMasterEQ();
-    this.compressor = audioContext.createDynamicsCompressor();
-    this.limiter = audioContext.createDynamicsCompressor();
-    this.output = audioContext.createGain();
-    
-    // Setup dynamics
-    this.setupMasterCompressor();
-    this.setupLimiter();
-    
-    // Connect chain
-    this.input.connect(this.eq.input);
-    this.effectReturn.connect(this.eq.input);
-    this.eq.output.connect(this.compressor);
-    this.compressor.connect(this.limiter);
-    this.limiter.connect(this.output);
-    this.output.connect(audioContext.destination);
-    
-    // Set master volume
-    this.output.gain.value = 0.8;
-  }
-  
-  createMasterEQ() {
-    const lowShelf = this.context.createBiquadFilter();
-    const highShelf = this.context.createBiquadFilter();
-    
-    lowShelf.type = 'lowshelf';
-    lowShelf.frequency.value = 200;
-    lowShelf.gain.value = 0;
-    
-    highShelf.type = 'highshelf';
-    highShelf.frequency.value = 6000;
-    highShelf.gain.value = 0;
-    
-    lowShelf.connect(highShelf);
-    
-    return {
-      input: lowShelf,
-      output: highShelf,
-      lowShelf,
-      highShelf
-    };
-  }
-  
-  setupMasterCompressor() {
-    this.compressor.threshold.value = -18;
-    this.compressor.knee.value = 40;
-    this.compressor.ratio.value = 3;
-    this.compressor.attack.value = 0.01;
-    this.compressor.release.value = 0.1;
-  }
-  
-  setupLimiter() {
-    this.limiter.threshold.value = -3;
-    this.limiter.knee.value = 0;
-    this.limiter.ratio.value = 20;
-    this.limiter.attack.value = 0.001;
-    this.limiter.release.value = 0.01;
-  }
-}
+  // Setup all event listeners
+  function setupEventListeners() {
+    // Transport
+    document.getElementById('dmPlayBtn')?.addEventListener('click', play);
+    document.getElementById('dmStopBtn')?.addEventListener('click', stop);
+    document.getElementById('dmClearBtn')?.addEventListener('click', clear);
+    document.getElementById('dmResetBtn')?.addEventListener('click', resetToDefaults);
+    document.getElementById('dmDownloadBtn')?.addEventListener('click', downloadLoop);
 
-// Effects implementations
-class TapeStopEffect {
-  constructor(audioContext) {
-    this.context = audioContext;
-    this.input = audioContext.createGain();
-    this.output = audioContext.createGain();
-    this.isActive = false;
+    // Master volume
+    const masterSlider = document.getElementById('dmMasterSlider');
+    const masterValue = document.getElementById('dmMasterValue');
+    if (masterSlider) {
+      masterSlider.addEventListener('input', (e) => {
+        const value = parseInt(e.target.value);
+        globalParams.masterVolume = value / 100;
+        if (masterValue) masterValue.textContent = `${value}%`;
+        if (masterGain) {
+          masterGain.gain.value = globalParams.masterVolume;
+        }
+      });
+    }
+
+    // Tempo
+    const tempoSlider = document.getElementById('dmTempoSlider');
+    const tempoDisplay = document.getElementById('dmTempoDisplay');
+    if (tempoSlider) {
+      tempoSlider.addEventListener('input', (e) => {
+        const tempo = parseInt(e.target.value);
+        if (tempoDisplay) tempoDisplay.textContent = `${tempo} BPM`;
+        
+        if (isPlaying) {
+          pause();
+          play();
+        }
+      });
+    }
+
+    // Kit selector
+    document.getElementById('dmKitSelect')?.addEventListener('change', (e) => {
+      changeConfiguration(e.target.value);
+    });
+
+    // Bar selector
+    document.getElementById('dmBarSelect')?.addEventListener('change', (e) => {
+      changeBarMode(parseInt(e.target.value));
+    });
+
+    // Presets
+    document.querySelectorAll('.dm-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        loadPreset(btn.dataset.preset);
+      });
+    });
+
+    // Panel toggles
+    document.getElementById('dmMixerToggle')?.addEventListener('click', () => {
+      document.getElementById('dmMixerPanel').classList.add('active');
+      document.getElementById('dmEffectsPanel').classList.remove('active');
+      document.getElementById('dmCreativePanel').classList.remove('active');
+      document.getElementById('dmMixerToggle').classList.add('active');
+      document.getElementById('dmEffectsToggle').classList.remove('active');
+      document.getElementById('dmCreativeToggle').classList.remove('active');
+    });
+
+    document.getElementById('dmEffectsToggle')?.addEventListener('click', () => {
+      document.getElementById('dmMixerPanel').classList.remove('active');
+      document.getElementById('dmEffectsPanel').classList.add('active');
+      document.getElementById('dmCreativePanel').classList.remove('active');
+      document.getElementById('dmMixerToggle').classList.remove('active');
+      document.getElementById('dmEffectsToggle').classList.add('active');
+      document.getElementById('dmCreativeToggle').classList.remove('active');
+    });
+
+    document.getElementById('dmCreativeToggle')?.addEventListener('click', () => {
+      document.getElementById('dmMixerPanel').classList.remove('active');
+      document.getElementById('dmEffectsPanel').classList.remove('active');
+      document.getElementById('dmCreativePanel').classList.add('active');
+      document.getElementById('dmMixerToggle').classList.remove('active');
+      document.getElementById('dmEffectsToggle').classList.remove('active');
+      document.getElementById('dmCreativeToggle').classList.add('active');
+    });
+
+    // Track mute/solo
+    document.addEventListener('click', (e) => {
+      if (e.target.matches('.dm-track-btn')) {
+        const track = e.target.dataset.track;
+        const action = e.target.dataset.action;
+        
+        if (action === 'mute') {
+          isMuted[track] = !isMuted[track];
+          e.target.classList.toggle('muted');
+        } else if (action === 'solo') {
+          if (soloTrack === track) {
+            isSolo = false;
+            soloTrack = null;
+            e.target.classList.remove('solo');
+          } else {
+            isSolo = true;
+            soloTrack = track;
+            document.querySelectorAll('[data-action="solo"]').forEach(s => s.classList.remove('solo'));
+            e.target.classList.add('solo');
+          }
+        }
+      }
+    });
+
+    // Creative effect buttons
+    document.getElementById('dmTapeStopBtn')?.addEventListener('click', () => {
+      globalParams.tapeStop.enabled = !globalParams.tapeStop.enabled;
+      document.getElementById('dmTapeStopBtn').classList.toggle('active');
+    });
+
+    document.getElementById('dmStutterBtn')?.addEventListener('click', () => {
+      globalParams.stutter.enabled = !globalParams.stutter.enabled;
+      document.getElementById('dmStutterBtn').classList.toggle('active');
+    });
+
+    document.getElementById('dmGlitchBtn')?.addEventListener('click', () => {
+      globalParams.glitch.enabled = !globalParams.glitch.enabled;
+      document.getElementById('dmGlitchBtn').classList.toggle('active');
+    });
+
+    document.getElementById('dmReverseBtn')?.addEventListener('click', () => {
+      globalParams.reverse.enabled = !globalParams.reverse.enabled;
+      document.getElementById('dmReverseBtn').classList.toggle('active');
+    });
+
+    document.getElementById('dmGranularBtn')?.addEventListener('click', () => {
+      globalParams.granular.enabled = !globalParams.granular.enabled;
+      document.getElementById('dmGranularBtn').classList.toggle('active');
+    });
+
+    document.getElementById('dmLayeringBtn')?.addEventListener('click', () => {
+      globalParams.layering = !globalParams.layering;
+      document.getElementById('dmLayeringBtn').classList.toggle('active');
+    });
+
+    // Tape stop trigger
+    document.getElementById('dmTapeStopTrigger')?.addEventListener('click', () => {
+      globalParams.tapeStop.active = true;
+    });
+
+    // Setup all effect controls
+    setupAllEffectControls();
+  }
+
+  // Setup effect controls with real-time parameter updates
+  function setupAllEffectControls() {
+    // Standard effects
+    setupEffectToggle('dmReverbToggle', 'reverb');
+    setupEffectSliders('Reverb', 'reverb');
     
-    this.input.connect(this.output);
-  }
-  
-  trigger() {
-    // Tape stop implementation
-    console.log('Tape Stop triggered');
-  }
-}
-
-class StutterEffect {
-  constructor(audioContext) {
-    this.context = audioContext;
-    this.input = audioContext.createGain();
-    this.output = audioContext.createGain();
+    setupEffectToggle('dmDelayToggle', 'delay');
+    setupEffectSliders('Delay', 'delay');
     
-    this.input.connect(this.output);
-  }
-  
-  trigger() {
-    console.log('Stutter triggered');
-  }
-}
-
-class GlitchEffect {
-  constructor(audioContext) {
-    this.context = audioContext;
-    this.input = audioContext.createGain();
-    this.output = audioContext.createGain();
+    setupEffectToggle('dmFilterToggle', 'filter');
+    setupEffectSliders('Filter', 'filter');
     
-    this.input.connect(this.output);
-  }
-  
-  trigger() {
-    console.log('Glitch triggered');
-  }
-}
-
-class ReverseEffect {
-  constructor(audioContext) {
-    this.context = audioContext;
-    this.input = audioContext.createGain();
-    this.output = audioContext.createGain();
+    setupEffectToggle('dmCompToggle', 'compression');
+    setupEffectSliders('Comp', 'compression');
     
-    this.input.connect(this.output);
-  }
-  
-  trigger() {
-    console.log('Reverse triggered');
-  }
-}
-
-class GranularEffect {
-  constructor(audioContext) {
-    this.context = audioContext;
-    this.input = audioContext.createGain();
-    this.output = audioContext.createGain();
+    setupEffectToggle('dmDistToggle', 'distortion');
+    setupEffectSliders('Dist', 'distortion');
     
-    this.input.connect(this.output);
-  }
-  
-  trigger() {
-    console.log('Granular triggered');
-  }
-}
-
-class LayeringEffect {
-  constructor(audioContext) {
-    this.context = audioContext;
-    this.input = audioContext.createGain();
-    this.output = audioContext.createGain();
+    setupEffectToggle('dmChorusToggle', 'chorus');
+    setupEffectSliders('Chorus', 'chorus');
     
-    this.input.connect(this.output);
+    setupEffectToggle('dmPhaserToggle', 'phaser');
+    setupEffectSliders('Phaser', 'phaser');
+    
+    setupEffectToggle('dmBitcrusherToggle', 'bitcrusher');
+    setupEffectSliders('Bitcrusher', 'bitcrusher');
+    
+    setupEffectToggle('dmStereoWidthToggle', 'stereoWidth');
+    setupEffectSliders('StereoWidth', 'stereoWidth');
+    
+    // Creative effects
+    setupEffectToggle('dmGatedReverbToggle', 'gatedReverb');
+    setupEffectSliders('GatedReverb', 'gatedReverb');
+    
+    setupEffectToggle('dmTapeStopToggle', 'tapeStop');
+    setupEffectSliders('TapeStop', 'tapeStop');
+    
+    setupEffectToggle('dmStutterToggle', 'stutter');
+    setupEffectSliders('Stutter', 'stutter');
+    
+    setupEffectToggle('dmGlitchToggle', 'glitch');
+    setupEffectSliders('Glitch', 'glitch');
+    
+    setupEffectToggle('dmReverseToggle', 'reverse');
+    setupEffectSliders('Reverse', 'reverse');
+    
+    setupEffectToggle('dmGranularToggle', 'granular');
+    setupEffectSliders('Granular', 'granular');
+    
+    // Setup preset/mode buttons
+    setupEffectPresets();
   }
-  
-  trigger() {
-    console.log('Layering triggered');
-  }
-}
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', () => {
-  window.drumMachine = new DrumMachinePro();
-});
-
-// Handle page unload
-window.addEventListener('beforeunload', () => {
-  if (window.drumMachine && window.drumMachine.audioContext) {
-    window.drumMachine.audioContext.close();
+  function setupEffectToggle(toggleId, effectName) {
+    const toggle = document.getElementById(toggleId);
+    if (toggle) {
+      toggle.addEventListener('click', () => {
+        globalParams[effectName].enabled = !globalParams[effectName].enabled;
+        toggle.classList.toggle('active');
+        
+        if (globalParams[effectName].enabled) {
+          toggle.parentElement.parentElement.classList.add('active');
+        } else {
+          toggle.parentElement.parentElement.classList.remove('active');
+        }
+      });
+    }
   }
-});
+
+  function setupEffectSliders(effectPrefix, effectName) {
+    const sliders = document.querySelectorAll(`[id^="dm${effectPrefix}"]`);
+    sliders.forEach(slider => {
+      if (slider.type === 'range') {
+        slider.addEventListener('input', (e) => {
+          const paramName = slider.id.replace(`dm${effectPrefix}`, '').toLowerCase();
+          const valueDisplay = document.getElementById(slider.id + 'Val');
+          
+          if (valueDisplay) {
+            const value = parseFloat(e.target.value);
+            valueDisplay.textContent = formatEffectValue(effectName, paramName, value);
+            updateEffectParameter(effectName, paramName, value);
+          }
+        });
+      }
+    });
+  }
+
+  function setupEffectPresets() {
+    // Reverb presets
+    document.querySelectorAll('#dmReverbUnit .dm-effect-preset-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const preset = e.target.dataset.preset;
+        globalParams.reverb.preset = preset;
+        document.querySelectorAll('#dmReverbUnit .dm-effect-preset-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+      });
+    });
+    
+    // Delay modes
+    document.querySelectorAll('#dmDelayUnit .dm-effect-preset-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const mode = e.target.dataset.mode;
+        globalParams.delay.pingPong = mode === 'pingpong';
+        document.querySelectorAll('#dmDelayUnit .dm-effect-preset-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+      });
+    });
+    
+    // Filter modes
+    document.querySelectorAll('.dm-filter-mode-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const mode = e.target.dataset.mode;
+        globalParams.filter.type = mode;
+        document.querySelectorAll('.dm-filter-mode-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+      });
+    });
+    
+    // Distortion types
+    document.querySelectorAll('#dmDistUnit .dm-effect-preset-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const type = e.target.dataset.type;
+        globalParams.distortion.type = type;
+        document.querySelectorAll('#dmDistUnit .dm-effect-preset-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+      });
+    });
+  }
+
+  function formatEffectValue(effectName, paramName, value) {
+    // Format based on parameter type
+    if (paramName.includes('time') || paramName.includes('delay') || 
+        paramName.includes('hold') || paramName.includes('decay') || 
+        paramName.includes('release') || paramName.includes('attack')) {
+      return `${value}ms`;
+    } else if (paramName.includes('frequency') || paramName.includes('cutoff')) {
+      return value >= 1000 ? `${(value/1000).toFixed(1)}kHz` : `${value}Hz`;
+    } else if (paramName.includes('rate')) {
+      return `${value}Hz`;
+    } else if (paramName.includes('threshold')) {
+      return `${value}dB`;
+    } else if (paramName.includes('ratio')) {
+      return `${value}:1`;
+    } else if (paramName.includes('bits')) {
+      return value.toString();
+    } else if (paramName.includes('downsample')) {
+      return `${value}x`;
+    } else if (paramName.includes('stages')) {
+      return value.toString();
+    } else if (paramName.includes('division')) {
+      return `1/${value}`;
+    } else if (paramName.includes('grainsize')) {
+      return `${value}ms`;
+    } else if (paramName.includes('pitch')) {
+      return value > 0 ? `+${value}` : value.toString();
+    } else {
+      return `${Math.round(value)}%`;
+    }
+  }
+
+  function updateEffectParameter(effectName, paramName, value) {
+    // Update the actual parameter value
+    const param = paramName.charAt(0).toLowerCase() + paramName.slice(1);
+    
+    if (globalParams[effectName] && param in globalParams[effectName]) {
+      // Convert percentage values
+      if (param.includes('mix') || param.includes('probability') || 
+          param.includes('depth') || param.includes('overlap') || 
+          param.includes('intensity') || param.includes('frequency') ||
+          param.includes('speed')) {
+        globalParams[effectName][param] = value / 100;
+      } else {
+        globalParams[effectName][param] = value;
+      }
+    }
+  }
+
+  // Initialize
+  function initialize() {
+    const container = document.getElementById('drum-machine-container');
+    if (!container) {
+      console.error('Drum machine container not found');
+      return;
+    }
+
+    pause();
+    currentStep = 0;
+    
+    createDrumMachine();
+  }
+
+  // Public API
+  window.drumMachinePro = {
+    initialize: initialize,
+    play: play,
+    stop: stop,
+    clear: clear,
+    loadPreset: loadPreset,
+    resetToDefaults: resetToDefaults
+  };
+
+  // Auto-initialize
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+  } else {
+    initialize();
+  }
+})();
