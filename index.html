@@ -30,19 +30,123 @@
   <div class="vinyl-decoration"></div>
   
   <div id="root" class="min-h-screen p-6 vinyl-bg">
-    <!-- App content will be injected here by app-simplified.js -->
+    <div class="max-w-7xl mx-auto">
+      <!-- Header -->
+      <header class="mb-8 text-center">
+        <h1 class="text-5xl font-bold mb-2" style="color: #00a651">Casa 24 Records</h1>
+        <p class="text-xl text-gray-400">We Out Here</p>
+        <p class="text-sm text-gray-500 mt-1" id="last-updated">Loading...</p>
+      </header>
+
+      <!-- Navigation -->
+      <div class="mb-8">
+        <div class="border-b border-gray-700">
+          <nav class="flex space-x-8 justify-center">
+            <a href="#collective" class="py-4 px-1 font-medium text-lg text-gray-400">
+              Collective Overview
+            </a>
+            <a href="#life" class="py-4 px-1 font-medium text-lg text-gray-400">
+              LIFE@24
+            </a>
+            <a href="#unmastered" class="py-4 px-1 font-medium text-lg text-gray-400">
+              untitled unmastered
+            </a>
+            <a href="#drum-machine" class="py-4 px-1 font-medium text-lg text-gray-400">
+              Drum Machine
+            </a>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Section Containers -->
+      <!-- Collective Overview (Default section - no display:none) -->
+      <div data-section="collective">
+        <div id="collective-overview-root"></div>
+      </div>
+
+      <!-- LIFE@24 -->
+      <div data-section="life" style="display: none;">
+        <div class="mb-8 flex justify-between items-center">
+          <h2 class="text-3xl font-bold" style="color: #00a651">LIFE@24</h2>
+          <div id="life24-dropdown-container">
+            <!-- Dropdown will be injected here by life24.js -->
+          </div>
+        </div>
+        <div id="life-at-24-container">
+          <div class="text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mb-2"></div>
+            <p class="text-gray-400">Loading magazines...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- untitled unmastered -->
+      <div data-section="unmastered" style="display: none;">
+        <div class="mb-8 flex justify-between items-center">
+          <h2 class="text-3xl font-bold" style="color: #00a651">untitled unmastered</h2>
+          <div id="unmastered-dropdown-container">
+            <!-- Dropdown will be injected here by unmastered.js -->
+          </div>
+        </div>
+        <div id="untitled-unmastered-container">
+          <div class="text-center py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500 mb-2"></div>
+            <p class="text-gray-400">Loading tracks...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Drum Machine -->
+      <div data-section="drum-machine" style="display: none;">
+        <h2 class="text-3xl font-bold mb-8" style="color: #00a651">Beat Lab</h2>
+        <div id="drum-machine-container">
+          <!-- Drum machine will be loaded here -->
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="mt-12 pt-6 border-t border-gray-700 text-center text-gray-500">
+        <p class="text-lg">Casa 24 Records Analytics Dashboard</p>
+        <p class="text-sm mt-1 mb-6">Keeping it old school since 2021</p>
+      </footer>
+    </div>
   </div>
   
-  <!-- Application Code -->
-  <script type="text/babel" src="app-simplified.js"></script>
+  <!-- Load modular JavaScript files -->
+  <!-- Load CollectiveOverview with Babel FIRST -->
+  <script type="text/babel" src="js/CollectiveOverview.js"></script>
   
-  <!-- Life@24 Script -->
+  <!-- Load other modules -->
   <script src="js/life24.js"></script>
-  
-  <!-- untitled unmastered Script -->
   <script src="js/unmastered.js"></script>
-  
-  <!-- Enhanced Drum Machine Pro Script -->
   <script src="js/drum-machine-pro.js"></script>
+  
+  <!-- Load main controller LAST to ensure all modules are available -->
+  <script>
+    // Use Babel's callback to know when CollectiveOverview is transpiled and ready
+    window.addEventListener('load', function() {
+      // Small delay to ensure Babel has finished all transpilation
+      setTimeout(function() {
+        const mainScript = document.createElement('script');
+        mainScript.src = 'js/main.js';
+        document.body.appendChild(mainScript);
+      }, 100);
+    });
+  </script>
+  
+  <!-- Initialize last updated date -->
+  <script>
+    // Fetch and display last updated date
+    fetch('data/latest.json')
+      .then(response => response.json())
+      .then(data => {
+        if (data && data.date) {
+          document.getElementById('last-updated').textContent = 'Last updated: ' + data.date;
+        }
+      })
+      .catch(() => {
+        document.getElementById('last-updated').textContent = '';
+      });
+  </script>
 </body>
 </html>
