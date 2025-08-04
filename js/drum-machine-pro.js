@@ -1,162 +1,178 @@
-// Drum Machine Pro - Production MVP with Industry Standards Applied
+// Drum Machine Pro - MVP Max Mode with Maximum Capabilities
 (function() {
+  'use strict';
+  
   // Configuration
-  let STEPS = 16; // Dynamic for 4-bar/8-bar support
-  let currentBarMode = 4; // 4 or 8 bars
+  let STEPS = 16;
+  let currentBarMode = 4;
   
-  // Industry-standard gain staging constants
-  const REFERENCE_LEVEL = -18; // dBFS average operating level
-  const HEADROOM = 6; // dB of headroom
-  const MASTER_GAIN_DEFAULT = 0.7; // ~-3dB from unity for safety
+  // Audio constants
+  const REFERENCE_LEVEL = -18; // dBFS
+  const HEADROOM = 6; // dB
+  const MASTER_GAIN_DEFAULT = 0.7;
   
-  // Enhanced instrument configuration with 10 kits
+  // Enhanced instrument configurations with redesigned, musically distinct kits
   const instrumentConfigs = {
-    "Robocop": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 60, subFreq: 40, noiseAmount: 0 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 200, subFreq: 80, noiseAmount: 0.2 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 800, subFreq: 0, noiseAmount: 0.3 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 800, subFreq: 0, noiseAmount: 0.4 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1500, subFreq: 0, noiseAmount: 0.1 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 2000, subFreq: 0, noiseAmount: 0.5 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 400, subFreq: 0, noiseAmount: 0.05 },
-      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 800, subFreq: 0, noiseAmount: 0 }
-    ],
-    "Boom-bap": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 60, subFreq: 35, noiseAmount: 0.02 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 220, subFreq: 90, noiseAmount: 0.25 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 8000, subFreq: 0, noiseAmount: 0.4 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 7000, subFreq: 0, noiseAmount: 0.5 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2000, subFreq: 0, noiseAmount: 0.15 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 11000, subFreq: 0, noiseAmount: 0.6 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 1000, subFreq: 0, noiseAmount: 0.08 },
-      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 900, subFreq: 0, noiseAmount: 0 }
-    ],
-    "Lo-fi": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 50, subFreq: 30, noiseAmount: 0.05 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 180, subFreq: 70, noiseAmount: 0.3 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 6500, subFreq: 0, noiseAmount: 0.45 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 4500, subFreq: 0, noiseAmount: 0.55 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1000, subFreq: 0, noiseAmount: 0.2 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 9000, subFreq: 0, noiseAmount: 0.65 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 800, subFreq: 0, noiseAmount: 0.1 },
-      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 700, subFreq: 0, noiseAmount: 0.02 }
-    ],
-    "Trap Lord": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 45, subFreq: 28, noiseAmount: 0.01 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 250, subFreq: 100, noiseAmount: 0.2 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 10000, subFreq: 0, noiseAmount: 0.6 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 9000, subFreq: 0, noiseAmount: 0.7 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1800, subFreq: 0, noiseAmount: 0.12 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 12000, subFreq: 0, noiseAmount: 0.8 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 500, subFreq: 0, noiseAmount: 0.03 },
-      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 850, subFreq: 0, noiseAmount: 0 }
-    ],
-    "Latin Fusion": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 65, subFreq: 38, noiseAmount: 0.03 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 230, subFreq: 85, noiseAmount: 0.18 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 7500, subFreq: 0, noiseAmount: 0.35 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 6000, subFreq: 0, noiseAmount: 0.45 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2500, subFreq: 0, noiseAmount: 0.08 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 10000, subFreq: 0, noiseAmount: 0.7 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 1200, subFreq: 0, noiseAmount: 0.04 },
-      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 950, subFreq: 0, noiseAmount: 0.01 }
-    ],
     "Panama Heat": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 55, subFreq: 32, noiseAmount: 0.02 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 240, subFreq: 95, noiseAmount: 0.22 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 8500, subFreq: 0, noiseAmount: 0.5 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 7500, subFreq: 0, noiseAmount: 0.6 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1600, subFreq: 0, noiseAmount: 0.14 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 11500, subFreq: 0, noiseAmount: 0.75 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 600, subFreq: 0, noiseAmount: 0.06 },
-      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 1050, subFreq: 0, noiseAmount: 0 }
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 55, subFreq: 32, noiseAmount: 0.02, layerFreq: 28 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 240, subFreq: 95, noiseAmount: 0.22, layerFreq: 185 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 8500, subFreq: 0, noiseAmount: 0.5, layerFreq: 7000 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 7500, subFreq: 0, noiseAmount: 0.6, layerFreq: 6500 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1600, subFreq: 0, noiseAmount: 0.14, layerFreq: 2100 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 11500, subFreq: 0, noiseAmount: 0.75, layerFreq: 13000 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 600, subFreq: 0, noiseAmount: 0.06, layerFreq: 800 },
+      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 1050, subFreq: 0, noiseAmount: 0, layerFreq: 1250 }
     ],
-    "Digital Grime": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 40, subFreq: 25, noiseAmount: 0.08 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 260, subFreq: 110, noiseAmount: 0.3 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 12000, subFreq: 0, noiseAmount: 0.7 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 10000, subFreq: 0, noiseAmount: 0.8 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2200, subFreq: 0, noiseAmount: 0.25 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 14000, subFreq: 0, noiseAmount: 0.9 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 700, subFreq: 0, noiseAmount: 0.15 },
-      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 750, subFreq: 0, noiseAmount: 0.05 }
+    "Trap Quantum": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 42, subFreq: 25, noiseAmount: 0.01, layerFreq: 30 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 280, subFreq: 110, noiseAmount: 0.25, layerFreq: 220 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 12000, subFreq: 0, noiseAmount: 0.7, layerFreq: 10000 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 10000, subFreq: 0, noiseAmount: 0.8, layerFreq: 8500 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2000, subFreq: 0, noiseAmount: 0.15, layerFreq: 2500 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 14000, subFreq: 0, noiseAmount: 0.9, layerFreq: 12000 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 550, subFreq: 0, noiseAmount: 0.04, layerFreq: 700 },
+      { id: 'cowbell', label: '808', icon: '🎵', frequency: 900, subFreq: 35, noiseAmount: 0, layerFreq: 1100 }
     ],
-    "Smooth Jazz": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 70, subFreq: 45, noiseAmount: 0 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 190, subFreq: 75, noiseAmount: 0.1 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 5000, subFreq: 0, noiseAmount: 0.2 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 4000, subFreq: 0, noiseAmount: 0.3 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1200, subFreq: 0, noiseAmount: 0.05 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 8000, subFreq: 0, noiseAmount: 0.4 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 350, subFreq: 0, noiseAmount: 0.02 },
-      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 680, subFreq: 0, noiseAmount: 0 }
+    "Boom Circuit": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 65, subFreq: 38, noiseAmount: 0.03, layerFreq: 45 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 210, subFreq: 85, noiseAmount: 0.28, layerFreq: 180 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 9000, subFreq: 0, noiseAmount: 0.45, layerFreq: 7500 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 7800, subFreq: 0, noiseAmount: 0.55, layerFreq: 6200 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2200, subFreq: 0, noiseAmount: 0.18, layerFreq: 1800 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 12000, subFreq: 0, noiseAmount: 0.7, layerFreq: 10500 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 1100, subFreq: 0, noiseAmount: 0.1, layerFreq: 900 },
+      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 950, subFreq: 0, noiseAmount: 0.02, layerFreq: 850 }
     ],
-    "Future Bass": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 48, subFreq: 30, noiseAmount: 0.04 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 270, subFreq: 120, noiseAmount: 0.28 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 11000, subFreq: 0, noiseAmount: 0.65 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 9500, subFreq: 0, noiseAmount: 0.75 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2000, subFreq: 0, noiseAmount: 0.18 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 13000, subFreq: 0, noiseAmount: 0.85 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 450, subFreq: 0, noiseAmount: 0.07 },
-      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 920, subFreq: 0, noiseAmount: 0.02 }
+    "Lo-Fi Dreams": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 48, subFreq: 28, noiseAmount: 0.08, layerFreq: 35 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 175, subFreq: 65, noiseAmount: 0.35, layerFreq: 150 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 5500, subFreq: 0, noiseAmount: 0.5, layerFreq: 4500 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 4000, subFreq: 0, noiseAmount: 0.6, layerFreq: 3500 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 900, subFreq: 0, noiseAmount: 0.25, layerFreq: 1100 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 8000, subFreq: 0, noiseAmount: 0.7, layerFreq: 7000 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 750, subFreq: 0, noiseAmount: 0.12, layerFreq: 650 },
+      { id: 'cowbell', label: 'VINYL', icon: '💿', frequency: 650, subFreq: 0, noiseAmount: 0.4, layerFreq: 550 }
     ],
-    "Street Heat": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 52, subFreq: 33, noiseAmount: 0.015 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 235, subFreq: 88, noiseAmount: 0.24 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 9000, subFreq: 0, noiseAmount: 0.55 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 8000, subFreq: 0, noiseAmount: 0.65 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1700, subFreq: 0, noiseAmount: 0.13 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 11800, subFreq: 0, noiseAmount: 0.78 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 550, subFreq: 0, noiseAmount: 0.09 },
-      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 880, subFreq: 0, noiseAmount: 0.01 }
+    "Future Breaks": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 50, subFreq: 30, noiseAmount: 0.05, layerFreq: 35 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 290, subFreq: 130, noiseAmount: 0.3, layerFreq: 250 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 11500, subFreq: 0, noiseAmount: 0.7, layerFreq: 9500 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 10500, subFreq: 0, noiseAmount: 0.8, layerFreq: 8800 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2100, subFreq: 0, noiseAmount: 0.2, layerFreq: 2400 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 13500, subFreq: 0, noiseAmount: 0.85, layerFreq: 11000 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 480, subFreq: 0, noiseAmount: 0.08, layerFreq: 650 },
+      { id: 'cowbell', label: 'SYNTH', icon: '🎹', frequency: 980, subFreq: 490, noiseAmount: 0.03, layerFreq: 1470 }
+    ],
+    "Latin Fuego": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 68, subFreq: 40, noiseAmount: 0.04, layerFreq: 48 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 235, subFreq: 88, noiseAmount: 0.2, layerFreq: 195 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 7800, subFreq: 0, noiseAmount: 0.38, layerFreq: 6800 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 6300, subFreq: 0, noiseAmount: 0.48, layerFreq: 5500 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2600, subFreq: 0, noiseAmount: 0.1, layerFreq: 2900 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 10500, subFreq: 0, noiseAmount: 0.72, layerFreq: 9200 },
+      { id: 'rim', label: 'CLAVE', icon: '🥢', frequency: 1250, subFreq: 0, noiseAmount: 0.05, layerFreq: 1500 },
+      { id: 'cowbell', label: 'CONGA', icon: '🪘', frequency: 980, subFreq: 200, noiseAmount: 0.02, layerFreq: 750 }
+    ],
+    "Neon Tokyo": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 45, subFreq: 26, noiseAmount: 0.1, layerFreq: 32 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 265, subFreq: 115, noiseAmount: 0.32, layerFreq: 230 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 13000, subFreq: 0, noiseAmount: 0.75, layerFreq: 11000 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 11000, subFreq: 0, noiseAmount: 0.85, layerFreq: 9000 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2300, subFreq: 0, noiseAmount: 0.28, layerFreq: 2700 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 15000, subFreq: 0, noiseAmount: 0.95, layerFreq: 12500 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 720, subFreq: 0, noiseAmount: 0.18, layerFreq: 900 },
+      { id: 'cowbell', label: 'LASER', icon: '⚡', frequency: 880, subFreq: 1760, noiseAmount: 0.08, layerFreq: 3520 }
+    ],
+    "Analog Dust": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 72, subFreq: 48, noiseAmount: 0, layerFreq: 55 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 195, subFreq: 78, noiseAmount: 0.12, layerFreq: 165 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 5200, subFreq: 0, noiseAmount: 0.25, layerFreq: 4400 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 4200, subFreq: 0, noiseAmount: 0.35, layerFreq: 3600 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1250, subFreq: 0, noiseAmount: 0.08, layerFreq: 1450 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 8500, subFreq: 0, noiseAmount: 0.45, layerFreq: 7200 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 360, subFreq: 0, noiseAmount: 0.03, layerFreq: 480 },
+      { id: 'cowbell', label: 'TOM', icon: '🥁', frequency: 700, subFreq: 350, noiseAmount: 0, layerFreq: 525 }
+    ],
+    "Cyber Punk": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 38, subFreq: 22, noiseAmount: 0.12, layerFreq: 28 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 270, subFreq: 125, noiseAmount: 0.35, layerFreq: 240 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 14000, subFreq: 0, noiseAmount: 0.8, layerFreq: 12000 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 12000, subFreq: 0, noiseAmount: 0.9, layerFreq: 10000 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2400, subFreq: 0, noiseAmount: 0.3, layerFreq: 2800 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 16000, subFreq: 0, noiseAmount: 1.0, layerFreq: 13500 },
+      { id: 'rim', label: 'GLITCH', icon: '🔧', frequency: 750, subFreq: 375, noiseAmount: 0.25, layerFreq: 1125 },
+      { id: 'cowbell', label: 'ACID', icon: '🧪', frequency: 660, subFreq: 330, noiseAmount: 0.1, layerFreq: 990 }
+    ],
+    "Smooth Groove": [
+      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 75, subFreq: 50, noiseAmount: 0, layerFreq: 60 },
+      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 200, subFreq: 80, noiseAmount: 0.08, layerFreq: 170 },
+      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 4800, subFreq: 0, noiseAmount: 0.18, layerFreq: 4000 },
+      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 3800, subFreq: 0, noiseAmount: 0.28, layerFreq: 3200 },
+      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1100, subFreq: 0, noiseAmount: 0.04, layerFreq: 1300 },
+      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 7500, subFreq: 0, noiseAmount: 0.35, layerFreq: 6500 },
+      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 340, subFreq: 0, noiseAmount: 0.01, layerFreq: 450 },
+      { id: 'cowbell', label: 'RIDE', icon: '🎵', frequency: 650, subFreq: 0, noiseAmount: 0, layerFreq: 780 }
     ]
   };
   
   // Current configuration
-  let currentConfig = "Robocop";
+  let currentConfig = "Panama Heat";
   let instruments = instrumentConfigs[currentConfig];
 
-  // Default parameters with industry-standard values
+  // Default parameters with expanded creative options
   const defaultGlobalParams = {
     masterVolume: MASTER_GAIN_DEFAULT,
     instrumentParams: {},
-    // Effects with professional defaults
+    // Standard effects
     reverb: { 
       enabled: false, 
-      mix: 0.25, // 25% typical for drums
-      preset: 'room' // room, hall, plate
+      mix: 0.25,
+      preset: 'room',
+      predelay: 0,
+      damping: 0.5
     },
     delay: { 
       enabled: false, 
-      time: 250, // ms
-      feedback: 0.3, // 30% safe from self-oscillation
+      time: 250,
+      feedback: 0.3,
       mix: 0.2,
-      pingPong: false
+      pingPong: false,
+      sync: false
     },
     filter: { 
       enabled: false, 
-      frequency: 20000, // Hz
+      frequency: 20000,
       type: 'lowpass',
-      resonance: 1 // Q factor
+      resonance: 1,
+      sweep: false,
+      sweepSpeed: 0.5
     },
     compression: { 
       enabled: false, 
-      threshold: -20, // dB
-      ratio: 4, // 4:1 moderate compression
+      threshold: -20,
+      ratio: 4,
       attack: 0.003,
-      release: 0.25
+      release: 0.25,
+      makeup: 0
     },
     distortion: {
       enabled: false,
-      amount: 0.1, // 10% drive
-      tone: 0.5
+      amount: 0.1,
+      tone: 0.5,
+      type: 'soft'
     },
     chorus: {
       enabled: false,
-      rate: 1.5, // Hz
+      rate: 1.5,
       depth: 0.3,
       mix: 0.3
+    },
+    phaser: {
+      enabled: false,
+      rate: 0.5,
+      depth: 0.5,
+      stages: 4,
+      mix: 0.5
     },
     bitcrusher: {
       enabled: false,
@@ -165,67 +181,121 @@
     },
     stereoWidth: {
       enabled: false,
-      width: 1.0 // 0 = mono, 1 = normal, 2 = extra wide
+      width: 1.0
     },
+    // Creative effects
+    gatedReverb: {
+      enabled: false,
+      threshold: -20,
+      hold: 0.1,
+      decay: 0.05
+    },
+    tapeStop: {
+      enabled: false,
+      speed: 0.5,
+      active: false
+    },
+    stutter: {
+      enabled: false,
+      division: 16,
+      probability: 0.5
+    },
+    glitch: {
+      enabled: false,
+      intensity: 0.5,
+      frequency: 0.3
+    },
+    reverse: {
+      enabled: false,
+      probability: 0.2
+    },
+    granular: {
+      enabled: false,
+      grainSize: 50,
+      overlap: 0.5,
+      pitch: 0
+    },
+    // Global modulation
     swing: 0,
-    humanize: 0
+    humanize: 0,
+    layering: false,
+    // Automation
+    automation: {
+      enabled: false,
+      recording: false,
+      data: {}
+    }
   };
 
-  // Global parameters (deep clone of defaults)
+  // Global parameters
   let globalParams = JSON.parse(JSON.stringify(defaultGlobalParams));
 
-  // Initialize instrument parameters with defaults
+  // Initialize instrument parameters with layering support
   function initializeInstrumentParams() {
     instruments.forEach(inst => {
       globalParams.instrumentParams[inst.id] = {
         volume: 0.7,
-        pitch: 0, // semitones (-12 to +12 standard)
+        pitch: 0,
         decay: 1.0,
-        pan: 0 // -1 to +1
+        pan: 0,
+        layer: false,
+        layerVolume: 0.5,
+        layerPitch: 12
       };
     });
   }
 
   initializeInstrumentParams();
 
-  // Preset patterns
+  // Preset patterns with improved grooves
   const presets = {
-    "Traffic jam groove": {
-      bpm: 109,
-      kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+    "Panama Classic": {
+      bpm: 105,
+      kick:    [1,0,0,0,1,0,0,1,1,0,0,0,1,0,0,0],
       snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-      hihat:   [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
-      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      clap:    [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
-      cowbell: [0,0,0,0,0,0,0,1,0,0,1,0,0,0,1,1]
-    },
-    "Robofunk": {
-      bpm: 104,
-      kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
-      snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-      hihat:   [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
-      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      clap:    [1,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],
-      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0],
-      cowbell: [0,0,0,1,0,0,1,0,0,0,1,0,0,0,1,0]
-    },
-    "Power pose": {
-      bpm: 76,
-      kick:    [1,0,0,1,1,0,0,0,1,0,0,1,1,0,0,0],
-      snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-      hihat:   [0,0,1,0,0,0,1,0,0,0,1,0,1,0,1,0],
+      hihat:   [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,1],
       openhat: [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
-      clap:    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      clap:    [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
       crash:   [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-      rim:     [0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0],
-      cowbell: [0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0]
+      rim:     [0,1,0,0,0,0,1,0,0,1,0,0,0,0,0,0],
+      cowbell: [0,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0]
+    },
+    "Trap Mode": {
+      bpm: 140,
+      kick:    [1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0],
+      snare:   [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      hihat:   [1,1,0,1,1,1,0,1,1,1,0,1,1,1,1,1],
+      openhat: [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],
+      clap:    [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      rim:     [0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0],
+      cowbell: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    },
+    "Boom Bap": {
+      bpm: 90,
+      kick:    [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],
+      snare:   [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      hihat:   [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      clap:    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      rim:     [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      cowbell: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    },
+    "Future Funk": {
+      bpm: 120,
+      kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+      snare:   [0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],
+      hihat:   [1,0,1,1,0,0,1,0,1,0,1,1,0,0,1,0],
+      openhat: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      clap:    [0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0],
+      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      rim:     [0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0],
+      cowbell: [0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0]
     }
   };
 
-  // State
+  // State management
   let audioContext;
   let isPlaying = false;
   let currentStep = 0;
@@ -238,8 +308,8 @@
   let isSolo = false;
   let soloTrack = null;
   let selectedInstrument = null;
-  let showEffects = false;
-  let showMixer = true;
+  let automationData = {};
+  let recordedSamples = {};
 
   // Initialize empty pattern
   instruments.forEach(inst => {
@@ -247,17 +317,16 @@
     isMuted[inst.id] = false;
   });
 
-  // Utility: Convert dB to linear gain
+  // Utility functions
   function dbToGain(db) {
     return Math.pow(10, db / 20);
   }
 
-  // Utility: Convert linear gain to dB
   function gainToDb(gain) {
     return 20 * Math.log10(Math.max(0.0001, gain));
   }
 
-  // Create the drum machine HTML with improved UI
+  // Create the drum machine HTML
   function createDrumMachine() {
     const container = document.getElementById('drum-machine-container');
     if (!container) return;
@@ -265,7 +334,7 @@
     container.innerHTML = `
       <div class="dm-wrapper">
         <style>
-          /* Modern, clean drum machine styles */
+          /* Drum Machine Pro Styles - MVP Max Mode */
           .dm-wrapper {
             font-family: 'Space Mono', monospace;
             background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
@@ -274,7 +343,7 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
           }
 
-          /* Header Section */
+          /* Header */
           .dm-header {
             display: flex;
             justify-content: space-between;
@@ -291,6 +360,7 @@
             font-size: 2rem;
             color: #00a651;
             text-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
+            margin: 0;
           }
 
           .dm-header-controls {
@@ -344,13 +414,7 @@
             text-align: right;
           }
 
-          .dm-kit-selector {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-          }
-
-          .dm-bar-selector {
+          .dm-kit-selector, .dm-bar-selector {
             display: flex;
             gap: 0.5rem;
             align-items: center;
@@ -433,6 +497,30 @@
             box-shadow: 0 4px 12px rgba(255, 107, 0, 0.3);
           }
 
+          .dm-btn.random {
+            background: #9b59b6;
+            border-color: #9b59b6;
+            color: #fff;
+          }
+
+          .dm-btn.random:hover {
+            background: #8e44ad;
+            border-color: #8e44ad;
+            box-shadow: 0 4px 12px rgba(155, 89, 182, 0.3);
+          }
+
+          .dm-btn.record {
+            background: #e74c3c;
+            border-color: #e74c3c;
+            color: #fff;
+          }
+
+          .dm-btn.record:hover {
+            background: #c0392b;
+            border-color: #c0392b;
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+          }
+
           .dm-btn-icon {
             font-size: 1.25rem;
           }
@@ -475,6 +563,39 @@
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
+          }
+
+          /* Creative Controls */
+          .dm-creative-controls {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+          }
+
+          .dm-creative-btn {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #444;
+            color: #999;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+          }
+
+          .dm-creative-btn:hover {
+            border-color: #00a651;
+            color: #00a651;
+            background: rgba(0, 166, 81, 0.1);
+          }
+
+          .dm-creative-btn.active {
+            background: #00a651;
+            color: #1a1a1a;
+            border-color: #00a651;
           }
 
           /* Preset Buttons */
@@ -571,11 +692,12 @@
           .dm-track-controls {
             display: flex;
             gap: 0.25rem;
+            align-items: center;
           }
 
           .dm-track-btn {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             border-radius: 0.25rem;
             border: 1px solid #444;
             background: #2a2a2a;
@@ -584,7 +706,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.75rem;
+            font-size: 0.625rem;
             transition: all 0.2s;
             z-index: 11;
             position: relative;
@@ -642,6 +764,15 @@
             animation: step-pulse 0.2s ease-out;
           }
 
+          .dm-step.accent {
+            background: #ff6b00;
+            border-color: #ff6b00;
+          }
+
+          .dm-step.ghost {
+            opacity: 0.5;
+          }
+
           @keyframes step-pulse {
             0% {
               transform: scale(1);
@@ -691,10 +822,11 @@
           }
 
           /* Mixer/Effects Toggle */
-          .dm-mixer-toggle {
+          .dm-panel-toggle {
             display: flex;
             justify-content: center;
             margin-bottom: 1rem;
+            gap: 0.25rem;
           }
 
           .dm-toggle-btn {
@@ -705,7 +837,7 @@
             border-radius: 0.5rem 0.5rem 0 0;
             cursor: pointer;
             transition: all 0.2s;
-            margin: 0 0.25rem;
+            margin: 0;
           }
 
           .dm-toggle-btn.active {
@@ -830,6 +962,28 @@
             color: #00a651;
             font-size: 0.625rem;
             margin-top: 0.25rem;
+          }
+
+          .dm-layer-toggle {
+            margin-top: 0.5rem;
+            text-align: center;
+          }
+
+          .dm-layer-btn {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #666;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.625rem;
+            transition: all 0.2s;
+          }
+
+          .dm-layer-btn.active {
+            background: #9b59b6;
+            color: #fff;
+            border-color: #9b59b6;
           }
 
           /* Effects Panel */
@@ -983,6 +1137,20 @@
             border-color: #00a651;
           }
 
+          /* Creative Effects Panel */
+          .dm-creative-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            display: none;
+          }
+
+          .dm-creative-panel.active {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+          }
+
           /* Responsive */
           @media (max-width: 768px) {
             .dm-header {
@@ -1040,7 +1208,7 @@
               <span class="dm-kit-label">Sound Kit:</span>
               <select class="dm-kit-select" id="dmKitSelect">
                 ${Object.keys(instrumentConfigs).map(kit => 
-                  `<option value="${kit}">${kit.toUpperCase()}</option>`
+                  `<option value="${kit}" ${kit === currentConfig ? 'selected' : ''}>${kit.toUpperCase()}</option>`
                 ).join('')}
               </select>
             </div>
@@ -1078,24 +1246,44 @@
             <div class="dm-tempo-display" id="dmTempoDisplay">120 BPM</div>
           </div>
 
+          <button class="dm-btn random" id="dmRandomBtn">
+            <span class="dm-btn-icon">🎲</span>
+            <span>RANDOM</span>
+          </button>
+          <button class="dm-btn record" id="dmRecordBtn">
+            <span class="dm-btn-icon">⏺</span>
+            <span>REC</span>
+          </button>
           <button class="dm-btn" id="dmDownloadBtn">
             <span class="dm-btn-icon">💾</span>
             <span>EXPORT</span>
           </button>
         </div>
 
+        <!-- Creative Controls -->
+        <div class="dm-creative-controls">
+          <button class="dm-creative-btn" id="dmTapeStopBtn">TAPE STOP</button>
+          <button class="dm-creative-btn" id="dmStutterBtn">STUTTER</button>
+          <button class="dm-creative-btn" id="dmGlitchBtn">GLITCH</button>
+          <button class="dm-creative-btn" id="dmReverseBtn">REVERSE</button>
+          <button class="dm-creative-btn" id="dmGranularBtn">GRANULAR</button>
+          <button class="dm-creative-btn" id="dmLayeringBtn">LAYERING</button>
+        </div>
+
         <!-- Preset Buttons -->
         <div class="dm-presets">
           <div class="dm-preset-section-title">PATTERNS</div>
-          <button class="dm-preset-btn" data-preset="Traffic jam groove">Traffic jam groove</button>
-          <button class="dm-preset-btn" data-preset="Robofunk">Robofunk</button>
-          <button class="dm-preset-btn" data-preset="Power pose">Power pose</button>
+          <button class="dm-preset-btn" data-preset="Panama Classic">Panama Classic</button>
+          <button class="dm-preset-btn" data-preset="Trap Mode">Trap Mode</button>
+          <button class="dm-preset-btn" data-preset="Boom Bap">Boom Bap</button>
+          <button class="dm-preset-btn" data-preset="Future Funk">Future Funk</button>
         </div>
 
-        <!-- Mixer/Effects Toggle -->
-        <div class="dm-mixer-toggle">
+        <!-- Panel Toggle -->
+        <div class="dm-panel-toggle">
           <button class="dm-toggle-btn active" id="dmMixerToggle">MIXER</button>
           <button class="dm-toggle-btn" id="dmEffectsToggle">EFFECTS</button>
+          <button class="dm-toggle-btn" id="dmCreativeToggle">CREATIVE FX</button>
         </div>
 
         <!-- Mixer Panel -->
@@ -1107,179 +1295,15 @@
 
         <!-- Effects Panel -->
         <div class="dm-effects-panel" id="dmEffectsPanel">
-          <div class="dm-effects-grid">
-            <!-- Reverb -->
-            <div class="dm-effect-unit" id="dmReverbUnit">
-              <div class="dm-effect-header">
-                <span class="dm-effect-title">REVERB</span>
-                <div class="dm-effect-toggle" id="dmReverbToggle"></div>
-              </div>
-              <div class="dm-effect-controls">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Mix</span>
-                  <span class="dm-effect-param-value" id="dmReverbMixVal">25%</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmReverbMix" min="0" max="100" value="25">
-                <div class="dm-effect-preset-selector">
-                  <button class="dm-effect-preset-btn active" data-preset="room">ROOM</button>
-                  <button class="dm-effect-preset-btn" data-preset="hall">HALL</button>
-                  <button class="dm-effect-preset-btn" data-preset="plate">PLATE</button>
-                </div>
-              </div>
-            </div>
+          <div class="dm-effects-grid" id="dmEffectsGrid">
+            <!-- Effects will be generated here -->
+          </div>
+        </div>
 
-            <!-- Delay -->
-            <div class="dm-effect-unit" id="dmDelayUnit">
-              <div class="dm-effect-header">
-                <span class="dm-effect-title">DELAY</span>
-                <div class="dm-effect-toggle" id="dmDelayToggle"></div>
-              </div>
-              <div class="dm-effect-controls">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Time</span>
-                  <span class="dm-effect-param-value" id="dmDelayTimeVal">250ms</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmDelayTime" min="10" max="1000" value="250" step="1">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Feedback</span>
-                  <span class="dm-effect-param-value" id="dmDelayFeedbackVal">30%</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmDelayFeedback" min="0" max="85" value="30">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Mix</span>
-                  <span class="dm-effect-param-value" id="dmDelayMixVal">20%</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmDelayMixSlider" min="0" max="100" value="20">
-                <div class="dm-effect-preset-selector">
-                  <button class="dm-effect-preset-btn active" data-mode="normal">NORMAL</button>
-                  <button class="dm-effect-preset-btn" data-mode="pingpong">PING-PONG</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Filter -->
-            <div class="dm-effect-unit" id="dmFilterUnit">
-              <div class="dm-effect-header">
-                <span class="dm-effect-title">FILTER</span>
-                <div class="dm-effect-toggle" id="dmFilterToggle"></div>
-              </div>
-              <div class="dm-effect-controls">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Cutoff</span>
-                  <span class="dm-effect-param-value" id="dmFilterCutoffVal">20.0kHz</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmFilterCutoff" min="20" max="20000" value="20000" step="1">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Resonance</span>
-                  <span class="dm-effect-param-value" id="dmFilterResonanceVal">1.0</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmFilterResonance" min="1" max="30" value="1">
-                <div class="dm-filter-mode-selector">
-                  <button class="dm-filter-mode-btn active" data-mode="lowpass">LOW-PASS</button>
-                  <button class="dm-filter-mode-btn" data-mode="highpass">HIGH-PASS</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Compression -->
-            <div class="dm-effect-unit" id="dmCompUnit">
-              <div class="dm-effect-header">
-                <span class="dm-effect-title">COMPRESSOR</span>
-                <div class="dm-effect-toggle" id="dmCompToggle"></div>
-              </div>
-              <div class="dm-effect-controls">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Threshold</span>
-                  <span class="dm-effect-param-value" id="dmCompThresholdVal">-20dB</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmCompThreshold" min="-60" max="0" value="-20">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Ratio</span>
-                  <span class="dm-effect-param-value" id="dmCompRatioVal">4:1</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmCompRatio" min="1" max="20" value="4">
-              </div>
-            </div>
-
-            <!-- Distortion -->
-            <div class="dm-effect-unit" id="dmDistUnit">
-              <div class="dm-effect-header">
-                <span class="dm-effect-title">DISTORTION</span>
-                <div class="dm-effect-toggle" id="dmDistToggle"></div>
-              </div>
-              <div class="dm-effect-controls">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Drive</span>
-                  <span class="dm-effect-param-value" id="dmDistDriveVal">10%</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmDistDrive" min="0" max="100" value="10">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Tone</span>
-                  <span class="dm-effect-param-value" id="dmDistToneVal">50%</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmDistTone" min="0" max="100" value="50">
-              </div>
-            </div>
-
-            <!-- Chorus -->
-            <div class="dm-effect-unit" id="dmChorusUnit">
-              <div class="dm-effect-header">
-                <span class="dm-effect-title">CHORUS</span>
-                <div class="dm-effect-toggle" id="dmChorusToggle"></div>
-              </div>
-              <div class="dm-effect-controls">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Rate</span>
-                  <span class="dm-effect-param-value" id="dmChorusRateVal">1.5Hz</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmChorusRate" min="0.1" max="10" value="1.5" step="0.1">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Depth</span>
-                  <span class="dm-effect-param-value" id="dmChorusDepthVal">30%</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmChorusDepth" min="0" max="100" value="30">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Mix</span>
-                  <span class="dm-effect-param-value" id="dmChorusMixVal">30%</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmChorusMix" min="0" max="100" value="30">
-              </div>
-            </div>
-
-            <!-- Bitcrusher -->
-            <div class="dm-effect-unit" id="dmBitcrusherUnit">
-              <div class="dm-effect-header">
-                <span class="dm-effect-title">BITCRUSHER</span>
-                <div class="dm-effect-toggle" id="dmBitcrusherToggle"></div>
-              </div>
-              <div class="dm-effect-controls">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Bits</span>
-                  <span class="dm-effect-param-value" id="dmBitcrusherBitsVal">8</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmBitcrusherBits" min="1" max="16" value="8">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Downsample</span>
-                  <span class="dm-effect-param-value" id="dmBitcrusherDownsampleVal">1x</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmBitcrusherDownsample" min="1" max="10" value="1">
-              </div>
-            </div>
-
-            <!-- Stereo Width -->
-            <div class="dm-effect-unit" id="dmStereoWidthUnit">
-              <div class="dm-effect-header">
-                <span class="dm-effect-title">STEREO WIDTH</span>
-                <div class="dm-effect-toggle" id="dmStereoWidthToggle"></div>
-              </div>
-              <div class="dm-effect-controls">
-                <div class="dm-effect-param">
-                  <span class="dm-effect-param-label">Width</span>
-                  <span class="dm-effect-param-value" id="dmStereoWidthVal">100%</span>
-                </div>
-                <input type="range" class="dm-effect-slider" id="dmStereoWidth" min="0" max="200" value="100">
-              </div>
-            </div>
+        <!-- Creative Panel -->
+        <div class="dm-creative-panel" id="dmCreativePanel">
+          <div class="dm-effects-grid" id="dmCreativeGrid">
+            <!-- Creative effects will be generated here -->
           </div>
         </div>
 
@@ -1300,8 +1324,10 @@
 
     createPatternGrid();
     createMixerChannels();
+    createEffectsPanel();
+    createCreativePanel();
     setupEventListeners();
-    loadPreset('Traffic jam groove');
+    loadPreset('Panama Classic');
   }
 
   // Create pattern grid
@@ -1310,10 +1336,8 @@
     const stepIndicator = document.getElementById('dmStepIndicator');
     if (!grid || !stepIndicator) return;
 
-    // Update CSS variable for step count
     document.documentElement.style.setProperty('--step-count', STEPS);
 
-    // Clear existing content
     grid.innerHTML = '';
     stepIndicator.innerHTML = '<div></div>';
 
@@ -1329,7 +1353,7 @@
       const track = document.createElement('div');
       track.className = 'dm-track';
 
-      // Track header
+      // Track header with proper spacing for M and S buttons
       const header = document.createElement('div');
       header.className = 'dm-track-header';
       header.innerHTML = `
@@ -1349,17 +1373,20 @@
         step.dataset.instrument = inst.id;
         step.dataset.step = i;
         step.addEventListener('click', toggleStep);
+        step.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          toggleAccent(e);
+        });
         track.appendChild(step);
       }
 
       grid.appendChild(track);
     });
 
-    // Update pattern display
     updatePattern();
   }
 
-  // Create mixer channels
+  // Create mixer channels with layering support
   function createMixerChannels() {
     const mixerTracks = document.getElementById('dmMixerTracks');
     if (!mixerTracks) return;
@@ -1400,14 +1427,13 @@
             <div class="dm-knob-value">${pitchValue > 0 ? '+' : ''}${pitchValue}</div>
           </div>
         </div>
+        
+        <div class="dm-layer-toggle">
+          <button class="dm-layer-btn ${params.layer ? 'active' : ''}" data-instrument="${inst.id}">
+            LAYER ${params.layer ? 'ON' : 'OFF'}
+          </button>
+        </div>
       `;
-
-      // Add click handler for selection
-      channel.addEventListener('click', () => {
-        document.querySelectorAll('.dm-mixer-track').forEach(t => t.classList.remove('selected'));
-        channel.classList.add('selected');
-        selectedInstrument = inst.id;
-      });
 
       mixerTracks.appendChild(channel);
     });
@@ -1422,114 +1448,384 @@
       });
     });
 
-    // Setup knob controls
+    // Setup layer buttons
+    document.querySelectorAll('.dm-layer-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const inst = e.target.dataset.instrument;
+        globalParams.instrumentParams[inst].layer = !globalParams.instrumentParams[inst].layer;
+        e.target.classList.toggle('active');
+        e.target.textContent = `LAYER ${globalParams.instrumentParams[inst].layer ? 'ON' : 'OFF'}`;
+      });
+    });
+
     setupKnobControls();
   }
 
-  // Setup knob controls with industry-standard limits
-  function setupKnobControls() {
-    document.querySelectorAll('.dm-knob-control').forEach(knob => {
-      let isDragging = false;
-      let startY = 0;
-      let startValue = 0;
-      const sensitivity = 0.5;
+  // Create effects panel
+  function createEffectsPanel() {
+    const grid = document.getElementById('dmEffectsGrid');
+    if (!grid) return;
 
-      const updateKnob = (value) => {
-        const inst = knob.dataset.instrument;
-        const param = knob.dataset.param;
-        const indicator = knob.querySelector('.dm-knob-indicator');
-        const valueDisplay = knob.parentElement.querySelector('.dm-knob-value');
-        
-        if (param === 'pan') {
-          // Industry standard: -1 to +1 (displayed as L50 to R50)
-          const panValue = Math.max(-50, Math.min(50, Math.round((value - 50) * 50 / 50)));
-          const rotation = panValue * 2.7;
-          indicator.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
-          globalParams.instrumentParams[inst].pan = panValue / 50;
-          valueDisplay.textContent = panValue === 0 ? 'C' : panValue > 0 ? panValue + 'R' : Math.abs(panValue) + 'L';
-        } else if (param === 'pitch') {
-          // Industry standard: -12 to +12 semitones (one octave each way)
-          const pitchValue = Math.max(-12, Math.min(12, Math.round((value - 50) * 12 / 50)));
-          const rotation = pitchValue * 11.25;
-          indicator.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
-          globalParams.instrumentParams[inst].pitch = pitchValue;
-          valueDisplay.textContent = pitchValue > 0 ? '+' + pitchValue : pitchValue.toString();
-        }
-      };
+    grid.innerHTML = `
+      <!-- Reverb -->
+      <div class="dm-effect-unit" id="dmReverbUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">REVERB</span>
+          <div class="dm-effect-toggle" id="dmReverbToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Mix</span>
+            <span class="dm-effect-param-value" id="dmReverbMixVal">25%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmReverbMix" min="0" max="100" value="25">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">PreDelay</span>
+            <span class="dm-effect-param-value" id="dmReverbPredelayVal">0ms</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmReverbPredelay" min="0" max="100" value="0">
+          <div class="dm-effect-preset-selector">
+            <button class="dm-effect-preset-btn active" data-preset="room">ROOM</button>
+            <button class="dm-effect-preset-btn" data-preset="hall">HALL</button>
+            <button class="dm-effect-preset-btn" data-preset="plate">PLATE</button>
+            <button class="dm-effect-preset-btn" data-preset="cathedral">CATHEDRAL</button>
+          </div>
+        </div>
+      </div>
 
-      // Initialize knob positions
-      const inst = knob.dataset.instrument;
-      const param = knob.dataset.param;
-      if (param === 'pan') {
-        updateKnob(50 + globalParams.instrumentParams[inst].pan * 50);
-      } else if (param === 'pitch') {
-        updateKnob(50 + globalParams.instrumentParams[inst].pitch * 50 / 12);
-      }
+      <!-- Delay -->
+      <div class="dm-effect-unit" id="dmDelayUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">DELAY</span>
+          <div class="dm-effect-toggle" id="dmDelayToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Time</span>
+            <span class="dm-effect-param-value" id="dmDelayTimeVal">250ms</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmDelayTime" min="10" max="2000" value="250">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Feedback</span>
+            <span class="dm-effect-param-value" id="dmDelayFeedbackVal">30%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmDelayFeedback" min="0" max="85" value="30">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Mix</span>
+            <span class="dm-effect-param-value" id="dmDelayMixVal">20%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmDelayMixSlider" min="0" max="100" value="20">
+          <div class="dm-effect-preset-selector">
+            <button class="dm-effect-preset-btn active" data-mode="normal">NORMAL</button>
+            <button class="dm-effect-preset-btn" data-mode="pingpong">PING-PONG</button>
+          </div>
+        </div>
+      </div>
 
-      knob.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        startY = e.clientY;
-        const inst = knob.dataset.instrument;
-        const param = knob.dataset.param;
-        
-        if (param === 'pan') {
-          startValue = 50 + globalParams.instrumentParams[inst].pan * 50;
-        } else if (param === 'pitch') {
-          startValue = 50 + globalParams.instrumentParams[inst].pitch * 50 / 12;
-        }
-        
-        e.preventDefault();
-      });
+      <!-- Filter -->
+      <div class="dm-effect-unit" id="dmFilterUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">FILTER</span>
+          <div class="dm-effect-toggle" id="dmFilterToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Cutoff</span>
+            <span class="dm-effect-param-value" id="dmFilterCutoffVal">20.0kHz</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmFilterCutoff" min="20" max="20000" value="20000" step="1">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Resonance</span>
+            <span class="dm-effect-param-value" id="dmFilterResonanceVal">1.0</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmFilterResonance" min="1" max="30" value="1">
+          <div class="dm-filter-mode-selector">
+            <button class="dm-filter-mode-btn active" data-mode="lowpass">LOW-PASS</button>
+            <button class="dm-filter-mode-btn" data-mode="highpass">HIGH-PASS</button>
+            <button class="dm-filter-mode-btn" data-mode="bandpass">BAND-PASS</button>
+          </div>
+        </div>
+      </div>
 
-      document.addEventListener('mousemove', (e) => {
-        if (!isDragging) return;
-        
-        const deltaY = (startY - e.clientY) * sensitivity;
-        const newValue = Math.max(0, Math.min(100, startValue + deltaY));
-        updateKnob(newValue);
-      });
+      <!-- Compression -->
+      <div class="dm-effect-unit" id="dmCompUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">COMPRESSOR</span>
+          <div class="dm-effect-toggle" id="dmCompToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Threshold</span>
+            <span class="dm-effect-param-value" id="dmCompThresholdVal">-20dB</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmCompThreshold" min="-60" max="0" value="-20">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Ratio</span>
+            <span class="dm-effect-param-value" id="dmCompRatioVal">4:1</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmCompRatio" min="1" max="20" value="4">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Attack</span>
+            <span class="dm-effect-param-value" id="dmCompAttackVal">3ms</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmCompAttack" min="0" max="100" value="3">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Release</span>
+            <span class="dm-effect-param-value" id="dmCompReleaseVal">250ms</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmCompRelease" min="10" max="1000" value="250">
+        </div>
+      </div>
 
-      document.addEventListener('mouseup', () => {
-        isDragging = false;
-      });
-    });
+      <!-- Distortion -->
+      <div class="dm-effect-unit" id="dmDistUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">DISTORTION</span>
+          <div class="dm-effect-toggle" id="dmDistToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Drive</span>
+            <span class="dm-effect-param-value" id="dmDistDriveVal">10%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmDistDrive" min="0" max="100" value="10">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Tone</span>
+            <span class="dm-effect-param-value" id="dmDistToneVal">50%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmDistTone" min="0" max="100" value="50">
+          <div class="dm-effect-preset-selector">
+            <button class="dm-effect-preset-btn active" data-type="soft">SOFT</button>
+            <button class="dm-effect-preset-btn" data-type="hard">HARD</button>
+            <button class="dm-effect-preset-btn" data-type="fuzz">FUZZ</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chorus -->
+      <div class="dm-effect-unit" id="dmChorusUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">CHORUS</span>
+          <div class="dm-effect-toggle" id="dmChorusToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Rate</span>
+            <span class="dm-effect-param-value" id="dmChorusRateVal">1.5Hz</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmChorusRate" min="0.1" max="10" value="1.5" step="0.1">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Depth</span>
+            <span class="dm-effect-param-value" id="dmChorusDepthVal">30%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmChorusDepth" min="0" max="100" value="30">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Mix</span>
+            <span class="dm-effect-param-value" id="dmChorusMixVal">30%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmChorusMix" min="0" max="100" value="30">
+        </div>
+      </div>
+
+      <!-- Phaser -->
+      <div class="dm-effect-unit" id="dmPhaserUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">PHASER</span>
+          <div class="dm-effect-toggle" id="dmPhaserToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Rate</span>
+            <span class="dm-effect-param-value" id="dmPhaserRateVal">0.5Hz</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmPhaserRate" min="0.1" max="10" value="0.5" step="0.1">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Depth</span>
+            <span class="dm-effect-param-value" id="dmPhaserDepthVal">50%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmPhaserDepth" min="0" max="100" value="50">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Stages</span>
+            <span class="dm-effect-param-value" id="dmPhaserStagesVal">4</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmPhaserStages" min="2" max="8" value="4" step="2">
+        </div>
+      </div>
+
+      <!-- Bitcrusher -->
+      <div class="dm-effect-unit" id="dmBitcrusherUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">BITCRUSHER</span>
+          <div class="dm-effect-toggle" id="dmBitcrusherToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Bits</span>
+            <span class="dm-effect-param-value" id="dmBitcrusherBitsVal">8</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmBitcrusherBits" min="1" max="16" value="8">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Downsample</span>
+            <span class="dm-effect-param-value" id="dmBitcrusherDownsampleVal">1x</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmBitcrusherDownsample" min="1" max="20" value="1">
+        </div>
+      </div>
+
+      <!-- Stereo Width -->
+      <div class="dm-effect-unit" id="dmStereoWidthUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">STEREO WIDTH</span>
+          <div class="dm-effect-toggle" id="dmStereoWidthToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Width</span>
+            <span class="dm-effect-param-value" id="dmStereoWidthVal">100%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmStereoWidth" min="0" max="200" value="100">
+        </div>
+      </div>
+    `;
   }
 
-  // Toggle step
-  function toggleStep(e) {
-    const inst = e.target.dataset.instrument;
-    const step = parseInt(e.target.dataset.step);
-    
-    pattern[inst][step] = pattern[inst][step] ? 0 : 1;
-    e.target.classList.toggle('active');
+  // Create creative effects panel
+  function createCreativePanel() {
+    const grid = document.getElementById('dmCreativeGrid');
+    if (!grid) return;
+
+    grid.innerHTML = `
+      <!-- Gated Reverb -->
+      <div class="dm-effect-unit" id="dmGatedReverbUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">GATED REVERB</span>
+          <div class="dm-effect-toggle" id="dmGatedReverbToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Threshold</span>
+            <span class="dm-effect-param-value" id="dmGatedReverbThresholdVal">-20dB</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGatedReverbThreshold" min="-60" max="0" value="-20">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Hold</span>
+            <span class="dm-effect-param-value" id="dmGatedReverbHoldVal">100ms</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGatedReverbHold" min="10" max="500" value="100">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Decay</span>
+            <span class="dm-effect-param-value" id="dmGatedReverbDecayVal">50ms</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGatedReverbDecay" min="10" max="200" value="50">
+        </div>
+      </div>
+
+      <!-- Tape Stop -->
+      <div class="dm-effect-unit" id="dmTapeStopUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">TAPE STOP</span>
+          <div class="dm-effect-toggle" id="dmTapeStopToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Speed</span>
+            <span class="dm-effect-param-value" id="dmTapeStopSpeedVal">50%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmTapeStopSpeed" min="10" max="100" value="50">
+          <button class="dm-effect-preset-btn" id="dmTapeStopTrigger">TRIGGER</button>
+        </div>
+      </div>
+
+      <!-- Stutter -->
+      <div class="dm-effect-unit" id="dmStutterUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">STUTTER</span>
+          <div class="dm-effect-toggle" id="dmStutterToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Division</span>
+            <span class="dm-effect-param-value" id="dmStutterDivisionVal">1/16</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmStutterDivision" min="2" max="32" value="16" step="2">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Probability</span>
+            <span class="dm-effect-param-value" id="dmStutterProbabilityVal">50%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmStutterProbability" min="0" max="100" value="50">
+        </div>
+      </div>
+
+      <!-- Glitch -->
+      <div class="dm-effect-unit" id="dmGlitchUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">GLITCH</span>
+          <div class="dm-effect-toggle" id="dmGlitchToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Intensity</span>
+            <span class="dm-effect-param-value" id="dmGlitchIntensityVal">50%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGlitchIntensity" min="0" max="100" value="50">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Frequency</span>
+            <span class="dm-effect-param-value" id="dmGlitchFrequencyVal">30%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGlitchFrequency" min="0" max="100" value="30">
+        </div>
+      </div>
+
+      <!-- Reverse -->
+      <div class="dm-effect-unit" id="dmReverseUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">REVERSE</span>
+          <div class="dm-effect-toggle" id="dmReverseToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Probability</span>
+            <span class="dm-effect-param-value" id="dmReverseProbabilityVal">20%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmReverseProbability" min="0" max="100" value="20">
+        </div>
+      </div>
+
+      <!-- Granular -->
+      <div class="dm-effect-unit" id="dmGranularUnit">
+        <div class="dm-effect-header">
+          <span class="dm-effect-title">GRANULAR</span>
+          <div class="dm-effect-toggle" id="dmGranularToggle"></div>
+        </div>
+        <div class="dm-effect-controls">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Grain Size</span>
+            <span class="dm-effect-param-value" id="dmGranularGrainSizeVal">50ms</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGranularGrainSize" min="10" max="200" value="50">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Overlap</span>
+            <span class="dm-effect-param-value" id="dmGranularOverlapVal">50%</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGranularOverlap" min="0" max="100" value="50">
+          <div class="dm-effect-param">
+            <span class="dm-effect-param-label">Pitch</span>
+            <span class="dm-effect-param-value" id="dmGranularPitchVal">0</span>
+          </div>
+          <input type="range" class="dm-effect-slider" id="dmGranularPitch" min="-24" max="24" value="0">
+        </div>
+      </div>
+    `;
   }
 
-  // Update pattern display
-  function updatePattern() {
-    instruments.forEach(inst => {
-      for (let step = 0; step < STEPS; step++) {
-        const element = document.querySelector(`[data-instrument="${inst.id}"][data-step="${step}"]`);
-        if (element) {
-          if (pattern[inst.id][step]) {
-            element.classList.add('active');
-          } else {
-            element.classList.remove('active');
-          }
-        }
-      }
-    });
-  }
-
-  // Initialize audio context and effects with proper gain staging
+  // Initialize audio and setup modular effect creation functions
   function initAudio() {
     if (!audioContext) {
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       
-      // Create master gain with industry-standard default
       masterGain = audioContext.createGain();
       masterGain.gain.value = globalParams.masterVolume;
       
-      // Create limiter to prevent clipping
       const limiter = audioContext.createDynamicsCompressor();
       limiter.threshold.value = -1;
       limiter.knee.value = 0;
@@ -1537,7 +1833,6 @@
       limiter.attack.value = 0.001;
       limiter.release.value = 0.01;
       
-      // Create effects nodes with proper gain staging
       effectsChain = {
         reverb: createReverb(),
         delay: createDelay(),
@@ -1545,27 +1840,30 @@
         compressor: createCompressor(),
         distortion: createDistortion(),
         chorus: createChorus(),
+        phaser: createPhaser(),
         bitcrusher: createBitcrusher(),
         stereoWidth: createStereoWidth(),
+        gatedReverb: createGatedReverb(),
+        tapeStop: createTapeStop(),
+        stutter: createStutter(),
+        glitch: createGlitch(),
+        granular: createGranular(),
         limiter: limiter
       };
       
-      // Final output chain
       masterGain.connect(limiter);
       limiter.connect(audioContext.destination);
     }
   }
 
-  // Create reverb with presets
+  // Standard effects creation (modularized)
   function createReverb() {
     const convolver = audioContext.createConvolver();
     const wetGain = audioContext.createGain();
     const dryGain = audioContext.createGain();
-    
-    // Store preset buffers
     const presets = {};
     
-    // Create room impulse
+    // Room impulse
     const roomLength = audioContext.sampleRate * 0.5;
     const roomImpulse = audioContext.createBuffer(2, roomLength, audioContext.sampleRate);
     for (let channel = 0; channel < 2; channel++) {
@@ -1576,7 +1874,7 @@
     }
     presets.room = roomImpulse;
     
-    // Create hall impulse
+    // Hall impulse
     const hallLength = audioContext.sampleRate * 2;
     const hallImpulse = audioContext.createBuffer(2, hallLength, audioContext.sampleRate);
     for (let channel = 0; channel < 2; channel++) {
@@ -1587,7 +1885,7 @@
     }
     presets.hall = hallImpulse;
     
-    // Create plate impulse
+    // Plate impulse
     const plateLength = audioContext.sampleRate * 1;
     const plateImpulse = audioContext.createBuffer(2, plateLength, audioContext.sampleRate);
     for (let channel = 0; channel < 2; channel++) {
@@ -1598,7 +1896,17 @@
     }
     presets.plate = plateImpulse;
     
-    // Set default preset
+    // Cathedral impulse
+    const cathedralLength = audioContext.sampleRate * 4;
+    const cathedralImpulse = audioContext.createBuffer(2, cathedralLength, audioContext.sampleRate);
+    for (let channel = 0; channel < 2; channel++) {
+      const channelData = cathedralImpulse.getChannelData(channel);
+      for (let i = 0; i < cathedralLength; i++) {
+        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / cathedralLength, 2.5);
+      }
+    }
+    presets.cathedral = cathedralImpulse;
+    
     convolver.buffer = presets[globalParams.reverb.preset];
     wetGain.gain.value = 0;
     dryGain.gain.value = 1;
@@ -1606,13 +1914,11 @@
     return { convolver, wetGain, dryGain, presets };
   }
 
-  // Create delay with ping-pong option
   function createDelay() {
     const delay = audioContext.createDelay(2);
     const feedback = audioContext.createGain();
     const wetGain = audioContext.createGain();
     
-    // Ping-pong delay nodes
     const delayL = audioContext.createDelay(2);
     const delayR = audioContext.createDelay(2);
     const feedbackL = audioContext.createGain();
@@ -1629,17 +1935,15 @@
     feedbackL.gain.value = 0.3;
     feedbackR.gain.value = 0.3;
     
-    // Normal delay routing
     delay.connect(feedback);
     feedback.connect(delay);
     
-    // Ping-pong routing
     splitter.connect(delayL, 0);
     splitter.connect(delayR, 1);
     delayL.connect(feedbackL);
     delayR.connect(feedbackR);
-    feedbackL.connect(merger, 0, 1); // Cross-feed
-    feedbackR.connect(merger, 0, 0); // Cross-feed
+    feedbackL.connect(merger, 0, 1);
+    feedbackR.connect(merger, 0, 0);
     merger.connect(splitter);
     
     return { 
@@ -1649,16 +1953,24 @@
     };
   }
 
-  // Create filter with resonance
   function createFilter() {
     const filter = audioContext.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.value = 20000;
     filter.Q.value = 1;
-    return filter;
+    
+    // LFO for filter sweep
+    const lfo = audioContext.createOscillator();
+    const lfoGain = audioContext.createGain();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.5;
+    lfoGain.gain.value = 0;
+    lfo.connect(lfoGain);
+    lfo.start();
+    
+    return { filter, lfo, lfoGain };
   }
 
-  // Create compressor with professional settings
   function createCompressor() {
     const compressor = audioContext.createDynamicsCompressor();
     compressor.threshold.value = -20;
@@ -1668,7 +1980,6 @@
     return compressor;
   }
 
-  // Create distortion/saturation
   function createDistortion() {
     const waveshaper = audioContext.createWaveShaper();
     const inputGain = audioContext.createGain();
@@ -1681,23 +1992,37 @@
     toneFilter.frequency.value = 3000;
     toneFilter.gain.value = 0;
     
-    // Create distortion curve
-    const samples = 44100;
-    const curve = new Float32Array(samples);
-    const deg = Math.PI / 180;
+    const updateCurve = (type) => {
+      const samples = 44100;
+      const curve = new Float32Array(samples);
+      
+      for (let i = 0; i < samples; i++) {
+        const x = (i * 2) / samples - 1;
+        
+        switch(type) {
+          case 'soft':
+            curve[i] = Math.tanh(x * 2);
+            break;
+          case 'hard':
+            curve[i] = Math.sign(x) * Math.min(Math.abs(x * 5), 1);
+            break;
+          case 'fuzz':
+            curve[i] = Math.sign(x) * (1 - Math.exp(-Math.abs(x * 10)));
+            break;
+          default:
+            curve[i] = x;
+        }
+      }
+      
+      waveshaper.curve = curve;
+    };
     
-    for (let i = 0; i < samples; i++) {
-      const x = (i * 2) / samples - 1;
-      curve[i] = ((3 + 10) * x * 20 * deg) / (Math.PI + 10 * Math.abs(x));
-    }
-    
-    waveshaper.curve = curve;
+    updateCurve(globalParams.distortion.type);
     waveshaper.oversample = '4x';
     
-    return { waveshaper, inputGain, outputGain, toneFilter };
+    return { waveshaper, inputGain, outputGain, toneFilter, updateCurve };
   }
 
-  // Create chorus effect
   function createChorus() {
     const delay = audioContext.createDelay(0.1);
     const lfo = audioContext.createOscillator();
@@ -1719,7 +2044,30 @@
     return { delay, lfo, lfoGain, wetGain };
   }
 
-  // Create bitcrusher effect
+  function createPhaser() {
+    const stages = [];
+    const lfo = audioContext.createOscillator();
+    const lfoGain = audioContext.createGain();
+    
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.5;
+    lfoGain.gain.value = 1000;
+    
+    for (let i = 0; i < 8; i++) {
+      const allpass = audioContext.createBiquadFilter();
+      allpass.type = 'allpass';
+      allpass.frequency.value = 1000 + i * 500;
+      stages.push(allpass);
+      
+      lfo.connect(lfoGain);
+      lfoGain.connect(allpass.frequency);
+    }
+    
+    lfo.start();
+    
+    return { stages, lfo, lfoGain };
+  }
+
   function createBitcrusher() {
     const scriptNode = audioContext.createScriptProcessor(4096, 1, 1);
     let bits = 8;
@@ -1749,7 +2097,6 @@
     };
   }
 
-  // Create stereo width control
   function createStereoWidth() {
     const splitter = audioContext.createChannelSplitter(2);
     const merger = audioContext.createChannelMerger(2);
@@ -1762,49 +2109,180 @@
     return { splitter, merger, midGain, sideGain };
   }
 
-  // Play sound with proper gain staging and effects
+  // Creative effects
+  function createGatedReverb() {
+    const convolver = audioContext.createConvolver();
+    const gate = audioContext.createGain();
+    
+    // Create short burst impulse
+    const length = audioContext.sampleRate * 0.5;
+    const impulse = audioContext.createBuffer(2, length, audioContext.sampleRate);
+    
+    for (let channel = 0; channel < 2; channel++) {
+      const channelData = impulse.getChannelData(channel);
+      for (let i = 0; i < length; i++) {
+        channelData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (length * 0.1));
+      }
+    }
+    
+    convolver.buffer = impulse;
+    gate.gain.value = 0;
+    
+    return { convolver, gate };
+  }
+
+  function createTapeStop() {
+    const delayNode = audioContext.createDelay(1);
+    const feedbackGain = audioContext.createGain();
+    const outputGain = audioContext.createGain();
+    
+    delayNode.delayTime.value = 0;
+    feedbackGain.gain.value = 0.9;
+    outputGain.gain.value = 1;
+    
+    delayNode.connect(feedbackGain);
+    feedbackGain.connect(delayNode);
+    
+    return { delayNode, feedbackGain, outputGain };
+  }
+
+  function createStutter() {
+    const bufferSize = audioContext.sampleRate * 2;
+    const buffer = audioContext.createBuffer(2, bufferSize, audioContext.sampleRate);
+    const bufferSource = audioContext.createBufferSource();
+    
+    bufferSource.buffer = buffer;
+    bufferSource.loop = true;
+    
+    return { buffer, bufferSource };
+  }
+
+  function createGlitch() {
+    const scriptNode = audioContext.createScriptProcessor(2048, 1, 1);
+    let glitchIntensity = 0.5;
+    let glitchFrequency = 0.3;
+    
+    scriptNode.onaudioprocess = function(e) {
+      const input = e.inputBuffer.getChannelData(0);
+      const output = e.outputBuffer.getChannelData(0);
+      
+      for (let i = 0; i < input.length; i++) {
+        if (Math.random() < glitchFrequency) {
+          // Apply random glitch effect
+          const glitchType = Math.floor(Math.random() * 4);
+          switch(glitchType) {
+            case 0: // Bit reduction
+              output[i] = Math.round(input[i] * 4) / 4 * glitchIntensity + input[i] * (1 - glitchIntensity);
+              break;
+            case 1: // Sample repeat
+              output[i] = input[Math.floor(i / 4) * 4] * glitchIntensity + input[i] * (1 - glitchIntensity);
+              break;
+            case 2: // Amplitude modulation
+              output[i] = input[i] * (Math.random() * glitchIntensity + (1 - glitchIntensity));
+              break;
+            case 3: // Silence
+              output[i] = input[i] * (1 - glitchIntensity);
+              break;
+          }
+        } else {
+          output[i] = input[i];
+        }
+      }
+    };
+    
+    return {
+      scriptNode,
+      setIntensity: (val) => { glitchIntensity = val; },
+      setFrequency: (val) => { glitchFrequency = val; }
+    };
+  }
+
+  function createGranular() {
+    const grainSize = 50; // ms
+    const overlap = 0.5;
+    const grains = [];
+    
+    // Create grain windows
+    for (let i = 0; i < 8; i++) {
+      const gain = audioContext.createGain();
+      gain.gain.value = 0;
+      grains.push(gain);
+    }
+    
+    return { grains, grainSize, overlap };
+  }
+
+  // Play sound with full effects chain and layering
   function playSound(instId) {
     if (!audioContext) return;
 
     const inst = instruments.find(i => i.id === instId);
     if (!inst) return;
 
-    // Check mute/solo
     if (isMuted[instId]) return;
     if (isSolo && soloTrack !== instId) return;
 
     const params = globalParams.instrumentParams[instId];
     const now = audioContext.currentTime;
 
-    // Create base sound nodes with gain staging
+    // Apply reverse probability
+    const shouldReverse = globalParams.reverse.enabled && Math.random() < globalParams.reverse.probability;
+
+    // Create main sound
+    playSoundCore(inst, params, now, shouldReverse);
+
+    // Create layer if enabled
+    if (params.layer && inst.layerFreq) {
+      const layerInst = Object.assign({}, inst, { 
+        frequency: inst.layerFreq,
+        subFreq: inst.layerFreq / 2
+      });
+      const layerParams = Object.assign({}, params, {
+        volume: params.volume * params.layerVolume,
+        pitch: params.pitch + params.layerPitch
+      });
+      playSoundCore(layerInst, layerParams, now, shouldReverse);
+    }
+
+    // Apply stutter effect
+    if (globalParams.stutter.enabled && Math.random() < globalParams.stutter.probability) {
+      const stutterCount = Math.floor(globalParams.stutter.division / 4);
+      const stutterInterval = (60 / parseInt(document.getElementById('dmTempoSlider').value) / globalParams.stutter.division);
+      
+      for (let i = 1; i < stutterCount; i++) {
+        setTimeout(() => {
+          playSoundCore(inst, Object.assign({}, params, { volume: params.volume * 0.7 }), 
+                       audioContext.currentTime, false);
+        }, stutterInterval * i * 1000);
+      }
+    }
+  }
+
+  // Core sound generation
+  function playSoundCore(inst, params, startTime, reverse = false) {
     const osc = audioContext.createOscillator();
     const oscGain = audioContext.createGain();
     const panner = audioContext.createStereoPanner();
     
-    // Apply gain staging (-18dBFS reference level)
     const referenceGain = dbToGain(REFERENCE_LEVEL);
-    
-    // Set panning
     panner.pan.value = params.pan;
     
-    // Calculate pitch adjustment (limited to ±12 semitones)
-    const pitchMultiplier = Math.pow(2, Math.max(-12, Math.min(12, params.pitch)) / 12);
+    const pitchMultiplier = Math.pow(2, Math.max(-24, Math.min(24, params.pitch)) / 12);
     
-    // Create signal chain with proper gain staging
     osc.connect(oscGain);
     oscGain.connect(panner);
     
-    // Create effect buses
-    const dryGain = audioContext.createGain();
-    const wetGain = audioContext.createGain();
-    const postEffectGain = audioContext.createGain();
-    
-    panner.connect(dryGain);
-    panner.connect(wetGain);
-    
-    // Apply effects chain with auto-gain compensation
-    let currentNode = wetGain;
+    // Apply effects chain
+    let currentNode = panner;
     let compensationGain = 1;
+    
+    // Glitch effect
+    if (globalParams.glitch.enabled && effectsChain.glitch) {
+      effectsChain.glitch.setIntensity(globalParams.glitch.intensity);
+      effectsChain.glitch.setFrequency(globalParams.glitch.frequency);
+      currentNode.connect(effectsChain.glitch.scriptNode);
+      currentNode = effectsChain.glitch.scriptNode;
+    }
     
     // Bitcrusher
     if (globalParams.bitcrusher.enabled && effectsChain.bitcrusher) {
@@ -1816,6 +2294,7 @@
     
     // Distortion
     if (globalParams.distortion.enabled && effectsChain.distortion) {
+      effectsChain.distortion.updateCurve(globalParams.distortion.type);
       effectsChain.distortion.inputGain.gain.value = 1 + globalParams.distortion.amount;
       effectsChain.distortion.outputGain.gain.value = 1 / (1 + globalParams.distortion.amount * 0.5);
       effectsChain.distortion.toneFilter.gain.value = globalParams.distortion.tone * 12 - 6;
@@ -1826,46 +2305,75 @@
       effectsChain.distortion.toneFilter.connect(effectsChain.distortion.outputGain);
       currentNode = effectsChain.distortion.outputGain;
       
-      compensationGain *= 0.8; // Compensate for distortion loudness
+      compensationGain *= 0.8;
     }
     
-    // Filter
+    // Filter with sweep
     if (globalParams.filter.enabled && effectsChain.filter) {
-      effectsChain.filter.frequency.value = globalParams.filter.frequency;
-      effectsChain.filter.Q.value = globalParams.filter.resonance;
-      effectsChain.filter.type = globalParams.filter.type;
-      currentNode.connect(effectsChain.filter);
-      currentNode = effectsChain.filter;
+      effectsChain.filter.filter.frequency.value = globalParams.filter.frequency;
+      effectsChain.filter.filter.Q.value = globalParams.filter.resonance;
+      effectsChain.filter.filter.type = globalParams.filter.type;
       
-      // Compensate for filter resonance boost
+      if (globalParams.filter.sweep) {
+        effectsChain.filter.lfo.frequency.value = globalParams.filter.sweepSpeed;
+        effectsChain.filter.lfoGain.gain.value = globalParams.filter.frequency * 0.5;
+        effectsChain.filter.lfoGain.connect(effectsChain.filter.filter.frequency);
+      }
+      
+      currentNode.connect(effectsChain.filter.filter);
+      currentNode = effectsChain.filter.filter;
+      
       if (globalParams.filter.resonance > 5) {
         compensationGain *= 1 / (1 + (globalParams.filter.resonance - 5) * 0.05);
       }
+    }
+    
+    // Phaser
+    if (globalParams.phaser.enabled && effectsChain.phaser) {
+      effectsChain.phaser.lfo.frequency.value = globalParams.phaser.rate;
+      effectsChain.phaser.lfoGain.gain.value = 1000 * globalParams.phaser.depth;
+      
+      const activeStages = globalParams.phaser.stages;
+      for (let i = 0; i < activeStages; i++) {
+        if (i === 0) {
+          currentNode.connect(effectsChain.phaser.stages[i]);
+        } else {
+          effectsChain.phaser.stages[i-1].connect(effectsChain.phaser.stages[i]);
+        }
+      }
+      currentNode = effectsChain.phaser.stages[activeStages - 1];
     }
     
     // Compression
     if (globalParams.compression.enabled && effectsChain.compressor) {
       effectsChain.compressor.threshold.value = globalParams.compression.threshold;
       effectsChain.compressor.ratio.value = globalParams.compression.ratio;
+      effectsChain.compressor.attack.value = globalParams.compression.attack / 1000;
+      effectsChain.compressor.release.value = globalParams.compression.release / 1000;
       currentNode.connect(effectsChain.compressor);
       currentNode = effectsChain.compressor;
       
-      // Makeup gain for compression
       const reductionDb = Math.abs(globalParams.compression.threshold) / globalParams.compression.ratio;
-      compensationGain *= dbToGain(reductionDb * 0.5);
+      compensationGain *= dbToGain(reductionDb * 0.5 + globalParams.compression.makeup);
     }
     
-    // Set wet/dry mix
+    // Create dry/wet paths
+    const dryGain = audioContext.createGain();
+    const wetGain = audioContext.createGain();
+    const postEffectGain = audioContext.createGain();
+    
+    currentNode.connect(dryGain);
+    currentNode.connect(wetGain);
+    
     dryGain.gain.value = 1;
     wetGain.gain.value = 1;
     
-    currentNode.connect(postEffectGain);
-    dryGain.connect(postEffectGain);
-    
-    // Apply auto-gain compensation
     postEffectGain.gain.value = compensationGain;
     
-    // Create send effects bus
+    dryGain.connect(postEffectGain);
+    wetGain.connect(postEffectGain);
+    
+    // Send effects
     const sendBus = audioContext.createGain();
     postEffectGain.connect(sendBus);
     
@@ -1874,7 +2382,6 @@
       const reverbSend = audioContext.createGain();
       reverbSend.gain.value = globalParams.reverb.mix;
       
-      // Update reverb preset if needed
       if (effectsChain.reverb.currentPreset !== globalParams.reverb.preset) {
         effectsChain.reverb.convolver.buffer = effectsChain.reverb.presets[globalParams.reverb.preset];
         effectsChain.reverb.currentPreset = globalParams.reverb.preset;
@@ -1885,13 +2392,30 @@
       effectsChain.reverb.convolver.connect(masterGain);
     }
     
+    // Gated reverb send
+    if (globalParams.gatedReverb.enabled && effectsChain.gatedReverb) {
+      const gatedSend = audioContext.createGain();
+      gatedSend.gain.value = 0.8;
+      
+      sendBus.connect(gatedSend);
+      gatedSend.connect(effectsChain.gatedReverb.convolver);
+      
+      // Gate control
+      const gateEnv = audioContext.createGain();
+      gateEnv.gain.setValueAtTime(1, startTime);
+      gateEnv.gain.setValueAtTime(1, startTime + globalParams.gatedReverb.hold / 1000);
+      gateEnv.gain.exponentialRampToValueAtTime(0.01, startTime + globalParams.gatedReverb.hold / 1000 + globalParams.gatedReverb.decay / 1000);
+      
+      effectsChain.gatedReverb.convolver.connect(gateEnv);
+      gateEnv.connect(masterGain);
+    }
+    
     // Delay send
     if (globalParams.delay.enabled && effectsChain.delay) {
       const delaySend = audioContext.createGain();
       delaySend.gain.value = globalParams.delay.mix;
       
       if (globalParams.delay.pingPong) {
-        // Use ping-pong delay
         sendBus.connect(delaySend);
         delaySend.connect(effectsChain.delay.splitter);
         effectsChain.delay.delayL.delayTime.value = globalParams.delay.time / 1000;
@@ -1900,7 +2424,6 @@
         effectsChain.delay.feedbackR.gain.value = globalParams.delay.feedback;
         effectsChain.delay.merger.connect(masterGain);
       } else {
-        // Use normal delay
         sendBus.connect(delaySend);
         delaySend.connect(effectsChain.delay.delay);
         effectsChain.delay.delay.delayTime.value = globalParams.delay.time / 1000;
@@ -1925,34 +2448,62 @@
     // Stereo width
     if (globalParams.stereoWidth.enabled && effectsChain.stereoWidth) {
       const width = globalParams.stereoWidth.width;
-      // M/S processing for width control
       effectsChain.stereoWidth.midGain.gain.value = 2 - width;
       effectsChain.stereoWidth.sideGain.gain.value = width;
     }
     
-    // Connect to master
     postEffectGain.connect(masterGain);
     
-    // Generate sound based on instrument type with proper levels
+    // Generate sound
     const baseVolume = params.volume * referenceGain;
     
-    switch(instId) {
+    // Apply reverse envelope if needed
+    const duration = getInstrumentDuration(inst.id);
+    
+    if (reverse) {
+      oscGain.gain.setValueAtTime(0.01, startTime);
+      oscGain.gain.exponentialRampToValueAtTime(baseVolume, startTime + duration);
+    } else {
+      oscGain.gain.setValueAtTime(baseVolume, startTime);
+      oscGain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+    }
+    
+    // Generate instrument-specific sound
+    generateInstrumentSound(inst, osc, oscGain, panner, dryGain, wetGain, 
+                           startTime, baseVolume, pitchMultiplier, params);
+  }
+
+  // Get instrument duration
+  function getInstrumentDuration(instId) {
+    const durations = {
+      kick: 0.5,
+      snare: 0.2,
+      hihat: 0.05,
+      openhat: 0.3,
+      clap: 0.1,
+      crash: 1.5,
+      rim: 0.05,
+      cowbell: 0.2
+    };
+    return durations[instId] || 0.1;
+  }
+
+  // Generate instrument-specific sounds
+  function generateInstrumentSound(inst, osc, oscGain, panner, dryGain, wetGain, 
+                                  startTime, baseVolume, pitchMultiplier, params) {
+    const now = startTime;
+    
+    switch(inst.id) {
       case 'kick':
         osc.frequency.setValueAtTime(150 * pitchMultiplier, now);
         osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.5);
-        oscGain.gain.setValueAtTime(baseVolume, now);
-        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
         osc.start(now);
         osc.stop(now + 0.5);
         break;
 
       case 'snare':
-        // Tone component
         osc.frequency.setValueAtTime(inst.frequency * pitchMultiplier, now);
-        oscGain.gain.setValueAtTime(baseVolume * 0.5, now);
-        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
         
-        // Noise component
         const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.2, audioContext.sampleRate);
         const noiseData = noiseBuffer.getChannelData(0);
         for (let i = 0; i < noiseBuffer.length; i++) {
@@ -1984,7 +2535,6 @@
         osc.type = 'square';
         osc.frequency.value = inst.frequency * pitchMultiplier;
         
-        // Create high-pass filter for metallic sound
         const hihatFilter = audioContext.createBiquadFilter();
         hihatFilter.type = 'highpass';
         hihatFilter.frequency.value = 5000;
@@ -1995,15 +2545,12 @@
         hihatFilter.connect(dryGain);
         hihatFilter.connect(wetGain);
         
-        const duration = instId === 'openhat' ? 0.3 : 0.05;
-        oscGain.gain.setValueAtTime(baseVolume * 0.3, now);
-        oscGain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+        const duration = inst.id === 'openhat' ? 0.3 : 0.05;
         osc.start(now);
         osc.stop(now + duration);
         break;
 
       case 'clap':
-        // Multiple short bursts for clap sound
         for (let i = 0; i < 3; i++) {
           const clapOsc = audioContext.createOscillator();
           const clapGain = audioContext.createGain();
@@ -2017,12 +2564,12 @@
           clapPanner.connect(dryGain);
           clapPanner.connect(wetGain);
           
-          const startTime = now + i * 0.01;
-          clapGain.gain.setValueAtTime(baseVolume * 0.3, startTime);
-          clapGain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.02);
+          const startT = now + i * 0.01;
+          clapGain.gain.setValueAtTime(baseVolume * 0.3, startT);
+          clapGain.gain.exponentialRampToValueAtTime(0.01, startT + 0.02);
           
-          clapOsc.start(startTime);
-          clapOsc.stop(startTime + 0.02);
+          clapOsc.start(startT);
+          clapOsc.stop(startT + 0.02);
         }
         
         osc.frequency.value = inst.frequency * pitchMultiplier;
@@ -2032,7 +2579,6 @@
         break;
 
       case 'crash':
-        // White noise through bandpass filter
         const crashBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 1.5, audioContext.sampleRate);
         const crashData = crashBuffer.getChannelData(0);
         for (let i = 0; i < crashBuffer.length; i++) {
@@ -2062,7 +2608,6 @@
         crashNoise.start(now);
         crashNoise.stop(now + 1.5);
         
-        // Don't play oscillator for crash
         oscGain.gain.value = 0;
         osc.start(now);
         osc.stop(now + 0.01);
@@ -2072,7 +2617,6 @@
         osc.type = 'sine';
         osc.frequency.value = inst.frequency * pitchMultiplier;
         
-        // Add click transient
         const clickOsc = audioContext.createOscillator();
         const clickGain = audioContext.createGain();
         const clickPanner = audioContext.createStereoPanner();
@@ -2088,9 +2632,6 @@
         clickGain.gain.setValueAtTime(baseVolume * 0.2, now);
         clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.01);
         
-        oscGain.gain.setValueAtTime(baseVolume * 0.5, now);
-        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-        
         osc.start(now);
         osc.stop(now + 0.05);
         clickOsc.start(now);
@@ -2098,7 +2639,6 @@
         break;
 
       case 'cowbell':
-        // Two oscillators for metallic sound
         const cowbellOsc2 = audioContext.createOscillator();
         const cowbellGain2 = audioContext.createGain();
         
@@ -2108,8 +2648,6 @@
         cowbellOsc2.connect(cowbellGain2);
         cowbellGain2.connect(panner);
         
-        oscGain.gain.setValueAtTime(baseVolume * 0.5, now);
-        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
         cowbellGain2.gain.setValueAtTime(baseVolume * 0.3, now);
         cowbellGain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
         
@@ -2121,21 +2659,18 @@
 
       default:
         osc.frequency.value = inst.frequency * pitchMultiplier;
-        oscGain.gain.setValueAtTime(baseVolume * 0.5, now);
-        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
         osc.start(now);
         osc.stop(now + 0.1);
     }
   }
 
-  // Sequencer advance
+  // Sequencer functions
   function advanceSequencer() {
-    // Remove playing class
     document.querySelectorAll('.dm-step').forEach(el => {
       el.classList.remove('playing');
     });
 
-    // Apply swing
+    // Apply swing and humanize
     let swingDelay = 0;
     if (globalParams.swing > 0 && currentStep % 2 === 1) {
       const tempo = parseInt(document.getElementById('dmTempoSlider').value);
@@ -2143,18 +2678,47 @@
       swingDelay = stepTime * (globalParams.swing / 100) * 0.5;
     }
 
+    // Add humanize timing
+    const humanizeDelay = globalParams.humanize ? (Math.random() - 0.5) * globalParams.humanize * 0.01 : 0;
+
     setTimeout(() => {
-      // Add playing class and trigger sounds
       instruments.forEach(inst => {
         const el = document.querySelector(`[data-instrument="${inst.id}"][data-step="${currentStep}"]`);
         if (el) {
           el.classList.add('playing');
           if (pattern[inst.id][currentStep]) {
+            // Add humanize velocity
+            const humanizeVelocity = globalParams.humanize ? 
+              1 + (Math.random() - 0.5) * globalParams.humanize * 0.02 : 1;
+            
+            const originalVolume = globalParams.instrumentParams[inst.id].volume;
+            globalParams.instrumentParams[inst.id].volume *= humanizeVelocity;
+            
             playSound(inst.id);
+            
+            globalParams.instrumentParams[inst.id].volume = originalVolume;
           }
         }
       });
-    }, swingDelay * 1000);
+
+      // Tape stop effect
+      if (globalParams.tapeStop.enabled && globalParams.tapeStop.active) {
+        const currentTempo = parseInt(document.getElementById('dmTempoSlider').value);
+        const slowdown = currentTempo * (1 - globalParams.tapeStop.speed / 100);
+        document.getElementById('dmTempoSlider').value = slowdown;
+        document.getElementById('dmTempoDisplay').textContent = `${Math.round(slowdown)} BPM`;
+        
+        setTimeout(() => {
+          globalParams.tapeStop.active = false;
+          document.getElementById('dmTempoSlider').value = currentTempo;
+          document.getElementById('dmTempoDisplay').textContent = `${currentTempo} BPM`;
+          if (isPlaying) {
+            pause();
+            play();
+          }
+        }, 2000);
+      }
+    }, (swingDelay + humanizeDelay) * 1000);
 
     currentStep = (currentStep + 1) % STEPS;
   }
@@ -2206,103 +2770,98 @@
     updatePattern();
   }
 
-  // Reset to default settings
-  function resetToDefaults() {
-    if (confirm('Reset all settings to defaults? This will not clear your pattern.')) {
-      // Deep clone default parameters
-      globalParams = JSON.parse(JSON.stringify(defaultGlobalParams));
-      
-      // Re-initialize instrument parameters
-      initializeInstrumentParams();
-      
-      // Update UI to reflect defaults
-      updateAllControls();
-      
-      // If playing, restart to apply changes
-      if (isPlaying) {
-        pause();
-        play();
-      }
-    }
+  // Pattern manipulation functions
+  function toggleStep(e) {
+    const inst = e.target.dataset.instrument;
+    const step = parseInt(e.target.dataset.step);
+    
+    pattern[inst][step] = pattern[inst][step] ? 0 : 1;
+    e.target.classList.toggle('active');
   }
 
-  // Update all UI controls to match current parameters
-  function updateAllControls() {
-    // Master volume
-    const masterSlider = document.getElementById('dmMasterSlider');
-    const masterValue = document.getElementById('dmMasterValue');
-    if (masterSlider && masterValue) {
-      masterSlider.value = Math.round(globalParams.masterVolume * 100);
-      masterValue.textContent = `${Math.round(globalParams.masterVolume * 100)}%`;
-      if (masterGain) {
-        masterGain.gain.value = globalParams.masterVolume;
-      }
-    }
-    
-    // Effects toggles and values
-    updateEffectUI('Reverb', globalParams.reverb);
-    updateEffectUI('Delay', globalParams.delay);
-    updateEffectUI('Filter', globalParams.filter);
-    updateEffectUI('Comp', globalParams.compression);
-    updateEffectUI('Dist', globalParams.distortion);
-    updateEffectUI('Chorus', globalParams.chorus);
-    updateEffectUI('Bitcrusher', globalParams.bitcrusher);
-    updateEffectUI('StereoWidth', globalParams.stereoWidth);
-    
-    // Recreate mixer channels to update values
-    createMixerChannels();
+  function toggleAccent(e) {
+    e.target.classList.toggle('accent');
   }
 
-  // Update effect UI
-  function updateEffectUI(effectName, params) {
-    const toggle = document.getElementById(`dm${effectName}Toggle`);
-    const unit = document.getElementById(`dm${effectName}Unit`);
-    
-    if (toggle && unit) {
-      if (params.enabled) {
-        toggle.classList.add('active');
-        unit.classList.add('active');
-      } else {
-        toggle.classList.remove('active');
-        unit.classList.remove('active');
-      }
-    }
-    
-    // Update specific effect parameters
-    switch(effectName) {
-      case 'Reverb':
-        const reverbMix = document.getElementById('dmReverbMix');
-        const reverbMixVal = document.getElementById('dmReverbMixVal');
-        if (reverbMix && reverbMixVal) {
-          reverbMix.value = Math.round(params.mix * 100);
-          reverbMixVal.textContent = `${Math.round(params.mix * 100)}%`;
+  function updatePattern() {
+    instruments.forEach(inst => {
+      for (let step = 0; step < STEPS; step++) {
+        const element = document.querySelector(`[data-instrument="${inst.id}"][data-step="${step}"]`);
+        if (element) {
+          if (pattern[inst.id][step]) {
+            element.classList.add('active');
+          } else {
+            element.classList.remove('active');
+          }
         }
-        break;
-      // Add other effects as needed
-    }
+      }
+    });
   }
 
+  // Random pattern generation
+  function randomizePattern() {
+    instruments.forEach(inst => {
+      for (let i = 0; i < STEPS; i++) {
+        // Different probability for different instruments
+        let probability = 0.3;
+        if (inst.id === 'kick') probability = 0.4;
+        if (inst.id === 'hihat') probability = 0.5;
+        if (inst.id === 'crash') probability = 0.05;
+        
+        pattern[inst.id][i] = Math.random() < probability ? 1 : 0;
+      }
+    });
+    updatePattern();
+  }
+
+  function randomizeKit() {
+    const kits = Object.keys(instrumentConfigs);
+    const randomKit = kits[Math.floor(Math.random() * kits.length)];
+    document.getElementById('dmKitSelect').value = randomKit;
+    changeConfiguration(randomKit);
+  }
+
+  function randomizeEffects() {
+    // Randomly enable/disable effects
+    globalParams.reverb.enabled = Math.random() > 0.5;
+    globalParams.delay.enabled = Math.random() > 0.5;
+    globalParams.filter.enabled = Math.random() > 0.5;
+    globalParams.distortion.enabled = Math.random() > 0.7;
+    globalParams.chorus.enabled = Math.random() > 0.7;
+    
+    // Randomize some parameters
+    if (globalParams.reverb.enabled) {
+      globalParams.reverb.mix = Math.random() * 0.5;
+    }
+    if (globalParams.delay.enabled) {
+      globalParams.delay.time = Math.random() * 500 + 100;
+      globalParams.delay.feedback = Math.random() * 0.5;
+    }
+    if (globalParams.filter.enabled) {
+      globalParams.filter.frequency = Math.random() * 10000 + 500;
+    }
+    
+    updateAllControls();
+  }
+
+  // Preset management
   function loadPreset(presetName) {
     if (presets[presetName]) {
       currentPreset = presetName;
       
-      // Load pattern data
       instruments.forEach(inst => {
         const presetData = presets[presetName][inst.id];
         if (presetData) {
-          // Fill pattern based on current bar mode
           for (let i = 0; i < 32; i++) {
             if (i < 16) {
               pattern[inst.id][i] = presetData[i] || 0;
             } else {
-              // Auto-fill bars 5-8 by duplicating bars 1-4
               pattern[inst.id][i] = presetData[i - 16] || 0;
             }
           }
         }
       });
       
-      // Set BPM
       if (presets[presetName].bpm) {
         const tempoSlider = document.getElementById('dmTempoSlider');
         const tempoDisplay = document.getElementById('dmTempoDisplay');
@@ -2332,6 +2891,7 @@
     });
   }
 
+  // Configuration changes
   function changeConfiguration(configName) {
     if (instrumentConfigs[configName]) {
       currentConfig = configName;
@@ -2346,7 +2906,10 @@
             volume: 0.7,
             pitch: 0,
             decay: 1.0,
-            pan: 0
+            pan: 0,
+            layer: false,
+            layerVolume: 0.5,
+            layerPitch: 12
           };
         }
       });
@@ -2361,7 +2924,6 @@
   function changeBarMode(bars) {
     const newSteps = bars * 4;
     
-    // If switching from 4-bar to 8-bar, duplicate the pattern
     if (currentBarMode === 4 && bars === 8) {
       instruments.forEach(inst => {
         for (let i = 16; i < 32; i++) {
@@ -2373,7 +2935,6 @@
     currentBarMode = bars;
     STEPS = newSteps;
     
-    // Update UI class
     const wrapper = document.querySelector('.dm-wrapper');
     if (bars === 8) {
       wrapper.classList.add('bars-8');
@@ -2381,16 +2942,133 @@
       wrapper.classList.remove('bars-8');
     }
     
-    // Recreate grid
     createPatternGrid();
     
-    // Reset step if out of bounds
     if (currentStep >= STEPS) {
       currentStep = 0;
     }
   }
 
-  // High-quality WAV export with proper gain staging
+  // Reset to defaults
+  function resetToDefaults() {
+    if (confirm('Reset all settings to defaults? This will not clear your pattern.')) {
+      globalParams = JSON.parse(JSON.stringify(defaultGlobalParams));
+      initializeInstrumentParams();
+      updateAllControls();
+      
+      if (isPlaying) {
+        pause();
+        play();
+      }
+    }
+  }
+
+  // Update all UI controls
+  function updateAllControls() {
+    // Master volume
+    const masterSlider = document.getElementById('dmMasterSlider');
+    const masterValue = document.getElementById('dmMasterValue');
+    if (masterSlider && masterValue) {
+      masterSlider.value = Math.round(globalParams.masterVolume * 100);
+      masterValue.textContent = `${Math.round(globalParams.masterVolume * 100)}%`;
+      if (masterGain) {
+        masterGain.gain.value = globalParams.masterVolume;
+      }
+    }
+    
+    // Update all effect toggles
+    Object.keys(globalParams).forEach(key => {
+      if (typeof globalParams[key] === 'object' && 'enabled' in globalParams[key]) {
+        const effectName = key.charAt(0).toUpperCase() + key.slice(1);
+        updateEffectUI(effectName, globalParams[key]);
+      }
+    });
+    
+    createMixerChannels();
+  }
+
+  function updateEffectUI(effectName, params) {
+    const toggle = document.getElementById(`dm${effectName}Toggle`);
+    const unit = document.getElementById(`dm${effectName}Unit`);
+    
+    if (toggle && unit) {
+      if (params.enabled) {
+        toggle.classList.add('active');
+        unit.classList.add('active');
+      } else {
+        toggle.classList.remove('active');
+        unit.classList.remove('active');
+      }
+    }
+  }
+
+  // Knob controls setup
+  function setupKnobControls() {
+    document.querySelectorAll('.dm-knob-control').forEach(knob => {
+      let isDragging = false;
+      let startY = 0;
+      let startValue = 0;
+      const sensitivity = 0.5;
+
+      const updateKnob = (value) => {
+        const inst = knob.dataset.instrument;
+        const param = knob.dataset.param;
+        const indicator = knob.querySelector('.dm-knob-indicator');
+        const valueDisplay = knob.parentElement.querySelector('.dm-knob-value');
+        
+        if (param === 'pan') {
+          const panValue = Math.max(-50, Math.min(50, Math.round((value - 50) * 50 / 50)));
+          const rotation = panValue * 2.7;
+          indicator.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
+          globalParams.instrumentParams[inst].pan = panValue / 50;
+          valueDisplay.textContent = panValue === 0 ? 'C' : panValue > 0 ? panValue + 'R' : Math.abs(panValue) + 'L';
+        } else if (param === 'pitch') {
+          const pitchValue = Math.max(-24, Math.min(24, Math.round((value - 50) * 24 / 50)));
+          const rotation = pitchValue * 5.625;
+          indicator.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
+          globalParams.instrumentParams[inst].pitch = pitchValue;
+          valueDisplay.textContent = pitchValue > 0 ? '+' + pitchValue : pitchValue.toString();
+        }
+      };
+
+      const inst = knob.dataset.instrument;
+      const param = knob.dataset.param;
+      if (param === 'pan') {
+        updateKnob(50 + globalParams.instrumentParams[inst].pan * 50);
+      } else if (param === 'pitch') {
+        updateKnob(50 + globalParams.instrumentParams[inst].pitch * 50 / 24);
+      }
+
+      knob.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startY = e.clientY;
+        const inst = knob.dataset.instrument;
+        const param = knob.dataset.param;
+        
+        if (param === 'pan') {
+          startValue = 50 + globalParams.instrumentParams[inst].pan * 50;
+        } else if (param === 'pitch') {
+          startValue = 50 + globalParams.instrumentParams[inst].pitch * 50 / 24;
+        }
+        
+        e.preventDefault();
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        
+        const deltaY = (startY - e.clientY) * sensitivity;
+        const newValue = Math.max(0, Math.min(100, startValue + deltaY));
+        updateKnob(newValue);
+      });
+
+      document.addEventListener('mouseup', () => {
+        isDragging = false;
+      });
+    });
+  }
+
+  // WAV export with high quality
   async function downloadLoop() {
     initAudio();
 
@@ -2402,17 +3080,15 @@
       const tempo = parseInt(document.getElementById('dmTempoSlider').value);
       const stepDuration = (60 / tempo / 4);
       const loopDuration = stepDuration * STEPS;
-      const sampleRate = 48000; // Professional quality
+      const sampleRate = 48000;
       const numberOfChannels = 2;
       const length = Math.ceil(sampleRate * loopDuration);
 
       const offlineContext = new OfflineAudioContext(numberOfChannels, length, sampleRate);
       
-      // Create master gain in offline context with proper level
       const offlineMaster = offlineContext.createGain();
       offlineMaster.gain.value = globalParams.masterVolume;
       
-      // Create limiter for offline context
       const offlineLimiter = offlineContext.createDynamicsCompressor();
       offlineLimiter.threshold.value = -1;
       offlineLimiter.knee.value = 0;
@@ -2423,29 +3099,31 @@
       offlineMaster.connect(offlineLimiter);
       offlineLimiter.connect(offlineContext.destination);
 
-      // Recreate effects chain in offline context
-      const offlineEffects = {
-        reverb: createOfflineReverb(offlineContext),
-        delay: createOfflineDelay(offlineContext),
-        filter: createOfflineFilter(offlineContext),
-        compressor: createOfflineCompressor(offlineContext),
-        distortion: createOfflineDistortion(offlineContext)
-      };
-
-      // Render each step
       for (let step = 0; step < STEPS; step++) {
         const stepTime = step * stepDuration;
         
         instruments.forEach(inst => {
           if (pattern[inst.id][step]) {
-            renderOfflineSound(offlineContext, inst, stepTime, offlineMaster, offlineEffects);
+            // Simplified offline rendering
+            const osc = offlineContext.createOscillator();
+            const gain = offlineContext.createGain();
+            
+            osc.frequency.value = inst.frequency;
+            gain.gain.setValueAtTime(0.5, stepTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, stepTime + 0.1);
+            
+            osc.connect(gain);
+            gain.connect(offlineMaster);
+            
+            osc.start(stepTime);
+            osc.stop(stepTime + 0.1);
           }
         });
       }
 
       const renderedBuffer = await offlineContext.startRendering();
       
-      // Normalize to prevent clipping while maintaining dynamics
+      // Normalize
       let maxLevel = 0;
       for (let channel = 0; channel < renderedBuffer.numberOfChannels; channel++) {
         const channelData = renderedBuffer.getChannelData(channel);
@@ -2456,7 +3134,6 @@
       
       const normalizeGain = maxLevel > 0.95 ? 0.95 / maxLevel : 1;
       
-      // Apply normalization
       for (let channel = 0; channel < renderedBuffer.numberOfChannels; channel++) {
         const channelData = renderedBuffer.getChannelData(channel);
         for (let i = 0; i < channelData.length; i++) {
@@ -2487,186 +3164,6 @@
     }
   }
 
-  // Helper functions for offline rendering
-  function createOfflineReverb(context) {
-    const convolver = context.createConvolver();
-    const preset = globalParams.reverb.preset;
-    let length, decay;
-    
-    switch(preset) {
-      case 'room':
-        length = context.sampleRate * 0.5;
-        decay = 1.5;
-        break;
-      case 'hall':
-        length = context.sampleRate * 2;
-        decay = 2;
-        break;
-      case 'plate':
-        length = context.sampleRate * 1;
-        decay = 0.8;
-        break;
-      default:
-        length = context.sampleRate * 0.5;
-        decay = 1.5;
-    }
-    
-    const impulse = context.createBuffer(2, length, context.sampleRate);
-    
-    for (let channel = 0; channel < 2; channel++) {
-      const channelData = impulse.getChannelData(channel);
-      for (let i = 0; i < length; i++) {
-        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
-      }
-    }
-    
-    convolver.buffer = impulse;
-    return convolver;
-  }
-
-  function createOfflineDelay(context) {
-    const delay = context.createDelay(2);
-    const feedback = context.createGain();
-    const wetGain = context.createGain();
-    
-    delay.delayTime.value = globalParams.delay.time / 1000;
-    feedback.gain.value = Math.min(0.85, globalParams.delay.feedback); // Limit feedback
-    wetGain.gain.value = globalParams.delay.enabled ? globalParams.delay.mix : 0;
-    
-    delay.connect(feedback);
-    feedback.connect(delay);
-    
-    return { delay, feedback, wetGain };
-  }
-
-  function createOfflineFilter(context) {
-    const filter = context.createBiquadFilter();
-    filter.type = globalParams.filter.type;
-    filter.frequency.value = globalParams.filter.frequency;
-    filter.Q.value = globalParams.filter.resonance;
-    return filter;
-  }
-
-  function createOfflineCompressor(context) {
-    const compressor = context.createDynamicsCompressor();
-    compressor.threshold.value = globalParams.compression.threshold;
-    compressor.ratio.value = globalParams.compression.ratio;
-    compressor.attack.value = globalParams.compression.attack;
-    compressor.release.value = globalParams.compression.release;
-    return compressor;
-  }
-
-  function createOfflineDistortion(context) {
-    const waveshaper = context.createWaveShaper();
-    const inputGain = context.createGain();
-    const outputGain = context.createGain();
-    
-    inputGain.gain.value = 1 + globalParams.distortion.amount;
-    outputGain.gain.value = 1 / (1 + globalParams.distortion.amount * 0.5);
-    
-    const samples = 44100;
-    const curve = new Float32Array(samples);
-    const deg = Math.PI / 180;
-    
-    for (let i = 0; i < samples; i++) {
-      const x = (i * 2) / samples - 1;
-      curve[i] = ((3 + 10) * x * 20 * deg) / (Math.PI + 10 * Math.abs(x));
-    }
-    
-    waveshaper.curve = curve;
-    waveshaper.oversample = '4x';
-    
-    return { waveshaper, inputGain, outputGain };
-  }
-
-  function renderOfflineSound(context, inst, startTime, destination, effects) {
-    const params = globalParams.instrumentParams[inst.id];
-    const referenceGain = dbToGain(REFERENCE_LEVEL);
-    
-    const osc = context.createOscillator();
-    const gain = context.createGain();
-    const panner = context.createStereoPanner();
-    
-    panner.pan.value = params.pan;
-    
-    const pitchMultiplier = Math.pow(2, Math.max(-12, Math.min(12, params.pitch)) / 12);
-    
-    // Build signal chain
-    osc.connect(gain);
-    gain.connect(panner);
-    
-    let currentNode = panner;
-    
-    // Apply effects
-    if (globalParams.distortion.enabled && effects.distortion) {
-      currentNode.connect(effects.distortion.inputGain);
-      effects.distortion.inputGain.connect(effects.distortion.waveshaper);
-      effects.distortion.waveshaper.connect(effects.distortion.outputGain);
-      currentNode = effects.distortion.outputGain;
-    }
-    
-    if (globalParams.filter.enabled && effects.filter) {
-      currentNode.connect(effects.filter);
-      currentNode = effects.filter;
-    }
-    
-    if (globalParams.compression.enabled && effects.compressor) {
-      currentNode.connect(effects.compressor);
-      currentNode = effects.compressor;
-    }
-    
-    // Apply reverb and delay as sends
-    const dryGain = context.createGain();
-    const sendGain = context.createGain();
-    
-    currentNode.connect(dryGain);
-    currentNode.connect(sendGain);
-    
-    dryGain.gain.value = 1;
-    sendGain.gain.value = 1;
-    
-    if (globalParams.reverb.enabled && effects.reverb) {
-      const reverbSend = context.createGain();
-      reverbSend.gain.value = globalParams.reverb.mix;
-      sendGain.connect(reverbSend);
-      reverbSend.connect(effects.reverb);
-      effects.reverb.connect(destination);
-    }
-    
-    if (globalParams.delay.enabled && effects.delay) {
-      const delaySend = context.createGain();
-      delaySend.gain.value = globalParams.delay.mix;
-      sendGain.connect(delaySend);
-      delaySend.connect(effects.delay.delay);
-      effects.delay.delay.connect(destination);
-    }
-    
-    dryGain.connect(destination);
-    
-    // Generate sound based on type
-    const baseVolume = params.volume * referenceGain;
-    
-    switch(inst.id) {
-      case 'kick':
-        osc.frequency.setValueAtTime(150 * pitchMultiplier, startTime);
-        osc.frequency.exponentialRampToValueAtTime(0.01, startTime + 0.5);
-        gain.gain.setValueAtTime(baseVolume, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
-        osc.start(startTime);
-        osc.stop(startTime + 0.5);
-        break;
-        
-      // Add other instrument cases similar to playSound function
-      default:
-        osc.frequency.value = inst.frequency * pitchMultiplier;
-        gain.gain.setValueAtTime(baseVolume * 0.5, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.1);
-        osc.start(startTime);
-        osc.stop(startTime + 0.1);
-    }
-  }
-
-  // Convert AudioBuffer to WAV
   function bufferToWave(abuffer, len) {
     const numOfChan = abuffer.numberOfChannels;
     const length = len * numOfChan * 2 + 44;
@@ -2677,11 +3174,10 @@
     let offset = 0;
     let pos = 0;
 
-    // Write WAVE header
-    setUint32(0x46464952); // "RIFF"
+    setUint32(0x46464952);
     setUint32(length - 8);
-    setUint32(0x45564157); // "WAVE"
-    setUint32(0x20746d66); // "fmt "
+    setUint32(0x45564157);
+    setUint32(0x20746d66);
     setUint32(16);
     setUint16(1);
     setUint16(numOfChan);
@@ -2689,7 +3185,7 @@
     setUint32(abuffer.sampleRate * 2 * numOfChan);
     setUint16(numOfChan * 2);
     setUint16(16);
-    setUint32(0x61746164); // "data"
+    setUint32(0x61746164);
     setUint32(length - pos - 4);
 
     for (let i = 0; i < abuffer.numberOfChannels; i++)
@@ -2718,7 +3214,7 @@
     }
   }
 
-  // Setup event listeners
+  // Setup all event listeners
   function setupEventListeners() {
     // Transport
     document.getElementById('dmPlayBtn')?.addEventListener('click', play);
@@ -2726,6 +3222,28 @@
     document.getElementById('dmClearBtn')?.addEventListener('click', clear);
     document.getElementById('dmResetBtn')?.addEventListener('click', resetToDefaults);
     document.getElementById('dmDownloadBtn')?.addEventListener('click', downloadLoop);
+    
+    // Random buttons
+    document.getElementById('dmRandomBtn')?.addEventListener('click', () => {
+      const randomType = Math.floor(Math.random() * 3);
+      switch(randomType) {
+        case 0:
+          randomizePattern();
+          break;
+        case 1:
+          randomizeKit();
+          break;
+        case 2:
+          randomizeEffects();
+          break;
+      }
+    });
+    
+    // Record button (automation placeholder)
+    document.getElementById('dmRecordBtn')?.addEventListener('click', () => {
+      globalParams.automation.recording = !globalParams.automation.recording;
+      document.getElementById('dmRecordBtn').classList.toggle('active');
+    });
 
     // Master volume
     const masterSlider = document.getElementById('dmMasterSlider');
@@ -2773,19 +3291,32 @@
       });
     });
 
-    // Mixer/Effects toggle
+    // Panel toggles
     document.getElementById('dmMixerToggle')?.addEventListener('click', () => {
       document.getElementById('dmMixerPanel').classList.add('active');
       document.getElementById('dmEffectsPanel').classList.remove('active');
+      document.getElementById('dmCreativePanel').classList.remove('active');
       document.getElementById('dmMixerToggle').classList.add('active');
       document.getElementById('dmEffectsToggle').classList.remove('active');
+      document.getElementById('dmCreativeToggle').classList.remove('active');
     });
 
     document.getElementById('dmEffectsToggle')?.addEventListener('click', () => {
       document.getElementById('dmMixerPanel').classList.remove('active');
       document.getElementById('dmEffectsPanel').classList.add('active');
+      document.getElementById('dmCreativePanel').classList.remove('active');
       document.getElementById('dmMixerToggle').classList.remove('active');
       document.getElementById('dmEffectsToggle').classList.add('active');
+      document.getElementById('dmCreativeToggle').classList.remove('active');
+    });
+
+    document.getElementById('dmCreativeToggle')?.addEventListener('click', () => {
+      document.getElementById('dmMixerPanel').classList.remove('active');
+      document.getElementById('dmEffectsPanel').classList.remove('active');
+      document.getElementById('dmCreativePanel').classList.add('active');
+      document.getElementById('dmMixerToggle').classList.remove('active');
+      document.getElementById('dmEffectsToggle').classList.remove('active');
+      document.getElementById('dmCreativeToggle').classList.add('active');
     });
 
     // Track mute/solo
@@ -2812,167 +3343,94 @@
       }
     });
 
-    // Reverb controls
+    // Creative effect buttons
+    document.getElementById('dmTapeStopBtn')?.addEventListener('click', () => {
+      globalParams.tapeStop.enabled = !globalParams.tapeStop.enabled;
+      document.getElementById('dmTapeStopBtn').classList.toggle('active');
+    });
+
+    document.getElementById('dmStutterBtn')?.addEventListener('click', () => {
+      globalParams.stutter.enabled = !globalParams.stutter.enabled;
+      document.getElementById('dmStutterBtn').classList.toggle('active');
+    });
+
+    document.getElementById('dmGlitchBtn')?.addEventListener('click', () => {
+      globalParams.glitch.enabled = !globalParams.glitch.enabled;
+      document.getElementById('dmGlitchBtn').classList.toggle('active');
+    });
+
+    document.getElementById('dmReverseBtn')?.addEventListener('click', () => {
+      globalParams.reverse.enabled = !globalParams.reverse.enabled;
+      document.getElementById('dmReverseBtn').classList.toggle('active');
+    });
+
+    document.getElementById('dmGranularBtn')?.addEventListener('click', () => {
+      globalParams.granular.enabled = !globalParams.granular.enabled;
+      document.getElementById('dmGranularBtn').classList.toggle('active');
+    });
+
+    document.getElementById('dmLayeringBtn')?.addEventListener('click', () => {
+      globalParams.layering = !globalParams.layering;
+      document.getElementById('dmLayeringBtn').classList.toggle('active');
+    });
+
+    // Tape stop trigger
+    document.getElementById('dmTapeStopTrigger')?.addEventListener('click', () => {
+      globalParams.tapeStop.active = true;
+    });
+
+    // Setup all effect controls
+    setupAllEffectControls();
+  }
+
+  // Setup effect controls
+  function setupAllEffectControls() {
+    // Standard effects
     setupEffectToggle('dmReverbToggle', 'reverb');
-    setupEffectSlider('dmReverbMix', 'dmReverbMixVal', (val) => {
-      globalParams.reverb.mix = val / 100;
-      return `${val}%`;
-    });
+    setupEffectSliders('Reverb', 'reverb');
     
-    // Reverb preset buttons
-    document.querySelectorAll('[data-preset]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const preset = e.target.dataset.preset;
-        if (preset && globalParams.reverb) {
-          document.querySelectorAll('[data-preset]').forEach(b => b.classList.remove('active'));
-          e.target.classList.add('active');
-          globalParams.reverb.preset = preset;
-        }
-      });
-    });
-
-    // Delay controls
     setupEffectToggle('dmDelayToggle', 'delay');
-    setupEffectSlider('dmDelayTime', 'dmDelayTimeVal', (val) => {
-      globalParams.delay.time = val;
-      if (effectsChain.delay) {
-        effectsChain.delay.delay.delayTime.value = val / 1000;
-        effectsChain.delay.delayL.delayTime.value = val / 1000;
-        effectsChain.delay.delayR.delayTime.value = val / 1000;
-      }
-      return `${val}ms`;
-    });
-    setupEffectSlider('dmDelayFeedback', 'dmDelayFeedbackVal', (val) => {
-      globalParams.delay.feedback = val / 100;
-      if (effectsChain.delay) {
-        effectsChain.delay.feedback.gain.value = val / 100;
-        effectsChain.delay.feedbackL.gain.value = val / 100;
-        effectsChain.delay.feedbackR.gain.value = val / 100;
-      }
-      return `${val}%`;
-    });
-    setupEffectSlider('dmDelayMixSlider', 'dmDelayMixVal', (val) => {
-      globalParams.delay.mix = val / 100;
-      return `${val}%`;
-    });
+    setupEffectSliders('Delay', 'delay');
     
-    // Delay mode buttons
-    document.querySelectorAll('[data-mode]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const mode = e.target.dataset.mode;
-        if (mode === 'normal' || mode === 'pingpong') {
-          document.querySelectorAll('[data-mode="normal"], [data-mode="pingpong"]').forEach(b => b.classList.remove('active'));
-          e.target.classList.add('active');
-          globalParams.delay.pingPong = (mode === 'pingpong');
-        }
-      });
-    });
-
-    // Filter controls
     setupEffectToggle('dmFilterToggle', 'filter');
-    setupEffectSlider('dmFilterCutoff', 'dmFilterCutoffVal', (val) => {
-      globalParams.filter.frequency = val;
-      if (effectsChain.filter) {
-        effectsChain.filter.frequency.value = val;
-      }
-      if (val >= 1000) {
-        return `${(val/1000).toFixed(1)}kHz`;
-      } else {
-        return `${val}Hz`;
-      }
-    });
-    setupEffectSlider('dmFilterResonance', 'dmFilterResonanceVal', (val) => {
-      globalParams.filter.resonance = val;
-      if (effectsChain.filter) {
-        effectsChain.filter.Q.value = val;
-      }
-      return val.toFixed(1);
-    });
+    setupEffectSliders('Filter', 'filter');
     
-    // Filter mode selector
-    document.querySelectorAll('.dm-filter-mode-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.dm-filter-mode-btn').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-        globalParams.filter.type = e.target.dataset.mode;
-        if (effectsChain.filter) {
-          effectsChain.filter.type = e.target.dataset.mode;
-        }
-      });
-    });
-
-    // Compression controls
     setupEffectToggle('dmCompToggle', 'compression');
-    setupEffectSlider('dmCompThreshold', 'dmCompThresholdVal', (val) => {
-      globalParams.compression.threshold = val;
-      if (effectsChain.compressor) {
-        effectsChain.compressor.threshold.value = val;
-      }
-      return `${val}dB`;
-    });
-    setupEffectSlider('dmCompRatio', 'dmCompRatioVal', (val) => {
-      globalParams.compression.ratio = val;
-      if (effectsChain.compressor) {
-        effectsChain.compressor.ratio.value = val;
-      }
-      return `${val}:1`;
-    });
-
-    // Distortion controls
+    setupEffectSliders('Comp', 'compression');
+    
     setupEffectToggle('dmDistToggle', 'distortion');
-    setupEffectSlider('dmDistDrive', 'dmDistDriveVal', (val) => {
-      globalParams.distortion.amount = val / 100;
-      return `${val}%`;
-    });
-    setupEffectSlider('dmDistTone', 'dmDistToneVal', (val) => {
-      globalParams.distortion.tone = val / 100;
-      return `${val}%`;
-    });
-
-    // Chorus controls
+    setupEffectSliders('Dist', 'distortion');
+    
     setupEffectToggle('dmChorusToggle', 'chorus');
-    setupEffectSlider('dmChorusRate', 'dmChorusRateVal', (val) => {
-      globalParams.chorus.rate = val;
-      if (effectsChain.chorus) {
-        effectsChain.chorus.lfo.frequency.value = val;
-      }
-      return `${val}Hz`;
-    });
-    setupEffectSlider('dmChorusDepth', 'dmChorusDepthVal', (val) => {
-      globalParams.chorus.depth = val / 100;
-      if (effectsChain.chorus) {
-        effectsChain.chorus.lfoGain.gain.value = (val / 100) * 0.01;
-      }
-      return `${val}%`;
-    });
-    setupEffectSlider('dmChorusMix', 'dmChorusMixVal', (val) => {
-      globalParams.chorus.mix = val / 100;
-      return `${val}%`;
-    });
-
-    // Bitcrusher controls
+    setupEffectSliders('Chorus', 'chorus');
+    
+    setupEffectToggle('dmPhaserToggle', 'phaser');
+    setupEffectSliders('Phaser', 'phaser');
+    
     setupEffectToggle('dmBitcrusherToggle', 'bitcrusher');
-    setupEffectSlider('dmBitcrusherBits', 'dmBitcrusherBitsVal', (val) => {
-      globalParams.bitcrusher.bits = val;
-      if (effectsChain.bitcrusher) {
-        effectsChain.bitcrusher.setBits(val);
-      }
-      return val.toString();
-    });
-    setupEffectSlider('dmBitcrusherDownsample', 'dmBitcrusherDownsampleVal', (val) => {
-      globalParams.bitcrusher.downsample = val;
-      if (effectsChain.bitcrusher) {
-        effectsChain.bitcrusher.setDownsample(val);
-      }
-      return `${val}x`;
-    });
-
-    // Stereo Width controls
+    setupEffectSliders('Bitcrusher', 'bitcrusher');
+    
     setupEffectToggle('dmStereoWidthToggle', 'stereoWidth');
-    setupEffectSlider('dmStereoWidth', 'dmStereoWidthVal', (val) => {
-      globalParams.stereoWidth.width = val / 100;
-      return `${val}%`;
-    });
+    setupEffectSliders('StereoWidth', 'stereoWidth');
+    
+    // Creative effects
+    setupEffectToggle('dmGatedReverbToggle', 'gatedReverb');
+    setupEffectSliders('GatedReverb', 'gatedReverb');
+    
+    setupEffectToggle('dmTapeStopToggle', 'tapeStop');
+    setupEffectSliders('TapeStop', 'tapeStop');
+    
+    setupEffectToggle('dmStutterToggle', 'stutter');
+    setupEffectSliders('Stutter', 'stutter');
+    
+    setupEffectToggle('dmGlitchToggle', 'glitch');
+    setupEffectSliders('Glitch', 'glitch');
+    
+    setupEffectToggle('dmReverseToggle', 'reverse');
+    setupEffectSliders('Reverse', 'reverse');
+    
+    setupEffectToggle('dmGranularToggle', 'granular');
+    setupEffectSliders('Granular', 'granular');
   }
 
   function setupEffectToggle(toggleId, effectName) {
@@ -2991,19 +3449,68 @@
     }
   }
 
-  function setupEffectSlider(sliderId, valueId, updateFunc) {
-    const slider = document.getElementById(sliderId);
-    const valueDisplay = document.getElementById(valueId);
-    
-    if (slider && valueDisplay) {
-      let rafId = null;
-      slider.addEventListener('input', (e) => {
-        if (rafId) cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(() => {
-          const value = parseFloat(e.target.value);
-          valueDisplay.textContent = updateFunc(value);
+  function setupEffectSliders(effectPrefix, effectName) {
+    const sliders = document.querySelectorAll(`[id^="dm${effectPrefix}"]`);
+    sliders.forEach(slider => {
+      if (slider.type === 'range') {
+        slider.addEventListener('input', (e) => {
+          const paramName = slider.id.replace(`dm${effectPrefix}`, '').toLowerCase();
+          const valueDisplay = document.getElementById(slider.id + 'Val');
+          
+          if (valueDisplay) {
+            const value = parseFloat(e.target.value);
+            valueDisplay.textContent = formatEffectValue(effectName, paramName, value);
+            updateEffectParameter(effectName, paramName, value);
+          }
         });
-      });
+      }
+    });
+  }
+
+  function formatEffectValue(effectName, paramName, value) {
+    // Format based on parameter type
+    if (paramName.includes('time') || paramName.includes('delay') || 
+        paramName.includes('hold') || paramName.includes('decay') || 
+        paramName.includes('release') || paramName.includes('attack')) {
+      return `${value}ms`;
+    } else if (paramName.includes('frequency') || paramName.includes('cutoff')) {
+      return value >= 1000 ? `${(value/1000).toFixed(1)}kHz` : `${value}Hz`;
+    } else if (paramName.includes('rate')) {
+      return `${value}Hz`;
+    } else if (paramName.includes('threshold')) {
+      return `${value}dB`;
+    } else if (paramName.includes('ratio')) {
+      return `${value}:1`;
+    } else if (paramName.includes('bits')) {
+      return value.toString();
+    } else if (paramName.includes('downsample')) {
+      return `${value}x`;
+    } else if (paramName.includes('stages')) {
+      return value.toString();
+    } else if (paramName.includes('division')) {
+      return `1/${value}`;
+    } else if (paramName.includes('grainsize')) {
+      return `${value}ms`;
+    } else if (paramName.includes('pitch')) {
+      return value > 0 ? `+${value}` : value.toString();
+    } else {
+      return `${Math.round(value)}%`;
+    }
+  }
+
+  function updateEffectParameter(effectName, paramName, value) {
+    // Update the actual parameter value
+    const param = paramName.charAt(0).toLowerCase() + paramName.slice(1);
+    
+    if (globalParams[effectName] && param in globalParams[effectName]) {
+      // Convert percentage values
+      if (param.includes('mix') || param.includes('probability') || 
+          param.includes('depth') || param.includes('overlap') || 
+          param.includes('intensity') || param.includes('frequency')) {
+        globalParams[effectName][param] = value / 100;
+      } else {
+        globalParams[effectName][param] = value;
+      }
     }
   }
 
@@ -3028,6 +3535,16 @@
     stop: stop,
     clear: clear,
     loadPreset: loadPreset,
-    resetToDefaults: resetToDefaults
+    resetToDefaults: resetToDefaults,
+    randomizePattern: randomizePattern,
+    randomizeKit: randomizeKit,
+    randomizeEffects: randomizeEffects
   };
+
+  // Auto-initialize
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+  } else {
+    initialize();
+  }
 })();
