@@ -186,9 +186,9 @@ function App() {
       setTimeout(() => {
         window.unmastered.initialize('newest');
       }, 100);
-    } else if (activeTab === 'drum-machine' && window.drumMachine && typeof window.drumMachine.initialize === 'function') {
+    } else if (activeTab === 'drum-machine' && window.drumMachinePro && typeof window.drumMachinePro.initialize === 'function') {
       setTimeout(() => {
-        window.drumMachine.initialize();
+        window.drumMachinePro.initialize();
       }, 100);
     }
   }, [activeTab]);

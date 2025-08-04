@@ -397,7 +397,324 @@ h1, h2, h3, h4 {
   gap: 1.5rem;
 }
 
-/* Responsive improvements */
+/* ============================================ */
+/* DRUM MACHINE PRO STYLES - ENHANCED VERSION  */
+/* ============================================ */
+
+/* Drum Machine Pro Controls Wrapper */
+.drum-controls-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+/* Drum section animation */
+.drum-section {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Enhanced parameter sliders */
+.drum-param-slider {
+  accent-color: #00a651;
+  cursor: pointer;
+}
+
+.drum-param-slider::-webkit-slider-thumb {
+  cursor: pointer;
+}
+
+.drum-param-slider::-moz-range-thumb {
+  cursor: pointer;
+}
+
+/* Effect toggle states */
+.drum-effect-toggle {
+  transition: all 0.2s ease;
+}
+
+.drum-effect-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: 2px 2px 0px #00a651;
+}
+
+.drum-effect-toggle.active {
+  background: #00a651 !important;
+  color: #1a1a1a !important;
+  font-weight: bold;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Instrument controls panel animation */
+.drum-instrument-controls {
+  transition: all 0.3s ease;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+}
+
+.drum-instrument-controls.active {
+  opacity: 1;
+  max-height: 500px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Velocity visualization on step buttons */
+.drum-step-btn[style*="--velocity-height"] {
+  position: relative;
+}
+
+.drum-step-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--velocity-height);
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.3), transparent);
+  pointer-events: none;
+  border-radius: 0 0 0.25rem 0.25rem;
+}
+
+/* Drum step button enhancements */
+.drum-step-btn {
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.drum-step-btn.playing::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: radial-gradient(circle, rgba(0, 166, 81, 0.4), transparent);
+  border-radius: 0.25rem;
+  animation: pulse-ring 0.3s ease-out;
+}
+
+@keyframes pulse-ring {
+  from {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+/* Settings gear button */
+button[onclick*="toggleInstrumentControls"] {
+  transition: transform 0.3s ease;
+}
+
+button[onclick*="toggleInstrumentControls"]:hover {
+  transform: rotate(90deg);
+}
+
+/* Drum track label as clickable */
+.drum-track-label {
+  transition: all 0.2s ease;
+}
+
+.drum-track-label:hover {
+  color: #00ff7f !important;
+  transform: translateX(2px);
+}
+
+/* Control grid refinements */
+.drum-controls-grid {
+  position: relative;
+}
+
+.drum-controls-grid::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 2px;
+  height: 60%;
+  background: linear-gradient(to bottom, transparent, #00a651, transparent);
+  transform: translateY(-50%);
+  opacity: 0.3;
+}
+
+/* Section title styling */
+.drum-section-title {
+  position: relative;
+  display: inline-block;
+}
+
+.drum-section-title::before,
+.drum-section-title::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 50px;
+  height: 2px;
+  background: linear-gradient(to right, transparent, #00a651);
+  transform: translateY(-50%);
+}
+
+.drum-section-title::before {
+  right: 100%;
+  margin-right: 1rem;
+}
+
+.drum-section-title::after {
+  left: 100%;
+  margin-left: 1rem;
+  background: linear-gradient(to left, transparent, #00a651);
+}
+
+/* Preset button enhanced states */
+.drum-preset-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.drum-preset-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: radial-gradient(circle, rgba(0, 166, 81, 0.3), transparent);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.drum-preset-btn:hover::before {
+  width: 100%;
+  height: 100%;
+}
+
+/* Config select enhanced */
+.drum-config-select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 166, 81, 0.3);
+}
+
+/* Responsive drum machine improvements */
+@media (max-width: 1024px) {
+  .drum-controls-wrapper {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .drum-section {
+    padding: 1.25rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .drum-section {
+    padding: 1rem !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  .drum-controls-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem;
+  }
+  
+  .drum-param-label {
+    min-width: 100px;
+    font-size: 0.75rem;
+  }
+  
+  .drum-param-value {
+    font-size: 0.75rem;
+  }
+  
+  .drum-section-title {
+    font-size: 1rem;
+  }
+  
+  .drum-section-title::before,
+  .drum-section-title::after {
+    width: 30px;
+  }
+  
+  .drum-instrument-controls {
+    padding: 0.75rem !important;
+  }
+  
+  .drum-instrument-controls > div {
+    grid-template-columns: 1fr !important;
+  }
+  
+  /* Mobile step buttons */
+  .drum-step-btn {
+    min-height: 35px;
+    min-width: 35px;
+  }
+  
+  .drum-step-4n {
+    margin-left: 0.25rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Ultra compact for small phones */
+  .drum-track-label {
+    font-size: 0.7rem !important;
+    padding-right: 0.25rem !important;
+  }
+  
+  .drum-control-btn {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .drum-preset-btn {
+    padding: 0.4rem 0.75rem !important;
+    font-size: 0.7rem !important;
+  }
+}
+
+/* Accessibility improvements */
+.drum-step-btn:focus,
+.drum-control-btn:focus,
+.drum-preset-btn:focus,
+.drum-effect-toggle:focus {
+  outline: 2px solid #00ff7f;
+  outline-offset: 2px;
+}
+
+/* Dark mode overrides for better contrast */
+@media (prefers-color-scheme: dark) {
+  .drum-param-slider {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  .drum-section {
+    background: rgba(26, 26, 26, 0.9) !important;
+  }
+}
+
+/* Performance optimizations */
+.drum-step-btn,
+.drum-control-btn,
+.drum-effect-toggle {
+  will-change: transform;
+}
+
+/* Responsive improvements general */
 @media (max-width: 1024px) {
   .stat-grid {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
