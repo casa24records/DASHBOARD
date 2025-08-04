@@ -41,7 +41,17 @@
   // State
   let currentSection = config.defaultSection;
   let initialized = false;
-  let sectionInitialized = {};
+
+  /**
+   * Wait for CollectiveOverview module to be loaded
+   */
+  function waitForCollectiveOverview(callback) {
+    if (window.CollectiveOverviewLoaded) {
+      callback();
+    } else {
+      setTimeout(() => waitForCollectiveOverview(callback), 50);
+    }
+  }
 
   /**
    * Initialize the main controller
@@ -57,8 +67,14 @@
     const hash = window.location.hash.substring(1);
     const initialSection = (hash && config.sections[hash]) ? hash : config.defaultSection;
 
-    // Initialize default section
-    showSection(initialSection);
+    // If initial section is collective, wait for it to load
+    if (initialSection === 'collective') {
+      waitForCollectiveOverview(() => {
+        showSection(initialSection);
+      });
+    } else {
+      showSection(initialSection);
+    }
 
     // Handle browser back/forward
     window.addEventListener('popstate', handlePopState);
@@ -114,10 +130,18 @@
     }
 
     // Initialize section after making it visible
-    // Use requestAnimationFrame to ensure DOM has updated
-    requestAnimationFrame(() => {
-      initializeSection(sectionId);
-    });
+    // For collective overview, ensure module is loaded first
+    if (sectionId === 'collective') {
+      waitForCollectiveOverview(() => {
+        requestAnimationFrame(() => {
+          initializeSection(sectionId);
+        });
+      });
+    } else {
+      requestAnimationFrame(() => {
+        initializeSection(sectionId);
+      });
+    }
 
     // Update URL without page reload
     history.pushState({ section: sectionId }, '', `#${sectionId}`);
