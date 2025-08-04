@@ -364,13 +364,7 @@
     refresh: refresh
   };
 
-  // Auto-initialize when tab is shown
-  document.addEventListener('DOMContentLoaded', () => {
-    // Check if this is the default/active section
-    const hash = window.location.hash.substring(1);
-    if (!hash || hash === 'collective') {
-      initialize();
-    }
-  });
+  // DO NOT auto-initialize - let main.js handle initialization
+  // Remove the DOMContentLoaded auto-initialization that was causing conflicts
 
 })();
