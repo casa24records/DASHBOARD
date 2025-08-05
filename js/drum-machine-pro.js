@@ -404,28 +404,16 @@
             border-radius: 2px;
             cursor: pointer;
             -webkit-appearance: none;
-            appearance: none;
           }
 
           .dm-master-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            appearance: none;
             width: 16px;
             height: 16px;
             background: #00a651;
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
-          }
-
-          .dm-master-slider::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            background: #00a651;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
-            border: none;
           }
 
           .dm-master-value {
@@ -551,28 +539,16 @@
             border-radius: 2px;
             cursor: pointer;
             -webkit-appearance: none;
-            appearance: none;
           }
 
           .dm-tempo-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            appearance: none;
             width: 16px;
             height: 16px;
             background: #00a651;
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
-          }
-
-          .dm-tempo-slider::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            background: #00a651;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
-            border: none;
           }
 
           /* Creative Effects Section */
@@ -927,51 +903,14 @@
           }
 
           .dm-mixer-fader {
-            width: 100%;
+            writing-mode: bt-lr;
+            -webkit-appearance: slider-vertical;
+            width: 30px;
             height: 100px;
-            -webkit-appearance: none;
-            appearance: none;
-            background: transparent;
+            background: #333;
             outline: none;
             margin: 0 auto;
             display: block;
-            transform: rotate(-90deg);
-            transform-origin: center;
-            cursor: pointer;
-          }
-
-          .dm-mixer-fader::-webkit-slider-track {
-            width: 100%;
-            height: 4px;
-            background: #333;
-            border-radius: 2px;
-          }
-
-          .dm-mixer-fader::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 16px;
-            height: 16px;
-            background: #00a651;
-            border-radius: 50%;
-            cursor: pointer;
-            margin-top: -6px;
-          }
-
-          .dm-mixer-fader::-moz-range-track {
-            width: 100%;
-            height: 4px;
-            background: #333;
-            border-radius: 2px;
-          }
-
-          .dm-mixer-fader::-moz-range-thumb {
-            width: 16px;
-            height: 16px;
-            background: #00a651;
-            border-radius: 50%;
-            cursor: pointer;
-            border: none;
           }
 
           .dm-mixer-value {
@@ -1105,6 +1044,8 @@
             position: relative;
             cursor: pointer;
             transition: background 0.3s;
+            border: none;
+            outline: none;
           }
 
           .dm-effect-toggle.active {
@@ -1161,27 +1102,16 @@
             border-radius: 2px;
             cursor: pointer;
             -webkit-appearance: none;
-            appearance: none;
             margin: 0.25rem 0;
           }
 
           .dm-effect-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
-            appearance: none;
             width: 12px;
             height: 12px;
             background: #00a651;
             border-radius: 50%;
             cursor: pointer;
-          }
-
-          .dm-effect-slider::-moz-range-thumb {
-            width: 12px;
-            height: 12px;
-            background: #00a651;
-            border-radius: 50%;
-            cursor: pointer;
-            border: none;
           }
 
           .dm-effect-preset-selector,
@@ -1224,6 +1154,19 @@
           .dm-creative-panel.active {
             display: block;
             animation: slideDown 0.3s ease-out;
+          }
+
+          /* Visually hidden for accessibility */
+          .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
           }
 
           /* Responsive */
@@ -1486,6 +1429,7 @@
         <label for="fader-${inst.id}" class="visually-hidden">Volume for ${inst.label}</label>
         <input type="range" class="dm-mixer-fader" 
                id="fader-${inst.id}"
+               orient="vertical"
                min="0" max="100" value="${Math.round(params.volume * 100)}"
                data-instrument="${inst.id}"
                data-param="volume"
@@ -1497,7 +1441,8 @@
             <div class="dm-knob-label">PAN</div>
             <div class="dm-knob-control" data-instrument="${inst.id}" data-param="pan"
                  role="slider" aria-label="Pan for ${inst.label}" 
-                 aria-valuenow="${panValue}" aria-valuemin="-50" aria-valuemax="50">
+                 aria-valuenow="${panValue}" aria-valuemin="-50" aria-valuemax="50"
+                 tabindex="0">
               <div class="dm-knob-indicator"></div>
             </div>
             <div class="dm-knob-value">${panValue === 0 ? 'C' : panValue > 0 ? panValue + 'R' : Math.abs(panValue) + 'L'}</div>
@@ -1506,7 +1451,8 @@
             <div class="dm-knob-label">PITCH</div>
             <div class="dm-knob-control" data-instrument="${inst.id}" data-param="pitch"
                  role="slider" aria-label="Pitch for ${inst.label}"
-                 aria-valuenow="${pitchValue}" aria-valuemin="-24" aria-valuemax="24">
+                 aria-valuenow="${pitchValue}" aria-valuemin="-24" aria-valuemax="24"
+                 tabindex="0">
               <div class="dm-knob-indicator"></div>
             </div>
             <div class="dm-knob-value">${pitchValue > 0 ? '+' : ''}${pitchValue}</div>
@@ -1525,25 +1471,6 @@
 
       mixerTracks.appendChild(channel);
     });
-
-    // Add visually hidden style for labels
-    if (!document.querySelector('.visually-hidden')) {
-      const style = document.createElement('style');
-      style.textContent = `
-        .visually-hidden {
-          position: absolute;
-          width: 1px;
-          height: 1px;
-          padding: 0;
-          margin: -1px;
-          overflow: hidden;
-          clip: rect(0, 0, 0, 0);
-          white-space: nowrap;
-          border: 0;
-        }
-      `;
-      document.head.appendChild(style);
-    }
 
     // Setup fader listeners with real-time updates
     document.querySelectorAll('.dm-mixer-fader').forEach(fader => {
