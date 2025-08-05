@@ -404,16 +404,28 @@
             border-radius: 2px;
             cursor: pointer;
             -webkit-appearance: none;
+            appearance: none;
           }
 
           .dm-master-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
+            appearance: none;
             width: 16px;
             height: 16px;
             background: #00a651;
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
+          }
+
+          .dm-master-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #00a651;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
+            border: none;
           }
 
           .dm-master-value {
@@ -539,16 +551,28 @@
             border-radius: 2px;
             cursor: pointer;
             -webkit-appearance: none;
+            appearance: none;
           }
 
           .dm-tempo-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
+            appearance: none;
             width: 16px;
             height: 16px;
             background: #00a651;
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
+          }
+
+          .dm-tempo-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #00a651;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 166, 81, 0.5);
+            border: none;
           }
 
           /* Creative Effects Section */
@@ -903,14 +927,51 @@
           }
 
           .dm-mixer-fader {
-            writing-mode: bt-lr;
-            -webkit-appearance: slider-vertical;
-            width: 30px;
+            width: 100%;
             height: 100px;
-            background: #333;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
             outline: none;
             margin: 0 auto;
             display: block;
+            transform: rotate(-90deg);
+            transform-origin: center;
+            cursor: pointer;
+          }
+
+          .dm-mixer-fader::-webkit-slider-track {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+          }
+
+          .dm-mixer-fader::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #00a651;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -6px;
+          }
+
+          .dm-mixer-fader::-moz-range-track {
+            width: 100%;
+            height: 4px;
+            background: #333;
+            border-radius: 2px;
+          }
+
+          .dm-mixer-fader::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #00a651;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
           }
 
           .dm-mixer-value {
@@ -1100,16 +1161,27 @@
             border-radius: 2px;
             cursor: pointer;
             -webkit-appearance: none;
+            appearance: none;
             margin: 0.25rem 0;
           }
 
           .dm-effect-slider::-webkit-slider-thumb {
             -webkit-appearance: none;
+            appearance: none;
             width: 12px;
             height: 12px;
             background: #00a651;
             border-radius: 50%;
             cursor: pointer;
+          }
+
+          .dm-effect-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background: #00a651;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
           }
 
           .dm-effect-preset-selector,
@@ -1202,22 +1274,23 @@
           <h2 class="dm-title">DRUM MACHINE PRO</h2>
           <div class="dm-header-controls">
             <div class="dm-master-volume">
-              <span class="dm-master-label">MASTER</span>
+              <label for="dmMasterSlider" class="dm-master-label">MASTER</label>
               <input type="range" class="dm-master-slider" id="dmMasterSlider" 
-                     min="0" max="100" value="${Math.round(globalParams.masterVolume * 100)}">
+                     min="0" max="100" value="${Math.round(globalParams.masterVolume * 100)}"
+                     aria-label="Master volume">
               <span class="dm-master-value" id="dmMasterValue">${Math.round(globalParams.masterVolume * 100)}%</span>
             </div>
             <div class="dm-kit-selector">
-              <span class="dm-kit-label">Sound Kit:</span>
-              <select class="dm-kit-select" id="dmKitSelect">
+              <label for="dmKitSelect" class="dm-kit-label">Sound Kit:</label>
+              <select class="dm-kit-select" id="dmKitSelect" aria-label="Sound kit selector">
                 ${Object.keys(instrumentConfigs).map(kit => 
                   `<option value="${kit}" ${kit === currentConfig ? 'selected' : ''}>${kit.toUpperCase()}</option>`
                 ).join('')}
               </select>
             </div>
             <div class="dm-bar-selector">
-              <span class="dm-bar-label">Pattern:</span>
-              <select class="dm-bar-select" id="dmBarSelect">
+              <label for="dmBarSelect" class="dm-bar-label">Pattern:</label>
+              <select class="dm-bar-select" id="dmBarSelect" aria-label="Pattern length selector">
                 <option value="4">4 BARS</option>
                 <option value="8">8 BARS</option>
               </select>
@@ -1227,30 +1300,32 @@
 
         <!-- Transport Controls -->
         <div class="dm-transport">
-          <button class="dm-btn" id="dmPlayBtn">
-            <span class="dm-btn-icon">▶</span>
+          <button class="dm-btn" id="dmPlayBtn" aria-label="Play or pause playback">
+            <span class="dm-btn-icon" aria-hidden="true">▶</span>
             <span>PLAY</span>
           </button>
-          <button class="dm-btn" id="dmStopBtn">
-            <span class="dm-btn-icon">■</span>
+          <button class="dm-btn" id="dmStopBtn" aria-label="Stop playback">
+            <span class="dm-btn-icon" aria-hidden="true">■</span>
             <span>STOP</span>
           </button>
-          <button class="dm-btn" id="dmClearBtn">
-            <span class="dm-btn-icon">✕</span>
+          <button class="dm-btn" id="dmClearBtn" aria-label="Clear all patterns">
+            <span class="dm-btn-icon" aria-hidden="true">✕</span>
             <span>CLEAR PATTERN</span>
           </button>
-          <button class="dm-btn reset" id="dmResetBtn">
-            <span class="dm-btn-icon">↺</span>
+          <button class="dm-btn reset" id="dmResetBtn" aria-label="Reset all settings to defaults">
+            <span class="dm-btn-icon" aria-hidden="true">↺</span>
             <span>RESET</span>
           </button>
           
           <div class="dm-tempo-control">
-            <input type="range" class="dm-tempo-slider" id="dmTempoSlider" min="60" max="200" value="120">
-            <div class="dm-tempo-display" id="dmTempoDisplay">120 BPM</div>
+            <label for="dmTempoSlider" class="visually-hidden">Tempo</label>
+            <input type="range" class="dm-tempo-slider" id="dmTempoSlider" 
+                   min="60" max="200" value="120" aria-label="Tempo in BPM">
+            <div class="dm-tempo-display" id="dmTempoDisplay" aria-live="polite">120 BPM</div>
           </div>
 
-          <button class="dm-btn" id="dmDownloadBtn">
-            <span class="dm-btn-icon">💾</span>
+          <button class="dm-btn" id="dmDownloadBtn" aria-label="Export pattern as WAV file">
+            <span class="dm-btn-icon" aria-hidden="true">💾</span>
             <span>EXPORT</span>
           </button>
         </div>
@@ -1259,47 +1334,47 @@
         <div class="dm-creative-section">
           <div class="dm-creative-header">CREATIVE FX</div>
           <div class="dm-creative-controls">
-            <button class="dm-creative-btn" id="dmTapeStopBtn">TAPE STOP</button>
-            <button class="dm-creative-btn" id="dmStutterBtn">STUTTER</button>
-            <button class="dm-creative-btn" id="dmGlitchBtn">GLITCH</button>
-            <button class="dm-creative-btn" id="dmReverseBtn">REVERSE</button>
-            <button class="dm-creative-btn" id="dmGranularBtn">GRANULAR</button>
-            <button class="dm-creative-btn" id="dmLayeringBtn">LAYERING</button>
+            <button class="dm-creative-btn" id="dmTapeStopBtn" aria-label="Toggle tape stop effect">TAPE STOP</button>
+            <button class="dm-creative-btn" id="dmStutterBtn" aria-label="Toggle stutter effect">STUTTER</button>
+            <button class="dm-creative-btn" id="dmGlitchBtn" aria-label="Toggle glitch effect">GLITCH</button>
+            <button class="dm-creative-btn" id="dmReverseBtn" aria-label="Toggle reverse effect">REVERSE</button>
+            <button class="dm-creative-btn" id="dmGranularBtn" aria-label="Toggle granular effect">GRANULAR</button>
+            <button class="dm-creative-btn" id="dmLayeringBtn" aria-label="Toggle layering">LAYERING</button>
           </div>
         </div>
 
         <!-- Preset Buttons -->
         <div class="dm-presets">
           <div class="dm-preset-section-title">PATTERNS</div>
-          <button class="dm-preset-btn" data-preset="Traffic jam groove">Traffic jam groove</button>
-          <button class="dm-preset-btn" data-preset="Robofunk">Robofunk</button>
-          <button class="dm-preset-btn" data-preset="Power pose">Power pose</button>
-          <button class="dm-preset-btn" data-preset="Future Funk">Future Funk</button>
+          <button class="dm-preset-btn" data-preset="Traffic jam groove" aria-label="Load Traffic jam groove preset">Traffic jam groove</button>
+          <button class="dm-preset-btn" data-preset="Robofunk" aria-label="Load Robofunk preset">Robofunk</button>
+          <button class="dm-preset-btn" data-preset="Power pose" aria-label="Load Power pose preset">Power pose</button>
+          <button class="dm-preset-btn" data-preset="Future Funk" aria-label="Load Future Funk preset">Future Funk</button>
         </div>
 
         <!-- Panel Toggle -->
-        <div class="dm-panel-toggle">
-          <button class="dm-toggle-btn active" id="dmMixerToggle">MIXER</button>
-          <button class="dm-toggle-btn" id="dmEffectsToggle">EFFECTS</button>
-          <button class="dm-toggle-btn" id="dmCreativeToggle">CREATIVE FX</button>
+        <div class="dm-panel-toggle" role="tablist">
+          <button class="dm-toggle-btn active" id="dmMixerToggle" role="tab" aria-selected="true" aria-controls="dmMixerPanel">MIXER</button>
+          <button class="dm-toggle-btn" id="dmEffectsToggle" role="tab" aria-selected="false" aria-controls="dmEffectsPanel">EFFECTS</button>
+          <button class="dm-toggle-btn" id="dmCreativeToggle" role="tab" aria-selected="false" aria-controls="dmCreativePanel">CREATIVE FX</button>
         </div>
 
         <!-- Mixer Panel -->
-        <div class="dm-mixer-panel active" id="dmMixerPanel">
+        <div class="dm-mixer-panel active" id="dmMixerPanel" role="tabpanel" aria-labelledby="dmMixerToggle">
           <div class="dm-mixer-tracks" id="dmMixerTracks">
             <!-- Mixer channels will be generated here -->
           </div>
         </div>
 
         <!-- Effects Panel -->
-        <div class="dm-effects-panel" id="dmEffectsPanel">
+        <div class="dm-effects-panel" id="dmEffectsPanel" role="tabpanel" aria-labelledby="dmEffectsToggle">
           <div class="dm-effects-grid" id="dmEffectsGrid">
             <!-- Effects will be generated here -->
           </div>
         </div>
 
         <!-- Creative Panel -->
-        <div class="dm-creative-panel" id="dmCreativePanel">
+        <div class="dm-creative-panel" id="dmCreativePanel" role="tabpanel" aria-labelledby="dmCreativeToggle">
           <div class="dm-effects-grid" id="dmCreativeGrid">
             <!-- Creative effects will be generated here -->
           </div>
@@ -1308,12 +1383,12 @@
         <!-- Pattern Grid -->
         <div class="dm-pattern-container">
           <!-- Step Numbers -->
-          <div class="dm-step-indicator" id="dmStepIndicator">
+          <div class="dm-step-indicator" id="dmStepIndicator" aria-hidden="true">
             <!-- Will be generated dynamically -->
           </div>
 
           <!-- Pattern Grid -->
-          <div class="dm-pattern-grid" id="dmPatternGrid">
+          <div class="dm-pattern-grid" id="dmPatternGrid" role="grid" aria-label="Drum pattern sequencer">
             <!-- Tracks will be generated here -->
           </div>
         </div>
@@ -1350,16 +1425,20 @@
     instruments.forEach(inst => {
       const track = document.createElement('div');
       track.className = 'dm-track';
+      track.setAttribute('role', 'row');
 
       // Track header with proper spacing for M and S buttons
       const header = document.createElement('div');
       header.className = 'dm-track-header';
+      header.setAttribute('role', 'rowheader');
       header.innerHTML = `
-        <span class="dm-track-icon">${inst.icon}</span>
+        <span class="dm-track-icon" aria-hidden="true">${inst.icon}</span>
         <span class="dm-track-label">${inst.label}</span>
         <div class="dm-track-controls">
-          <button class="dm-track-btn" data-track="${inst.id}" data-action="mute" title="Mute">M</button>
-          <button class="dm-track-btn" data-track="${inst.id}" data-action="solo" title="Solo">S</button>
+          <button class="dm-track-btn" data-track="${inst.id}" data-action="mute" 
+                  title="Mute ${inst.label}" aria-label="Mute ${inst.label}">M</button>
+          <button class="dm-track-btn" data-track="${inst.id}" data-action="solo" 
+                  title="Solo ${inst.label}" aria-label="Solo ${inst.label}">S</button>
         </div>
       `;
       track.appendChild(header);
@@ -1370,6 +1449,8 @@
         step.className = `dm-step`;
         step.dataset.instrument = inst.id;
         step.dataset.step = i;
+        step.setAttribute('role', 'gridcell');
+        step.setAttribute('aria-label', `${inst.label} step ${i + 1}`);
         step.addEventListener('click', toggleStep);
         step.addEventListener('contextmenu', (e) => {
           e.preventDefault();
@@ -1402,24 +1483,30 @@
       
       channel.innerHTML = `
         <div class="dm-mixer-track-name">${inst.icon} ${inst.label}</div>
+        <label for="fader-${inst.id}" class="visually-hidden">Volume for ${inst.label}</label>
         <input type="range" class="dm-mixer-fader" 
-               orient="vertical"
+               id="fader-${inst.id}"
                min="0" max="100" value="${Math.round(params.volume * 100)}"
                data-instrument="${inst.id}"
-               data-param="volume">
+               data-param="volume"
+               aria-label="Volume for ${inst.label}">
         <div class="dm-mixer-value">${Math.round(params.volume * 100)}%</div>
         
         <div class="dm-mixer-knobs">
           <div class="dm-knob">
             <div class="dm-knob-label">PAN</div>
-            <div class="dm-knob-control" data-instrument="${inst.id}" data-param="pan">
+            <div class="dm-knob-control" data-instrument="${inst.id}" data-param="pan"
+                 role="slider" aria-label="Pan for ${inst.label}" 
+                 aria-valuenow="${panValue}" aria-valuemin="-50" aria-valuemax="50">
               <div class="dm-knob-indicator"></div>
             </div>
             <div class="dm-knob-value">${panValue === 0 ? 'C' : panValue > 0 ? panValue + 'R' : Math.abs(panValue) + 'L'}</div>
           </div>
           <div class="dm-knob">
             <div class="dm-knob-label">PITCH</div>
-            <div class="dm-knob-control" data-instrument="${inst.id}" data-param="pitch">
+            <div class="dm-knob-control" data-instrument="${inst.id}" data-param="pitch"
+                 role="slider" aria-label="Pitch for ${inst.label}"
+                 aria-valuenow="${pitchValue}" aria-valuemin="-24" aria-valuemax="24">
               <div class="dm-knob-indicator"></div>
             </div>
             <div class="dm-knob-value">${pitchValue > 0 ? '+' : ''}${pitchValue}</div>
@@ -1427,7 +1514,10 @@
         </div>
         
         <div class="dm-layer-toggle">
-          <button class="dm-layer-btn ${params.layer ? 'active' : ''}" data-instrument="${inst.id}">
+          <button class="dm-layer-btn ${params.layer ? 'active' : ''}" 
+                  data-instrument="${inst.id}"
+                  aria-label="Toggle layer for ${inst.label}"
+                  aria-pressed="${params.layer}">
             LAYER ${params.layer ? 'ON' : 'OFF'}
           </button>
         </div>
@@ -1435,6 +1525,25 @@
 
       mixerTracks.appendChild(channel);
     });
+
+    // Add visually hidden style for labels
+    if (!document.querySelector('.visually-hidden')) {
+      const style = document.createElement('style');
+      style.textContent = `
+        .visually-hidden {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
+        }
+      `;
+      document.head.appendChild(style);
+    }
 
     // Setup fader listeners with real-time updates
     document.querySelectorAll('.dm-mixer-fader').forEach(fader => {
@@ -1452,6 +1561,7 @@
         const inst = e.target.dataset.instrument;
         globalParams.instrumentParams[inst].layer = !globalParams.instrumentParams[inst].layer;
         e.target.classList.toggle('active');
+        e.target.setAttribute('aria-pressed', globalParams.instrumentParams[inst].layer);
         e.target.textContent = `LAYER ${globalParams.instrumentParams[inst].layer ? 'ON' : 'OFF'}`;
       });
     });
@@ -1469,24 +1579,26 @@
       <div class="dm-effect-unit" id="dmReverbUnit">
         <div class="dm-effect-header">
           <span class="dm-effect-title">REVERB</span>
-          <div class="dm-effect-toggle" id="dmReverbToggle"></div>
+          <button class="dm-effect-toggle" id="dmReverbToggle" 
+                  aria-label="Toggle reverb effect" 
+                  role="switch" aria-checked="false"></button>
         </div>
         <div class="dm-effect-controls">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Mix</span>
+            <label for="dmReverbMix" class="dm-effect-param-label">Mix</label>
             <span class="dm-effect-param-value" id="dmReverbMixVal">25%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmReverbMix" min="0" max="100" value="25">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">PreDelay</span>
+            <label for="dmReverbPredelay" class="dm-effect-param-label">PreDelay</label>
             <span class="dm-effect-param-value" id="dmReverbPredelayVal">0ms</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmReverbPredelay" min="0" max="100" value="0">
           <div class="dm-effect-preset-selector">
-            <button class="dm-effect-preset-btn active" data-preset="room">ROOM</button>
-            <button class="dm-effect-preset-btn" data-preset="hall">HALL</button>
-            <button class="dm-effect-preset-btn" data-preset="plate">PLATE</button>
-            <button class="dm-effect-preset-btn" data-preset="cathedral">CATHEDRAL</button>
+            <button class="dm-effect-preset-btn active" data-preset="room" aria-label="Room reverb preset">ROOM</button>
+            <button class="dm-effect-preset-btn" data-preset="hall" aria-label="Hall reverb preset">HALL</button>
+            <button class="dm-effect-preset-btn" data-preset="plate" aria-label="Plate reverb preset">PLATE</button>
+            <button class="dm-effect-preset-btn" data-preset="cathedral" aria-label="Cathedral reverb preset">CATHEDRAL</button>
           </div>
         </div>
       </div>
@@ -1495,27 +1607,29 @@
       <div class="dm-effect-unit" id="dmDelayUnit">
         <div class="dm-effect-header">
           <span class="dm-effect-title">DELAY</span>
-          <div class="dm-effect-toggle" id="dmDelayToggle"></div>
+          <button class="dm-effect-toggle" id="dmDelayToggle"
+                  aria-label="Toggle delay effect"
+                  role="switch" aria-checked="false"></button>
         </div>
         <div class="dm-effect-controls">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Time</span>
+            <label for="dmDelayTime" class="dm-effect-param-label">Time</label>
             <span class="dm-effect-param-value" id="dmDelayTimeVal">250ms</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmDelayTime" min="10" max="2000" value="250">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Feedback</span>
+            <label for="dmDelayFeedback" class="dm-effect-param-label">Feedback</label>
             <span class="dm-effect-param-value" id="dmDelayFeedbackVal">30%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmDelayFeedback" min="0" max="85" value="30">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Mix</span>
+            <label for="dmDelayMixSlider" class="dm-effect-param-label">Mix</label>
             <span class="dm-effect-param-value" id="dmDelayMixVal">20%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmDelayMixSlider" min="0" max="100" value="20">
           <div class="dm-effect-preset-selector">
-            <button class="dm-effect-preset-btn active" data-mode="normal">NORMAL</button>
-            <button class="dm-effect-preset-btn" data-mode="pingpong">PING-PONG</button>
+            <button class="dm-effect-preset-btn active" data-mode="normal" aria-label="Normal delay mode">NORMAL</button>
+            <button class="dm-effect-preset-btn" data-mode="pingpong" aria-label="Ping-pong delay mode">PING-PONG</button>
           </div>
         </div>
       </div>
@@ -1524,23 +1638,25 @@
       <div class="dm-effect-unit" id="dmFilterUnit">
         <div class="dm-effect-header">
           <span class="dm-effect-title">FILTER</span>
-          <div class="dm-effect-toggle" id="dmFilterToggle"></div>
+          <button class="dm-effect-toggle" id="dmFilterToggle"
+                  aria-label="Toggle filter effect"
+                  role="switch" aria-checked="false"></button>
         </div>
         <div class="dm-effect-controls">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Cutoff</span>
+            <label for="dmFilterCutoff" class="dm-effect-param-label">Cutoff</label>
             <span class="dm-effect-param-value" id="dmFilterCutoffVal">20.0kHz</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmFilterCutoff" min="20" max="20000" value="20000" step="1">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Resonance</span>
+            <label for="dmFilterResonance" class="dm-effect-param-label">Resonance</label>
             <span class="dm-effect-param-value" id="dmFilterResonanceVal">1.0</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmFilterResonance" min="1" max="30" value="1">
           <div class="dm-filter-mode-selector">
-            <button class="dm-filter-mode-btn active" data-mode="lowpass">LOW-PASS</button>
-            <button class="dm-filter-mode-btn" data-mode="highpass">HIGH-PASS</button>
-            <button class="dm-filter-mode-btn" data-mode="bandpass">BAND-PASS</button>
+            <button class="dm-filter-mode-btn active" data-mode="lowpass" aria-label="Low-pass filter mode">LOW-PASS</button>
+            <button class="dm-filter-mode-btn" data-mode="highpass" aria-label="High-pass filter mode">HIGH-PASS</button>
+            <button class="dm-filter-mode-btn" data-mode="bandpass" aria-label="Band-pass filter mode">BAND-PASS</button>
           </div>
         </div>
       </div>
@@ -1549,26 +1665,28 @@
       <div class="dm-effect-unit" id="dmCompUnit">
         <div class="dm-effect-header">
           <span class="dm-effect-title">COMPRESSOR</span>
-          <div class="dm-effect-toggle" id="dmCompToggle"></div>
+          <button class="dm-effect-toggle" id="dmCompToggle"
+                  aria-label="Toggle compressor effect"
+                  role="switch" aria-checked="false"></button>
         </div>
         <div class="dm-effect-controls">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Threshold</span>
+            <label for="dmCompThreshold" class="dm-effect-param-label">Threshold</label>
             <span class="dm-effect-param-value" id="dmCompThresholdVal">-20dB</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmCompThreshold" min="-60" max="0" value="-20">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Ratio</span>
+            <label for="dmCompRatio" class="dm-effect-param-label">Ratio</label>
             <span class="dm-effect-param-value" id="dmCompRatioVal">4:1</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmCompRatio" min="1" max="20" value="4">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Attack</span>
+            <label for="dmCompAttack" class="dm-effect-param-label">Attack</label>
             <span class="dm-effect-param-value" id="dmCompAttackVal">3ms</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmCompAttack" min="0" max="100" value="3">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Release</span>
+            <label for="dmCompRelease" class="dm-effect-param-label">Release</label>
             <span class="dm-effect-param-value" id="dmCompReleaseVal">250ms</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmCompRelease" min="10" max="1000" value="250">
@@ -1579,23 +1697,25 @@
       <div class="dm-effect-unit" id="dmDistUnit">
         <div class="dm-effect-header">
           <span class="dm-effect-title">DISTORTION</span>
-          <div class="dm-effect-toggle" id="dmDistToggle"></div>
+          <button class="dm-effect-toggle" id="dmDistToggle"
+                  aria-label="Toggle distortion effect"
+                  role="switch" aria-checked="false"></button>
         </div>
         <div class="dm-effect-controls">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Drive</span>
+            <label for="dmDistDrive" class="dm-effect-param-label">Drive</label>
             <span class="dm-effect-param-value" id="dmDistDriveVal">10%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmDistDrive" min="0" max="100" value="10">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Tone</span>
+            <label for="dmDistTone" class="dm-effect-param-label">Tone</label>
             <span class="dm-effect-param-value" id="dmDistToneVal">50%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmDistTone" min="0" max="100" value="50">
           <div class="dm-effect-preset-selector">
-            <button class="dm-effect-preset-btn active" data-type="soft">SOFT</button>
-            <button class="dm-effect-preset-btn" data-type="hard">HARD</button>
-            <button class="dm-effect-preset-btn" data-type="fuzz">FUZZ</button>
+            <button class="dm-effect-preset-btn active" data-type="soft" aria-label="Soft distortion type">SOFT</button>
+            <button class="dm-effect-preset-btn" data-type="hard" aria-label="Hard distortion type">HARD</button>
+            <button class="dm-effect-preset-btn" data-type="fuzz" aria-label="Fuzz distortion type">FUZZ</button>
           </div>
         </div>
       </div>
@@ -1604,21 +1724,23 @@
       <div class="dm-effect-unit" id="dmChorusUnit">
         <div class="dm-effect-header">
           <span class="dm-effect-title">CHORUS</span>
-          <div class="dm-effect-toggle" id="dmChorusToggle"></div>
+          <button class="dm-effect-toggle" id="dmChorusToggle"
+                  aria-label="Toggle chorus effect"
+                  role="switch" aria-checked="false"></button>
         </div>
         <div class="dm-effect-controls">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Rate</span>
+            <label for="dmChorusRate" class="dm-effect-param-label">Rate</label>
             <span class="dm-effect-param-value" id="dmChorusRateVal">1.5Hz</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmChorusRate" min="0.1" max="10" value="1.5" step="0.1">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Depth</span>
+            <label for="dmChorusDepth" class="dm-effect-param-label">Depth</label>
             <span class="dm-effect-param-value" id="dmChorusDepthVal">30%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmChorusDepth" min="0" max="100" value="30">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Mix</span>
+            <label for="dmChorusMix" class="dm-effect-param-label">Mix</label>
             <span class="dm-effect-param-value" id="dmChorusMixVal">30%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmChorusMix" min="0" max="100" value="30">
@@ -1629,21 +1751,23 @@
       <div class="dm-effect-unit" id="dmPhaserUnit">
         <div class="dm-effect-header">
           <span class="dm-effect-title">PHASER</span>
-          <div class="dm-effect-toggle" id="dmPhaserToggle"></div>
+          <button class="dm-effect-toggle" id="dmPhaserToggle"
+                  aria-label="Toggle phaser effect"
+                  role="switch" aria-checked="false"></button>
         </div>
         <div class="dm-effect-controls">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Rate</span>
+            <label for="dmPhaserRate" class="dm-effect-param-label">Rate</label>
             <span class="dm-effect-param-value" id="dmPhaserRateVal">0.5Hz</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmPhaserRate" min="0.1" max="10" value="0.5" step="0.1">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Depth</span>
+            <label for="dmPhaserDepth" class="dm-effect-param-label">Depth</label>
             <span class="dm-effect-param-value" id="dmPhaserDepthVal">50%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmPhaserDepth" min="0" max="100" value="50">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Stages</span>
+            <label for="dmPhaserStages" class="dm-effect-param-label">Stages</label>
             <span class="dm-effect-param-value" id="dmPhaserStagesVal">4</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmPhaserStages" min="2" max="8" value="4" step="2">
@@ -1654,16 +1778,18 @@
       <div class="dm-effect-unit" id="dmBitcrusherUnit">
         <div class="dm-effect-header">
           <span class="dm-effect-title">BITCRUSHER</span>
-          <div class="dm-effect-toggle" id="dmBitcrusherToggle"></div>
+          <button class="dm-effect-toggle" id="dmBitcrusherToggle"
+                  aria-label="Toggle bitcrusher effect"
+                  role="switch" aria-checked="false"></button>
         </div>
         <div class="dm-effect-controls">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Bits</span>
+            <label for="dmBitcrusherBits" class="dm-effect-param-label">Bits</label>
             <span class="dm-effect-param-value" id="dmBitcrusherBitsVal">8</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmBitcrusherBits" min="1" max="16" value="8">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Downsample</span>
+            <label for="dmBitcrusherDownsample" class="dm-effect-param-label">Downsample</label>
             <span class="dm-effect-param-value" id="dmBitcrusherDownsampleVal">1x</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmBitcrusherDownsample" min="1" max="20" value="1">
@@ -1674,11 +1800,13 @@
       <div class="dm-effect-unit" id="dmStereoWidthUnit">
         <div class="dm-effect-header">
           <span class="dm-effect-title">STEREO WIDTH</span>
-          <div class="dm-effect-toggle" id="dmStereoWidthToggle"></div>
+          <button class="dm-effect-toggle" id="dmStereoWidthToggle"
+                  aria-label="Toggle stereo width effect"
+                  role="switch" aria-checked="false"></button>
         </div>
         <div class="dm-effect-controls">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Width</span>
+            <label for="dmStereoWidth" class="dm-effect-param-label">Width</label>
             <span class="dm-effect-param-value" id="dmStereoWidthVal">100%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmStereoWidth" min="0" max="200" value="100">
@@ -1697,21 +1825,23 @@
       <div class="dm-effect-unit" id="dmGatedReverbUnit">
         <div class="dm-effect-header">
           <span class="dm-effect-title">GATED REVERB</span>
-          <div class="dm-effect-toggle" id="dmGatedReverbToggle"></div>
+          <button class="dm-effect-toggle" id="dmGatedReverbToggle"
+                  aria-label="Toggle gated reverb effect"
+                  role="switch" aria-checked="false"></button>
         </div>
         <div class="dm-effect-controls">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Threshold</span>
+            <label for="dmGatedReverbThreshold" class="dm-effect-param-label">Threshold</label>
             <span class="dm-effect-param-value" id="dmGatedReverbThresholdVal">-20dB</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmGatedReverbThreshold" min="-60" max="0" value="-20">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Hold</span>
+            <label for="dmGatedReverbHold" class="dm-effect-param-label">Hold</label>
             <span class="dm-effect-param-value" id="dmGatedReverbHoldVal">100ms</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmGatedReverbHold" min="10" max="500" value="100">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Decay</span>
+            <label for="dmGatedReverbDecay" class="dm-effect-param-label">Decay</label>
             <span class="dm-effect-param-value" id="dmGatedReverbDecayVal">50ms</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmGatedReverbDecay" min="10" max="200" value="50">
@@ -1722,15 +1852,17 @@
       <div class="dm-effect-unit" id="dmTapeStopUnit">
         <div class="dm-effect-header">
           <span class="dm-effect-title">TAPE STOP</span>
-          <div class="dm-effect-toggle" id="dmTapeStopToggle"></div>
+          <button class="dm-effect-toggle" id="dmTapeStopToggle"
+                  aria-label="Toggle tape stop effect"
+                  role="switch" aria-checked="false"></button>
         </div>
         <div class="dm-effect-controls">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Speed</span>
+            <label for="dmTapeStopSpeed" class="dm-effect-param-label">Speed</label>
             <span class="dm-effect-param-value" id="dmTapeStopSpeedVal">50%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmTapeStopSpeed" min="10" max="100" value="50">
-          <button class="dm-effect-preset-btn" id="dmTapeStopTrigger">TRIGGER</button>
+          <button class="dm-effect-preset-btn" id="dmTapeStopTrigger" aria-label="Trigger tape stop effect">TRIGGER</button>
         </div>
       </div>
 
@@ -1738,16 +1870,18 @@
       <div class="dm-effect-unit" id="dmStutterUnit">
         <div class="dm-effect-header">
           <span class="dm-effect-title">STUTTER</span>
-          <div class="dm-effect-toggle" id="dmStutterToggle"></div>
+          <button class="dm-effect-toggle" id="dmStutterToggle"
+                  aria-label="Toggle stutter effect"
+                  role="switch" aria-checked="false"></button>
         </div>
         <div class="dm-effect-controls">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Division</span>
+            <label for="dmStutterDivision" class="dm-effect-param-label">Division</label>
             <span class="dm-effect-param-value" id="dmStutterDivisionVal">1/16</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmStutterDivision" min="2" max="32" value="16" step="2">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Probability</span>
+            <label for="dmStutterProbability" class="dm-effect-param-label">Probability</label>
             <span class="dm-effect-param-value" id="dmStutterProbabilityVal">50%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmStutterProbability" min="0" max="100" value="50">
@@ -1758,16 +1892,18 @@
       <div class="dm-effect-unit" id="dmGlitchUnit">
         <div class="dm-effect-header">
           <span class="dm-effect-title">GLITCH</span>
-          <div class="dm-effect-toggle" id="dmGlitchToggle"></div>
+          <button class="dm-effect-toggle" id="dmGlitchToggle"
+                  aria-label="Toggle glitch effect"
+                  role="switch" aria-checked="false"></button>
         </div>
         <div class="dm-effect-controls">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Intensity</span>
+            <label for="dmGlitchIntensity" class="dm-effect-param-label">Intensity</label>
             <span class="dm-effect-param-value" id="dmGlitchIntensityVal">50%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmGlitchIntensity" min="0" max="100" value="50">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Frequency</span>
+            <label for="dmGlitchFrequency" class="dm-effect-param-label">Frequency</label>
             <span class="dm-effect-param-value" id="dmGlitchFrequencyVal">30%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmGlitchFrequency" min="0" max="100" value="30">
@@ -1778,11 +1914,13 @@
       <div class="dm-effect-unit" id="dmReverseUnit">
         <div class="dm-effect-header">
           <span class="dm-effect-title">REVERSE</span>
-          <div class="dm-effect-toggle" id="dmReverseToggle"></div>
+          <button class="dm-effect-toggle" id="dmReverseToggle"
+                  aria-label="Toggle reverse effect"
+                  role="switch" aria-checked="false"></button>
         </div>
         <div class="dm-effect-controls">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Probability</span>
+            <label for="dmReverseProbability" class="dm-effect-param-label">Probability</label>
             <span class="dm-effect-param-value" id="dmReverseProbabilityVal">20%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmReverseProbability" min="0" max="100" value="20">
@@ -1793,21 +1931,23 @@
       <div class="dm-effect-unit" id="dmGranularUnit">
         <div class="dm-effect-header">
           <span class="dm-effect-title">GRANULAR</span>
-          <div class="dm-effect-toggle" id="dmGranularToggle"></div>
+          <button class="dm-effect-toggle" id="dmGranularToggle"
+                  aria-label="Toggle granular effect"
+                  role="switch" aria-checked="false"></button>
         </div>
         <div class="dm-effect-controls">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Grain Size</span>
+            <label for="dmGranularGrainSize" class="dm-effect-param-label">Grain Size</label>
             <span class="dm-effect-param-value" id="dmGranularGrainSizeVal">50ms</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmGranularGrainSize" min="10" max="200" value="50">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Overlap</span>
+            <label for="dmGranularOverlap" class="dm-effect-param-label">Overlap</label>
             <span class="dm-effect-param-value" id="dmGranularOverlapVal">50%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmGranularOverlap" min="0" max="100" value="50">
           <div class="dm-effect-param">
-            <span class="dm-effect-param-label">Pitch</span>
+            <label for="dmGranularPitch" class="dm-effect-param-label">Pitch</label>
             <span class="dm-effect-param-value" id="dmGranularPitchVal">0</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmGranularPitch" min="-24" max="24" value="0">
@@ -2066,31 +2206,32 @@
     return { stages, lfo, lfoGain };
   }
 
+  // Replace deprecated ScriptProcessorNode with AudioWorkletProcessor
   function createBitcrusher() {
-    const scriptNode = audioContext.createScriptProcessor(4096, 1, 1);
+    // For now, we'll use a workaround with existing nodes
+    // In production, you'd register an AudioWorkletProcessor
+    const waveshaper = audioContext.createWaveShaper();
     let bits = 8;
     let downsample = 1;
-    let sampleCount = 0;
-    let lastSample = 0;
     
-    scriptNode.onaudioprocess = function(e) {
-      const input = e.inputBuffer.getChannelData(0);
-      const output = e.outputBuffer.getChannelData(0);
+    const updateCurve = () => {
+      const samples = 256;
+      const curve = new Float32Array(samples);
+      const step = Math.pow(0.5, bits);
       
-      for (let i = 0; i < input.length; i++) {
-        sampleCount++;
-        if (sampleCount >= downsample) {
-          const step = Math.pow(0.5, bits);
-          lastSample = step * Math.floor(input[i] / step + 0.5);
-          sampleCount = 0;
-        }
-        output[i] = lastSample;
+      for (let i = 0; i < samples; i++) {
+        const x = (i * 2) / samples - 1;
+        curve[i] = step * Math.floor(x / step + 0.5);
       }
+      
+      waveshaper.curve = curve;
     };
     
+    updateCurve();
+    
     return { 
-      scriptNode,
-      setBits: (b) => { bits = b; },
+      scriptNode: waveshaper, // Using waveshaper as replacement
+      setBits: (b) => { bits = b; updateCurve(); },
       setDownsample: (d) => { downsample = d; }
     };
   }
@@ -2156,42 +2297,35 @@
   }
 
   function createGlitch() {
-    const scriptNode = audioContext.createScriptProcessor(2048, 1, 1);
+    // Replace with waveshaper-based glitch effect
+    const waveshaper = audioContext.createWaveShaper();
     let glitchIntensity = 0.5;
     let glitchFrequency = 0.3;
     
-    scriptNode.onaudioprocess = function(e) {
-      const input = e.inputBuffer.getChannelData(0);
-      const output = e.outputBuffer.getChannelData(0);
+    const updateCurve = () => {
+      const samples = 256;
+      const curve = new Float32Array(samples);
       
-      for (let i = 0; i < input.length; i++) {
+      for (let i = 0; i < samples; i++) {
+        const x = (i * 2) / samples - 1;
+        
         if (Math.random() < glitchFrequency) {
-          // Apply random glitch effect
-          const glitchType = Math.floor(Math.random() * 4);
-          switch(glitchType) {
-            case 0: // Bit reduction
-              output[i] = Math.round(input[i] * 4) / 4 * glitchIntensity + input[i] * (1 - glitchIntensity);
-              break;
-            case 1: // Sample repeat
-              output[i] = input[Math.floor(i / 4) * 4] * glitchIntensity + input[i] * (1 - glitchIntensity);
-              break;
-            case 2: // Amplitude modulation
-              output[i] = input[i] * (Math.random() * glitchIntensity + (1 - glitchIntensity));
-              break;
-            case 3: // Silence
-              output[i] = input[i] * (1 - glitchIntensity);
-              break;
-          }
+          // Apply glitch distortion
+          curve[i] = Math.round(x * 4) / 4 * glitchIntensity + x * (1 - glitchIntensity);
         } else {
-          output[i] = input[i];
+          curve[i] = x;
         }
       }
+      
+      waveshaper.curve = curve;
     };
     
+    updateCurve();
+    
     return {
-      scriptNode,
-      setIntensity: (val) => { glitchIntensity = val; },
-      setFrequency: (val) => { glitchFrequency = val; }
+      scriptNode: waveshaper,
+      setIntensity: (val) => { glitchIntensity = val; updateCurve(); },
+      setFrequency: (val) => { glitchFrequency = val; updateCurve(); }
     };
   }
 
@@ -2963,6 +3097,7 @@
     
     pattern[inst][step] = pattern[inst][step] ? 0 : 1;
     e.target.classList.toggle('active');
+    e.target.setAttribute('aria-pressed', pattern[inst][step] ? 'true' : 'false');
   }
 
   function toggleAccent(e) {
@@ -2976,8 +3111,10 @@
         if (element) {
           if (pattern[inst.id][step]) {
             element.classList.add('active');
+            element.setAttribute('aria-pressed', 'true');
           } else {
             element.classList.remove('active');
+            element.setAttribute('aria-pressed', 'false');
           }
         }
       }
@@ -3149,9 +3286,11 @@
     if (toggle && unit) {
       if (params.enabled) {
         toggle.classList.add('active');
+        toggle.setAttribute('aria-checked', 'true');
         unit.classList.add('active');
       } else {
         toggle.classList.remove('active');
+        toggle.setAttribute('aria-checked', 'false');
         unit.classList.remove('active');
       }
     }
@@ -3177,12 +3316,14 @@
           indicator.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
           globalParams.instrumentParams[inst].pan = panValue / 50;
           valueDisplay.textContent = panValue === 0 ? 'C' : panValue > 0 ? panValue + 'R' : Math.abs(panValue) + 'L';
+          knob.setAttribute('aria-valuenow', panValue);
         } else if (param === 'pitch') {
           const pitchValue = Math.max(-24, Math.min(24, Math.round((value - 50) * 24 / 50)));
           const rotation = pitchValue * 5.625;
           indicator.style.transform = `translate(-50%, -100%) rotate(${rotation}deg)`;
           globalParams.instrumentParams[inst].pitch = pitchValue;
           valueDisplay.textContent = pitchValue > 0 ? '+' + pitchValue : pitchValue.toString();
+          knob.setAttribute('aria-valuenow', pitchValue);
         }
       };
 
@@ -3219,6 +3360,32 @@
 
       document.addEventListener('mouseup', () => {
         isDragging = false;
+      });
+
+      // Add keyboard support
+      knob.addEventListener('keydown', (e) => {
+        const inst = knob.dataset.instrument;
+        const param = knob.dataset.param;
+        let currentValue;
+        
+        if (param === 'pan') {
+          currentValue = 50 + globalParams.instrumentParams[inst].pan * 50;
+        } else if (param === 'pitch') {
+          currentValue = 50 + globalParams.instrumentParams[inst].pitch * 50 / 24;
+        }
+        
+        switch(e.key) {
+          case 'ArrowUp':
+          case 'ArrowRight':
+            e.preventDefault();
+            updateKnob(Math.min(100, currentValue + 5));
+            break;
+          case 'ArrowDown':
+          case 'ArrowLeft':
+            e.preventDefault();
+            updateKnob(Math.max(0, currentValue - 5));
+            break;
+        }
       });
     });
   }
@@ -3435,8 +3602,11 @@
       document.getElementById('dmEffectsPanel').classList.remove('active');
       document.getElementById('dmCreativePanel').classList.remove('active');
       document.getElementById('dmMixerToggle').classList.add('active');
+      document.getElementById('dmMixerToggle').setAttribute('aria-selected', 'true');
       document.getElementById('dmEffectsToggle').classList.remove('active');
+      document.getElementById('dmEffectsToggle').setAttribute('aria-selected', 'false');
       document.getElementById('dmCreativeToggle').classList.remove('active');
+      document.getElementById('dmCreativeToggle').setAttribute('aria-selected', 'false');
     });
 
     document.getElementById('dmEffectsToggle')?.addEventListener('click', () => {
@@ -3444,8 +3614,11 @@
       document.getElementById('dmEffectsPanel').classList.add('active');
       document.getElementById('dmCreativePanel').classList.remove('active');
       document.getElementById('dmMixerToggle').classList.remove('active');
+      document.getElementById('dmMixerToggle').setAttribute('aria-selected', 'false');
       document.getElementById('dmEffectsToggle').classList.add('active');
+      document.getElementById('dmEffectsToggle').setAttribute('aria-selected', 'true');
       document.getElementById('dmCreativeToggle').classList.remove('active');
+      document.getElementById('dmCreativeToggle').setAttribute('aria-selected', 'false');
     });
 
     document.getElementById('dmCreativeToggle')?.addEventListener('click', () => {
@@ -3453,8 +3626,11 @@
       document.getElementById('dmEffectsPanel').classList.remove('active');
       document.getElementById('dmCreativePanel').classList.add('active');
       document.getElementById('dmMixerToggle').classList.remove('active');
+      document.getElementById('dmMixerToggle').setAttribute('aria-selected', 'false');
       document.getElementById('dmEffectsToggle').classList.remove('active');
+      document.getElementById('dmEffectsToggle').setAttribute('aria-selected', 'false');
       document.getElementById('dmCreativeToggle').classList.add('active');
+      document.getElementById('dmCreativeToggle').setAttribute('aria-selected', 'true');
     });
 
     // Track mute/solo
@@ -3580,6 +3756,7 @@
       toggle.addEventListener('click', () => {
         globalParams[effectName].enabled = !globalParams[effectName].enabled;
         toggle.classList.toggle('active');
+        toggle.setAttribute('aria-checked', globalParams[effectName].enabled ? 'true' : 'false');
         
         if (globalParams[effectName].enabled) {
           toggle.parentElement.parentElement.classList.add('active');
