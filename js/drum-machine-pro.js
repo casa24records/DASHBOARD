@@ -1,4 +1,4 @@
-// Drum Machine Pro - Complete MVP Implementation with Maximum Capabilities
+// Drum Machine Pro - Complete MVP Implementation with Repository Integration
 (function() {
   'use strict';
   
@@ -11,113 +11,27 @@
   const HEADROOM = 6; // dB
   const MASTER_GAIN_DEFAULT = 0.7;
   
-  // Enhanced instrument configurations with redesigned, musically distinct kits
-  const instrumentConfigs = {
-    "Panama Heat": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 55, subFreq: 32, noiseAmount: 0.02, layerFreq: 28 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 240, subFreq: 95, noiseAmount: 0.22, layerFreq: 185 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 8500, subFreq: 0, noiseAmount: 0.5, layerFreq: 7000 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 7500, subFreq: 0, noiseAmount: 0.6, layerFreq: 6500 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1600, subFreq: 0, noiseAmount: 0.14, layerFreq: 2100 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 11500, subFreq: 0, noiseAmount: 0.75, layerFreq: 13000 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 600, subFreq: 0, noiseAmount: 0.06, layerFreq: 800 },
-      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 1050, subFreq: 0, noiseAmount: 0, layerFreq: 1250 }
-    ],
-    "Trap Quantum": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 42, subFreq: 25, noiseAmount: 0.01, layerFreq: 30 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 280, subFreq: 110, noiseAmount: 0.25, layerFreq: 220 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 12000, subFreq: 0, noiseAmount: 0.7, layerFreq: 10000 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 10000, subFreq: 0, noiseAmount: 0.8, layerFreq: 8500 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2000, subFreq: 0, noiseAmount: 0.15, layerFreq: 2500 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 14000, subFreq: 0, noiseAmount: 0.9, layerFreq: 12000 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 550, subFreq: 0, noiseAmount: 0.04, layerFreq: 700 },
-      { id: 'cowbell', label: '808', icon: '🎵', frequency: 900, subFreq: 35, noiseAmount: 0, layerFreq: 1100 }
-    ],
-    "Boom Circuit": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 65, subFreq: 38, noiseAmount: 0.03, layerFreq: 45 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 210, subFreq: 85, noiseAmount: 0.28, layerFreq: 180 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 9000, subFreq: 0, noiseAmount: 0.45, layerFreq: 7500 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 7800, subFreq: 0, noiseAmount: 0.55, layerFreq: 6200 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2200, subFreq: 0, noiseAmount: 0.18, layerFreq: 1800 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 12000, subFreq: 0, noiseAmount: 0.7, layerFreq: 10500 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 1100, subFreq: 0, noiseAmount: 0.1, layerFreq: 900 },
-      { id: 'cowbell', label: 'BELL', icon: '🔔', frequency: 950, subFreq: 0, noiseAmount: 0.02, layerFreq: 850 }
-    ],
-    "Lo-Fi Dreams": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 48, subFreq: 28, noiseAmount: 0.08, layerFreq: 35 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 175, subFreq: 65, noiseAmount: 0.35, layerFreq: 150 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 5500, subFreq: 0, noiseAmount: 0.5, layerFreq: 4500 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 4000, subFreq: 0, noiseAmount: 0.6, layerFreq: 3500 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 900, subFreq: 0, noiseAmount: 0.25, layerFreq: 1100 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 8000, subFreq: 0, noiseAmount: 0.7, layerFreq: 7000 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 750, subFreq: 0, noiseAmount: 0.12, layerFreq: 650 },
-      { id: 'cowbell', label: 'VINYL', icon: '💿', frequency: 650, subFreq: 0, noiseAmount: 0.4, layerFreq: 550 }
-    ],
-    "Future Breaks": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 50, subFreq: 30, noiseAmount: 0.05, layerFreq: 35 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 290, subFreq: 130, noiseAmount: 0.3, layerFreq: 250 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 11500, subFreq: 0, noiseAmount: 0.7, layerFreq: 9500 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 10500, subFreq: 0, noiseAmount: 0.8, layerFreq: 8800 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2100, subFreq: 0, noiseAmount: 0.2, layerFreq: 2400 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 13500, subFreq: 0, noiseAmount: 0.85, layerFreq: 11000 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 480, subFreq: 0, noiseAmount: 0.08, layerFreq: 650 },
-      { id: 'cowbell', label: 'SYNTH', icon: '🎹', frequency: 980, subFreq: 490, noiseAmount: 0.03, layerFreq: 1470 }
-    ],
-    "Latin Fuego": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 68, subFreq: 40, noiseAmount: 0.04, layerFreq: 48 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 235, subFreq: 88, noiseAmount: 0.2, layerFreq: 195 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 7800, subFreq: 0, noiseAmount: 0.38, layerFreq: 6800 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 6300, subFreq: 0, noiseAmount: 0.48, layerFreq: 5500 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2600, subFreq: 0, noiseAmount: 0.1, layerFreq: 2900 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 10500, subFreq: 0, noiseAmount: 0.72, layerFreq: 9200 },
-      { id: 'rim', label: 'CLAVE', icon: '🥢', frequency: 1250, subFreq: 0, noiseAmount: 0.05, layerFreq: 1500 },
-      { id: 'cowbell', label: 'CONGA', icon: '🪘', frequency: 980, subFreq: 200, noiseAmount: 0.02, layerFreq: 750 }
-    ],
-    "Neon Tokyo": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 45, subFreq: 26, noiseAmount: 0.1, layerFreq: 32 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 265, subFreq: 115, noiseAmount: 0.32, layerFreq: 230 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 13000, subFreq: 0, noiseAmount: 0.75, layerFreq: 11000 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 11000, subFreq: 0, noiseAmount: 0.85, layerFreq: 9000 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2300, subFreq: 0, noiseAmount: 0.28, layerFreq: 2700 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 15000, subFreq: 0, noiseAmount: 0.95, layerFreq: 12500 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 720, subFreq: 0, noiseAmount: 0.18, layerFreq: 900 },
-      { id: 'cowbell', label: 'LASER', icon: '⚡', frequency: 880, subFreq: 1760, noiseAmount: 0.08, layerFreq: 3520 }
-    ],
-    "Analog Dust": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 72, subFreq: 48, noiseAmount: 0, layerFreq: 55 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 195, subFreq: 78, noiseAmount: 0.12, layerFreq: 165 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 5200, subFreq: 0, noiseAmount: 0.25, layerFreq: 4400 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 4200, subFreq: 0, noiseAmount: 0.35, layerFreq: 3600 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1250, subFreq: 0, noiseAmount: 0.08, layerFreq: 1450 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 8500, subFreq: 0, noiseAmount: 0.45, layerFreq: 7200 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 360, subFreq: 0, noiseAmount: 0.03, layerFreq: 480 },
-      { id: 'cowbell', label: 'TOM', icon: '🥁', frequency: 700, subFreq: 350, noiseAmount: 0, layerFreq: 525 }
-    ],
-    "Cyber Punk": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 38, subFreq: 22, noiseAmount: 0.12, layerFreq: 28 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 270, subFreq: 125, noiseAmount: 0.35, layerFreq: 240 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 14000, subFreq: 0, noiseAmount: 0.8, layerFreq: 12000 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 12000, subFreq: 0, noiseAmount: 0.9, layerFreq: 10000 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 2400, subFreq: 0, noiseAmount: 0.3, layerFreq: 2800 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 16000, subFreq: 0, noiseAmount: 1.0, layerFreq: 13500 },
-      { id: 'rim', label: 'GLITCH', icon: '🔧', frequency: 750, subFreq: 375, noiseAmount: 0.25, layerFreq: 1125 },
-      { id: 'cowbell', label: 'ACID', icon: '🧪', frequency: 660, subFreq: 330, noiseAmount: 0.1, layerFreq: 990 }
-    ],
-    "Smooth Groove": [
-      { id: 'kick', label: 'KICK', icon: '🥁', frequency: 75, subFreq: 50, noiseAmount: 0, layerFreq: 60 },
-      { id: 'snare', label: 'SNARE', icon: '🎯', frequency: 200, subFreq: 80, noiseAmount: 0.08, layerFreq: 170 },
-      { id: 'hihat', label: 'HI-HAT', icon: '🎩', frequency: 4800, subFreq: 0, noiseAmount: 0.18, layerFreq: 4000 },
-      { id: 'openhat', label: 'OPEN', icon: '🔓', frequency: 3800, subFreq: 0, noiseAmount: 0.28, layerFreq: 3200 },
-      { id: 'clap', label: 'CLAP', icon: '👏', frequency: 1100, subFreq: 0, noiseAmount: 0.04, layerFreq: 1300 },
-      { id: 'crash', label: 'CRASH', icon: '💥', frequency: 7500, subFreq: 0, noiseAmount: 0.35, layerFreq: 6500 },
-      { id: 'rim', label: 'RIM', icon: '🗑️', frequency: 340, subFreq: 0, noiseAmount: 0.01, layerFreq: 450 },
-      { id: 'cowbell', label: 'RIDE', icon: '🎵', frequency: 650, subFreq: 0, noiseAmount: 0, layerFreq: 780 }
-    ]
-  };
+  // Repository configuration
+  const REPO_BASE_URL = 'https://casa24records.github.io/Drum-Machine-PRO';
+  const MANIFEST_URL = `${REPO_BASE_URL}/manifest.json`;
+  
+  // Instrument mapping (UI labels to repository instrument IDs)
+  const instrumentMapping = [
+    { id: 'kick', label: 'KICK', icon: '🥁', repoId: 'kick' },
+    { id: 'snare', label: 'SNARE', icon: '🎯', repoId: 'snare' },
+    { id: 'hihat', label: 'HI-HAT', icon: '🎩', repoId: 'hihat' },
+    { id: 'openhat', label: 'OPEN', icon: '🔓', repoId: 'open' },
+    { id: 'clap', label: 'CLAP', icon: '👏', repoId: 'clap' },
+    { id: 'crash', label: 'CRASH', icon: '💥', repoId: 'crash' },
+    { id: 'rim', label: 'RIM', icon: '🗑️', repoId: 'rim' },
+    { id: 'cowbell', label: 'BELL', icon: '🔔', repoId: 'bell' }
+  ];
   
   // Current configuration
-  let currentConfig = "Panama Heat";
-  let instruments = instrumentConfigs[currentConfig];
+  let currentSoundkit = null;
+  let availableSoundkits = [];
+  let instruments = instrumentMapping;
+  let audioBuffers = {};
 
   // Default parameters with expanded creative options
   const defaultGlobalParams = {
@@ -329,6 +243,65 @@
 
   function gainToDb(gain) {
     return 20 * Math.log10(Math.max(0.0001, gain));
+  }
+
+  // Load soundkits from repository
+  async function loadAvailableSoundkits() {
+    try {
+      const response = await fetch(MANIFEST_URL);
+      const manifest = await response.json();
+      
+      availableSoundkits = manifest.soundkits;
+      
+      // Update the dropdown
+      const kitSelect = document.getElementById('dmKitSelect');
+      if (kitSelect) {
+        kitSelect.innerHTML = availableSoundkits.map(kit => 
+          `<option value="${kit.id}">${kit.name.toUpperCase()}</option>`
+        ).join('');
+        
+        // Load the first soundkit
+        if (availableSoundkits.length > 0) {
+          await loadSoundkit(availableSoundkits[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load soundkits:', error);
+    }
+  }
+
+  // Load a specific soundkit
+  async function loadSoundkit(soundkitId) {
+    const kit = availableSoundkits.find(k => k.id === soundkitId);
+    if (!kit) return;
+    
+    currentSoundkit = kit;
+    
+    if (!audioContext) {
+      initAudio();
+    }
+    
+    // Clear existing buffers
+    audioBuffers = {};
+    
+    // Load all instrument samples
+    const loadPromises = instruments.map(async (inst) => {
+      const repoInstrument = kit.instruments[inst.repoId];
+      if (repoInstrument) {
+        const url = `${REPO_BASE_URL}/samples/${repoInstrument}`;
+        try {
+          const response = await fetch(url);
+          const arrayBuffer = await response.arrayBuffer();
+          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+          audioBuffers[inst.id] = audioBuffer;
+        } catch (error) {
+          console.error(`Failed to load ${inst.id}:`, error);
+        }
+      }
+    });
+    
+    await Promise.all(loadPromises);
+    console.log(`Loaded soundkit: ${kit.name}`);
   }
 
   // Create the drum machine HTML
@@ -1226,9 +1199,7 @@
             <div class="dm-kit-selector">
               <label for="dmKitSelect" class="dm-kit-label">Sound Kit:</label>
               <select class="dm-kit-select" id="dmKitSelect" aria-label="Sound kit selector">
-                ${Object.keys(instrumentConfigs).map(kit => 
-                  `<option value="${kit}" ${kit === currentConfig ? 'selected' : ''}>${kit.toUpperCase()}</option>`
-                ).join('')}
+                <!-- Will be populated dynamically -->
               </select>
             </div>
             <div class="dm-bar-selector">
@@ -1338,12 +1309,15 @@
       </div>
     `;
 
-    createPatternGrid();
-    createMixerChannels();
-    createEffectsPanel();
-    createCreativePanel();
-    setupEventListeners();
-    loadPreset('Traffic jam groove');
+    // Initialize after creating HTML
+    loadAvailableSoundkits().then(() => {
+      createPatternGrid();
+      createMixerChannels();
+      createEffectsPanel();
+      createCreativePanel();
+      setupEventListeners();
+      loadPreset('Traffic jam groove');
+    });
   }
 
   // Create pattern grid
@@ -2271,12 +2245,10 @@
     return { grains, grainSize, overlap };
   }
 
-  // Play sound with full effects chain and layering
+  // Play sound with full effects chain and layering - USING AUDIO BUFFERS
   function playSound(instId, time) {
     if (!audioContext) return;
-
-    const inst = instruments.find(i => i.id === instId);
-    if (!inst) return;
+    if (!audioBuffers[instId]) return;
 
     if (isMuted[instId]) return;
     if (isSolo && soloTrack !== instId) return;
@@ -2288,19 +2260,14 @@
     const shouldReverse = globalParams.reverse.enabled && Math.random() < globalParams.reverse.probability;
 
     // Create main sound
-    playSoundCore(inst, params, now, shouldReverse);
+    playSoundCore(instId, params, now, shouldReverse);
 
     // Create layer if enabled
-    if (params.layer && inst.layerFreq) {
-      const layerInst = Object.assign({}, inst, { 
-        frequency: inst.layerFreq,
-        subFreq: inst.layerFreq / 2
-      });
-      const layerParams = Object.assign({}, params, {
+    if (params.layer) {
+      playSoundCore(instId, Object.assign({}, params, {
         volume: params.volume * params.layerVolume,
         pitch: params.pitch + params.layerPitch
-      });
-      playSoundCore(layerInst, layerParams, now, shouldReverse);
+      }), now, shouldReverse);
     }
 
     // Apply stutter effect
@@ -2310,26 +2277,50 @@
       
       for (let i = 1; i < stutterCount; i++) {
         setTimeout(() => {
-          playSoundCore(inst, Object.assign({}, params, { volume: params.volume * 0.7 }), 
+          playSoundCore(instId, Object.assign({}, params, { volume: params.volume * 0.7 }), 
                        audioContext.currentTime, false);
         }, stutterInterval * i * 1000);
       }
     }
   }
 
-  // Core sound generation with optimized real-time performance
-  function playSoundCore(inst, params, startTime, reverse = false) {
-    const osc = audioContext.createOscillator();
-    const oscGain = audioContext.createGain();
+  // Core sound generation using audio buffers
+  function playSoundCore(instId, params, startTime, reverse = false) {
+    const buffer = audioBuffers[instId];
+    if (!buffer) return;
+
+    const source = audioContext.createBufferSource();
+    const gainNode = audioContext.createGain();
     const panner = audioContext.createStereoPanner();
     
     const referenceGain = dbToGain(REFERENCE_LEVEL);
     panner.pan.value = params.pan;
     
     const pitchMultiplier = Math.pow(2, Math.max(-24, Math.min(24, params.pitch)) / 12);
+    source.playbackRate.value = pitchMultiplier;
     
-    osc.connect(oscGain);
-    oscGain.connect(panner);
+    // Reverse the buffer if needed
+    if (reverse) {
+      const reversedBuffer = audioContext.createBuffer(
+        buffer.numberOfChannels,
+        buffer.length,
+        buffer.sampleRate
+      );
+      
+      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+        const channelData = buffer.getChannelData(channel);
+        const reversedData = reversedBuffer.getChannelData(channel);
+        for (let i = 0; i < buffer.length; i++) {
+          reversedData[i] = channelData[buffer.length - 1 - i];
+        }
+      }
+      source.buffer = reversedBuffer;
+    } else {
+      source.buffer = buffer;
+    }
+    
+    source.connect(gainNode);
+    gainNode.connect(panner);
     
     // Apply effects chain
     let currentNode = panner;
@@ -2513,381 +2504,12 @@
     
     postEffectGain.connect(masterGain);
     
-    // Generate sound
+    // Set volume
     const baseVolume = params.volume * referenceGain;
+    gainNode.gain.value = baseVolume;
     
-    // Apply reverse envelope if needed
-    const duration = getInstrumentDuration(inst.id);
-    
-    if (reverse) {
-      oscGain.gain.setValueAtTime(0.01, startTime);
-      oscGain.gain.exponentialRampToValueAtTime(baseVolume, startTime + duration);
-    } else {
-      oscGain.gain.setValueAtTime(baseVolume, startTime);
-      oscGain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-    }
-    
-    // Generate instrument-specific sound
-    generateInstrumentSound(inst, osc, oscGain, panner, dryGain, wetGain, 
-                           startTime, baseVolume, pitchMultiplier, params);
-  }
-
-  // Get instrument duration
-  function getInstrumentDuration(instId) {
-    const durations = {
-      kick: 0.5,
-      snare: 0.2,
-      hihat: 0.05,
-      openhat: 0.3,
-      clap: 0.1,
-      crash: 1.5,
-      rim: 0.05,
-      cowbell: 0.2
-    };
-    return durations[instId] || 0.1;
-  }
-
-  // Generate instrument-specific sounds
-  function generateInstrumentSound(inst, osc, oscGain, panner, dryGain, wetGain, 
-                                  startTime, baseVolume, pitchMultiplier, params) {
-    const now = startTime;
-    
-    switch(inst.id) {
-      case 'kick':
-        osc.frequency.setValueAtTime(150 * pitchMultiplier, now);
-        osc.frequency.exponentialRampToValueAtTime(inst.frequency * pitchMultiplier, now + 0.05);
-        osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.5);
-        osc.start(now);
-        osc.stop(now + 0.5);
-        
-        // Sub oscillator
-        if (inst.subFreq) {
-          const subOsc = audioContext.createOscillator();
-          const subGain = audioContext.createGain();
-          subOsc.frequency.value = inst.subFreq * pitchMultiplier;
-          subOsc.type = 'sine';
-          subGain.gain.setValueAtTime(baseVolume * 0.5, now);
-          subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-          subOsc.connect(subGain);
-          subGain.connect(panner);
-          subOsc.start(now);
-          subOsc.stop(now + 0.5);
-        }
-        break;
-
-      case 'snare':
-        osc.frequency.setValueAtTime(inst.frequency * pitchMultiplier, now);
-        osc.type = 'triangle';
-        
-        const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.2, audioContext.sampleRate);
-        const noiseData = noiseBuffer.getChannelData(0);
-        for (let i = 0; i < noiseBuffer.length; i++) {
-          noiseData[i] = Math.random() * 2 - 1;
-        }
-        
-        const noise = audioContext.createBufferSource();
-        noise.buffer = noiseBuffer;
-        const noiseGain = audioContext.createGain();
-        const noisePanner = audioContext.createStereoPanner();
-        const noiseFilter = audioContext.createBiquadFilter();
-        
-        noiseFilter.type = 'highpass';
-        noiseFilter.frequency.value = 2000;
-        noisePanner.pan.value = params.pan;
-        
-        noise.connect(noiseFilter);
-        noiseFilter.connect(noiseGain);
-        noiseGain.connect(noisePanner);
-        noisePanner.connect(wetGain);
-        noisePanner.connect(dryGain);
-        
-        noiseGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
-        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-        
-        // Add sub tone
-        if (inst.subFreq) {
-          const subOsc = audioContext.createOscillator();
-          const subGain = audioContext.createGain();
-          subOsc.frequency.value = inst.subFreq * pitchMultiplier;
-          subOsc.type = 'sine';
-          subGain.gain.setValueAtTime(baseVolume * 0.3, now);
-          subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-          subOsc.connect(subGain);
-          subGain.connect(panner);
-          subOsc.start(now);
-          subOsc.stop(now + 0.2);
-        }
-        
-        osc.start(now);
-        osc.stop(now + 0.2);
-        noise.start(now);
-        noise.stop(now + 0.2);
-        break;
-
-      case 'hihat':
-      case 'openhat':
-        osc.type = 'square';
-        osc.frequency.value = inst.frequency * pitchMultiplier;
-        
-        const hihatFilter = audioContext.createBiquadFilter();
-        hihatFilter.type = 'highpass';
-        hihatFilter.frequency.value = 5000;
-        hihatFilter.Q.value = 1;
-        
-        const hihatEnvFilter = audioContext.createBiquadFilter();
-        hihatEnvFilter.type = 'highpass';
-        hihatEnvFilter.frequency.setValueAtTime(8000, now);
-        hihatEnvFilter.frequency.exponentialRampToValueAtTime(2000, now + 0.1);
-        
-        panner.disconnect();
-        panner.connect(hihatFilter);
-        hihatFilter.connect(hihatEnvFilter);
-        hihatEnvFilter.connect(dryGain);
-        hihatEnvFilter.connect(wetGain);
-        
-        // Add metallic noise
-        const metalBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.1, audioContext.sampleRate);
-        const metalData = metalBuffer.getChannelData(0);
-        for (let i = 0; i < metalBuffer.length; i++) {
-          metalData[i] = (Math.random() * 2 - 1) * Math.sin(i * 0.1);
-        }
-        
-        const metalNoise = audioContext.createBufferSource();
-        metalNoise.buffer = metalBuffer;
-        const metalGain = audioContext.createGain();
-        metalGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
-        metalGain.gain.exponentialRampToValueAtTime(0.01, now + (inst.id === 'openhat' ? 0.3 : 0.05));
-        
-        metalNoise.connect(metalGain);
-        metalGain.connect(hihatFilter);
-        
-        const duration = inst.id === 'openhat' ? 0.3 : 0.05;
-        osc.start(now);
-        osc.stop(now + duration);
-        metalNoise.start(now);
-        metalNoise.stop(now + duration);
-        break;
-
-      case 'clap':
-        // Multi-layered clap
-        const clapLayers = 4;
-        for (let i = 0; i < clapLayers; i++) {
-          const clapOsc = audioContext.createOscillator();
-          const clapGain = audioContext.createGain();
-          const clapFilter = audioContext.createBiquadFilter();
-          const clapPanner = audioContext.createStereoPanner();
-          
-          clapOsc.frequency.value = inst.frequency * pitchMultiplier * (1 + i * 0.1);
-          clapOsc.type = 'square';
-          
-          clapFilter.type = 'bandpass';
-          clapFilter.frequency.value = 1500 + i * 200;
-          clapFilter.Q.value = 10;
-          
-          clapPanner.pan.value = params.pan + (Math.random() - 0.5) * 0.2;
-          
-          clapOsc.connect(clapFilter);
-          clapFilter.connect(clapGain);
-          clapGain.connect(clapPanner);
-          clapPanner.connect(dryGain);
-          clapPanner.connect(wetGain);
-          
-          const startT = now + i * 0.01;
-          clapGain.gain.setValueAtTime(baseVolume * 0.3 * (1 - i * 0.2), startT);
-          clapGain.gain.exponentialRampToValueAtTime(0.01, startT + 0.02);
-          
-          clapOsc.start(startT);
-          clapOsc.stop(startT + 0.02);
-        }
-        
-        // Add noise burst
-        const clapNoiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.03, audioContext.sampleRate);
-        const clapNoiseData = clapNoiseBuffer.getChannelData(0);
-        for (let i = 0; i < clapNoiseBuffer.length; i++) {
-          clapNoiseData[i] = Math.random() * 2 - 1;
-        }
-        
-        const clapNoise = audioContext.createBufferSource();
-        clapNoise.buffer = clapNoiseBuffer;
-        const clapNoiseGain = audioContext.createGain();
-        const clapNoiseFilter = audioContext.createBiquadFilter();
-        
-        clapNoiseFilter.type = 'highpass';
-        clapNoiseFilter.frequency.value = 1000;
-        
-        clapNoise.connect(clapNoiseFilter);
-        clapNoiseFilter.connect(clapNoiseGain);
-        clapNoiseGain.connect(panner);
-        
-        clapNoiseGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
-        clapNoiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-        
-        osc.frequency.value = inst.frequency * pitchMultiplier;
-        oscGain.gain.setValueAtTime(0, now);
-        osc.start(now);
-        osc.stop(now + 0.1);
-        clapNoise.start(now);
-        clapNoise.stop(now + 0.05);
-        break;
-
-      case 'crash':
-        // Complex metallic crash
-        const crashBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 1.5, audioContext.sampleRate);
-        const crashData = crashBuffer.getChannelData(0);
-        for (let i = 0; i < crashBuffer.length; i++) {
-          crashData[i] = Math.random() * 2 - 1;
-        }
-        
-        const crashNoise = audioContext.createBufferSource();
-        crashNoise.buffer = crashBuffer;
-        const crashGain = audioContext.createGain();
-        const crashFilter = audioContext.createBiquadFilter();
-        const crashFilter2 = audioContext.createBiquadFilter();
-        const crashPanner = audioContext.createStereoPanner();
-        
-        crashFilter.type = 'bandpass';
-        crashFilter.frequency.value = inst.frequency * pitchMultiplier;
-        crashFilter.Q.value = 0.5;
-        
-        crashFilter2.type = 'highpass';
-        crashFilter2.frequency.value = 8000;
-        
-        crashPanner.pan.value = params.pan;
-        
-        crashNoise.connect(crashGain);
-        crashGain.connect(crashFilter);
-        crashFilter.connect(crashFilter2);
-        crashFilter2.connect(crashPanner);
-        crashPanner.connect(dryGain);
-        crashPanner.connect(wetGain);
-        
-        crashGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
-        crashGain.gain.exponentialRampToValueAtTime(baseVolume * 0.3, now + 0.5);
-        crashGain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
-        
-        // Add shimmer
-        const shimmerOsc = audioContext.createOscillator();
-        const shimmerGain = audioContext.createGain();
-        shimmerOsc.frequency.value = inst.frequency * 2 * pitchMultiplier;
-        shimmerOsc.type = 'triangle';
-        
-        shimmerGain.gain.setValueAtTime(baseVolume * 0.2, now);
-        shimmerGain.gain.exponentialRampToValueAtTime(0.01, now + 1);
-        
-        shimmerOsc.connect(shimmerGain);
-        shimmerGain.connect(crashFilter2);
-        
-        crashNoise.start(now);
-        crashNoise.stop(now + 1.5);
-        shimmerOsc.start(now);
-        shimmerOsc.stop(now + 1);
-        
-        oscGain.gain.value = 0;
-        osc.start(now);
-        osc.stop(now + 0.01);
-        break;
-
-      case 'rim':
-        osc.type = 'sine';
-        osc.frequency.value = inst.frequency * pitchMultiplier;
-        
-        const clickOsc = audioContext.createOscillator();
-        const clickGain = audioContext.createGain();
-        const clickFilter = audioContext.createBiquadFilter();
-        const clickPanner = audioContext.createStereoPanner();
-        
-        clickOsc.frequency.value = 2000 * pitchMultiplier;
-        clickOsc.type = 'square';
-        
-        clickFilter.type = 'highpass';
-        clickFilter.frequency.value = 1000;
-        
-        clickPanner.pan.value = params.pan;
-        
-        clickOsc.connect(clickFilter);
-        clickFilter.connect(clickGain);
-        clickGain.connect(clickPanner);
-        clickPanner.connect(dryGain);
-        clickPanner.connect(wetGain);
-        
-        clickGain.gain.setValueAtTime(baseVolume * 0.5, now);
-        clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.01);
-        
-        // Add wood tone
-        if (inst.noiseAmount > 0) {
-          const woodBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.05, audioContext.sampleRate);
-          const woodData = woodBuffer.getChannelData(0);
-          for (let i = 0; i < woodBuffer.length; i++) {
-            woodData[i] = (Math.random() * 2 - 1) * Math.exp(-i * 0.0001);
-          }
-          
-          const woodNoise = audioContext.createBufferSource();
-          woodNoise.buffer = woodBuffer;
-          const woodGain = audioContext.createGain();
-          
-          woodGain.gain.setValueAtTime(baseVolume * inst.noiseAmount, now);
-          woodGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-          
-          woodNoise.connect(woodGain);
-          woodGain.connect(panner);
-          
-          woodNoise.start(now);
-          woodNoise.stop(now + 0.05);
-        }
-        
-        osc.start(now);
-        osc.stop(now + 0.05);
-        clickOsc.start(now);
-        clickOsc.stop(now + 0.01);
-        break;
-
-      case 'cowbell':
-        const cowbellOsc2 = audioContext.createOscillator();
-        const cowbellGain2 = audioContext.createGain();
-        const cowbellFilter = audioContext.createBiquadFilter();
-        
-        osc.frequency.value = inst.frequency * pitchMultiplier;
-        cowbellOsc2.frequency.value = inst.frequency * 1.48 * pitchMultiplier;
-        
-        osc.type = 'square';
-        cowbellOsc2.type = 'square';
-        
-        cowbellFilter.type = 'bandpass';
-        cowbellFilter.frequency.value = inst.frequency * pitchMultiplier;
-        cowbellFilter.Q.value = 15;
-        
-        cowbellOsc2.connect(cowbellGain2);
-        cowbellGain2.connect(cowbellFilter);
-        cowbellFilter.connect(panner);
-        
-        cowbellGain2.gain.setValueAtTime(baseVolume * 0.4, now);
-        cowbellGain2.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-        
-        // Add sub frequency if present
-        if (inst.subFreq) {
-          const subOsc = audioContext.createOscillator();
-          const subGain = audioContext.createGain();
-          subOsc.frequency.value = inst.subFreq * pitchMultiplier;
-          subOsc.type = 'sine';
-          subGain.gain.setValueAtTime(baseVolume * 0.3, now);
-          subGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-          subOsc.connect(subGain);
-          subGain.connect(panner);
-          subOsc.start(now);
-          subOsc.stop(now + 0.2);
-        }
-        
-        osc.start(now);
-        osc.stop(now + 0.2);
-        cowbellOsc2.start(now);
-        cowbellOsc2.stop(now + 0.2);
-        break;
-
-      default:
-        osc.frequency.value = inst.frequency * pitchMultiplier;
-        osc.start(now);
-        osc.stop(now + 0.1);
-    }
+    // Start playback
+    source.start(startTime);
   }
 
   // Sequencer functions with lookahead scheduling
@@ -3094,36 +2716,6 @@
         btn.classList.remove('active');
       }
     });
-  }
-
-  // Configuration changes
-  function changeConfiguration(configName) {
-    if (instrumentConfigs[configName]) {
-      currentConfig = configName;
-      instruments = instrumentConfigs[configName];
-      
-      const tempPattern = {};
-      instruments.forEach(inst => {
-        tempPattern[inst.id] = pattern[inst.id] || new Array(32).fill(0);
-        
-        if (!globalParams.instrumentParams[inst.id]) {
-          globalParams.instrumentParams[inst.id] = {
-            volume: 0.7,
-            pitch: 0,
-            decay: 1.0,
-            pan: 0,
-            layer: false,
-            layerVolume: 0.5,
-            layerPitch: 12
-          };
-        }
-      });
-      pattern = tempPattern;
-      
-      createPatternGrid();
-      createMixerChannels();
-      updatePattern();
-    }
   }
 
   function changeBarMode(bars) {
@@ -3348,24 +2940,51 @@
       offlineMaster.connect(offlineLimiter);
       offlineLimiter.connect(offlineContext.destination);
 
+      // Load buffers for offline context
+      const offlineBuffers = {};
+      for (const [instId, buffer] of Object.entries(audioBuffers)) {
+        if (buffer) {
+          const offlineBuffer = offlineContext.createBuffer(
+            buffer.numberOfChannels,
+            buffer.length,
+            buffer.sampleRate
+          );
+          
+          for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+            const sourceData = buffer.getChannelData(channel);
+            const targetData = offlineBuffer.getChannelData(channel);
+            for (let i = 0; i < buffer.length; i++) {
+              targetData[i] = sourceData[i];
+            }
+          }
+          
+          offlineBuffers[instId] = offlineBuffer;
+        }
+      }
+
       for (let step = 0; step < STEPS; step++) {
         const stepTime = step * stepDuration;
         
         instruments.forEach(inst => {
-          if (pattern[inst.id][step]) {
-            // Simplified offline rendering
-            const osc = offlineContext.createOscillator();
+          if (pattern[inst.id][step] && offlineBuffers[inst.id]) {
+            const source = offlineContext.createBufferSource();
             const gain = offlineContext.createGain();
+            const panner = offlineContext.createStereoPanner();
             
-            osc.frequency.value = inst.frequency;
-            gain.gain.setValueAtTime(0.5, stepTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, stepTime + 0.1);
+            source.buffer = offlineBuffers[inst.id];
             
-            osc.connect(gain);
-            gain.connect(offlineMaster);
+            const params = globalParams.instrumentParams[inst.id];
+            gain.gain.value = params.volume * 0.5;
+            panner.pan.value = params.pan;
             
-            osc.start(stepTime);
-            osc.stop(stepTime + 0.1);
+            const pitchMultiplier = Math.pow(2, params.pitch / 12);
+            source.playbackRate.value = pitchMultiplier;
+            
+            source.connect(gain);
+            gain.connect(panner);
+            panner.connect(offlineMaster);
+            
+            source.start(stepTime);
           }
         });
       }
@@ -3506,9 +3125,9 @@
       });
     }
 
-    // Kit selector
-    document.getElementById('dmKitSelect')?.addEventListener('change', (e) => {
-      changeConfiguration(e.target.value);
+    // Kit selector - Now loads from repository
+    document.getElementById('dmKitSelect')?.addEventListener('change', async (e) => {
+      await loadSoundkit(e.target.value);
     });
 
     // Bar selector
