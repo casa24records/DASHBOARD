@@ -278,7 +278,7 @@ const Life24Viewer = (() => {
         
         const response = await utils.retry(async () => {
           const res = await fetch(url.toString(), {
-            signal: state.abortController.signal
+            signal: state.abortController ? state.abortController.signal : undefined
           });
           
           if (!res.ok) {
@@ -327,7 +327,7 @@ const Life24Viewer = (() => {
       } catch (error) {
         if (error.name === 'AbortError') {
           console.log('Request was cancelled');
-          return state.magazines; // Return existing magazines
+          return state.magazines || []; // Return existing magazines or empty array
         }
         throw error;
       } finally {
@@ -830,7 +830,11 @@ const Life24Viewer = (() => {
     cleanup() {
       // Cancel any pending requests
       if (state.abortController) {
-        state.abortController.abort();
+        try {
+          state.abortController.abort();
+        } catch (e) {
+          console.warn('Error aborting request:', e);
+        }
       }
       
       // Close modal if open
