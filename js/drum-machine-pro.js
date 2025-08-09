@@ -206,7 +206,18 @@
       crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
       rim:     [0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0],
       cowbell: [0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0]
-    }
+    },
+    "Minimal": {
+      bpm: 120,
+      kick:    [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+      snare:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+      hihat:   [0,0,1,0,0,0,0,1,0,0,0,0,0,0,1,0],
+      openhat: [0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0],
+      clap:    [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+      crash:   [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      rim:     [0,1,0,0,0,0,0,0,0,0,0,0,0,1,0,0],
+      cowbell: [0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0]
+    },
   };
 
   // State management
@@ -1264,6 +1275,7 @@
           <button class="dm-preset-btn" data-preset="Robofunk" aria-label="Load Robofunk preset">Robofunk</button>
           <button class="dm-preset-btn" data-preset="Power pose" aria-label="Load Power pose preset">Power pose</button>
           <button class="dm-preset-btn" data-preset="Future Funk" aria-label="Load Future Funk preset">Future Funk</button>
+          <button class="dm-preset-btn" data-preset="Minimal" aria-label="Load Minimal preset">Minimal</button>
         </div>
 
         <!-- Panel Toggle -->
