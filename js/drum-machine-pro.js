@@ -61,26 +61,6 @@
       sweep: false,
       sweepSpeed: 0.5
     },
-    compression: { 
-      enabled: false, 
-      threshold: -20,
-      ratio: 4,
-      attack: 0.003,
-      release: 0.25,
-      makeup: 0
-    },
-    distortion: {
-      enabled: false,
-      amount: 0.1,
-      tone: 0.5,
-      type: 'soft'
-    },
-    chorus: {
-      enabled: false,
-      rate: 1.5,
-      depth: 0.3,
-      mix: 0.3
-    },
     phaser: {
       enabled: false,
       rate: 0.5,
@@ -93,10 +73,6 @@
       bits: 8,
       downsample: 1
     },
-    stereoWidth: {
-      enabled: false,
-      width: 1.0
-    },
     // Creative effects
     gatedReverb: {
       enabled: false,
@@ -104,20 +80,10 @@
       hold: 0.1,
       decay: 0.05
     },
-    tapeStop: {
-      enabled: false,
-      speed: 0.5,
-      active: false
-    },
     stutter: {
       enabled: false,
       division: 16,
       probability: 0.5
-    },
-    glitch: {
-      enabled: false,
-      intensity: 0.5,
-      frequency: 0.3
     },
     reverse: {
       enabled: false,
@@ -1259,9 +1225,7 @@
         <div class="dm-creative-section">
           <div class="dm-creative-header">CREATIVE FX</div>
           <div class="dm-creative-controls">
-            <button class="dm-creative-btn" id="dmTapeStopBtn" aria-label="Toggle tape stop effect">TAPE STOP</button>
             <button class="dm-creative-btn" id="dmStutterBtn" aria-label="Toggle stutter effect">STUTTER</button>
-            <button class="dm-creative-btn" id="dmGlitchBtn" aria-label="Toggle glitch effect">GLITCH</button>
             <button class="dm-creative-btn" id="dmReverseBtn" aria-label="Toggle reverse effect">REVERSE</button>
             <button class="dm-creative-btn" id="dmGranularBtn" aria-label="Toggle granular effect">GRANULAR</button>
             <button class="dm-creative-btn" id="dmLayeringBtn" aria-label="Toggle layering">LAYERING</button>
@@ -1574,92 +1538,6 @@
         </div>
       </div>
 
-      <!-- Compression -->
-      <div class="dm-effect-unit" id="dmCompUnit">
-        <div class="dm-effect-header">
-          <span class="dm-effect-title">COMPRESSOR</span>
-          <button class="dm-effect-toggle" id="dmCompToggle"
-                  aria-label="Toggle compressor effect"
-                  role="switch" aria-checked="false"></button>
-        </div>
-        <div class="dm-effect-controls">
-          <div class="dm-effect-param">
-            <label for="dmCompThreshold" class="dm-effect-param-label">Threshold</label>
-            <span class="dm-effect-param-value" id="dmCompThresholdVal">-20dB</span>
-          </div>
-          <input type="range" class="dm-effect-slider" id="dmCompThreshold" min="-60" max="0" value="-20">
-          <div class="dm-effect-param">
-            <label for="dmCompRatio" class="dm-effect-param-label">Ratio</label>
-            <span class="dm-effect-param-value" id="dmCompRatioVal">4:1</span>
-          </div>
-          <input type="range" class="dm-effect-slider" id="dmCompRatio" min="1" max="20" value="4">
-          <div class="dm-effect-param">
-            <label for="dmCompAttack" class="dm-effect-param-label">Attack</label>
-            <span class="dm-effect-param-value" id="dmCompAttackVal">3ms</span>
-          </div>
-          <input type="range" class="dm-effect-slider" id="dmCompAttack" min="0" max="100" value="3">
-          <div class="dm-effect-param">
-            <label for="dmCompRelease" class="dm-effect-param-label">Release</label>
-            <span class="dm-effect-param-value" id="dmCompReleaseVal">250ms</span>
-          </div>
-          <input type="range" class="dm-effect-slider" id="dmCompRelease" min="10" max="1000" value="250">
-        </div>
-      </div>
-
-      <!-- Distortion -->
-      <div class="dm-effect-unit" id="dmDistUnit">
-        <div class="dm-effect-header">
-          <span class="dm-effect-title">DISTORTION</span>
-          <button class="dm-effect-toggle" id="dmDistToggle"
-                  aria-label="Toggle distortion effect"
-                  role="switch" aria-checked="false"></button>
-        </div>
-        <div class="dm-effect-controls">
-          <div class="dm-effect-param">
-            <label for="dmDistDrive" class="dm-effect-param-label">Drive</label>
-            <span class="dm-effect-param-value" id="dmDistDriveVal">10%</span>
-          </div>
-          <input type="range" class="dm-effect-slider" id="dmDistDrive" min="0" max="100" value="10">
-          <div class="dm-effect-param">
-            <label for="dmDistTone" class="dm-effect-param-label">Tone</label>
-            <span class="dm-effect-param-value" id="dmDistToneVal">50%</span>
-          </div>
-          <input type="range" class="dm-effect-slider" id="dmDistTone" min="0" max="100" value="50">
-          <div class="dm-effect-preset-selector">
-            <button class="dm-effect-preset-btn active" data-type="soft" aria-label="Soft distortion type">SOFT</button>
-            <button class="dm-effect-preset-btn" data-type="hard" aria-label="Hard distortion type">HARD</button>
-            <button class="dm-effect-preset-btn" data-type="fuzz" aria-label="Fuzz distortion type">FUZZ</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Chorus -->
-      <div class="dm-effect-unit" id="dmChorusUnit">
-        <div class="dm-effect-header">
-          <span class="dm-effect-title">CHORUS</span>
-          <button class="dm-effect-toggle" id="dmChorusToggle"
-                  aria-label="Toggle chorus effect"
-                  role="switch" aria-checked="false"></button>
-        </div>
-        <div class="dm-effect-controls">
-          <div class="dm-effect-param">
-            <label for="dmChorusRate" class="dm-effect-param-label">Rate</label>
-            <span class="dm-effect-param-value" id="dmChorusRateVal">1.5Hz</span>
-          </div>
-          <input type="range" class="dm-effect-slider" id="dmChorusRate" min="0.1" max="10" value="1.5" step="0.1">
-          <div class="dm-effect-param">
-            <label for="dmChorusDepth" class="dm-effect-param-label">Depth</label>
-            <span class="dm-effect-param-value" id="dmChorusDepthVal">30%</span>
-          </div>
-          <input type="range" class="dm-effect-slider" id="dmChorusDepth" min="0" max="100" value="30">
-          <div class="dm-effect-param">
-            <label for="dmChorusMix" class="dm-effect-param-label">Mix</label>
-            <span class="dm-effect-param-value" id="dmChorusMixVal">30%</span>
-          </div>
-          <input type="range" class="dm-effect-slider" id="dmChorusMix" min="0" max="100" value="30">
-        </div>
-      </div>
-
       <!-- Phaser -->
       <div class="dm-effect-unit" id="dmPhaserUnit">
         <div class="dm-effect-header">
@@ -1708,23 +1586,6 @@
           <input type="range" class="dm-effect-slider" id="dmBitcrusherDownsample" min="1" max="20" value="1">
         </div>
       </div>
-
-      <!-- Stereo Width -->
-      <div class="dm-effect-unit" id="dmStereoWidthUnit">
-        <div class="dm-effect-header">
-          <span class="dm-effect-title">STEREO WIDTH</span>
-          <button class="dm-effect-toggle" id="dmStereoWidthToggle"
-                  aria-label="Toggle stereo width effect"
-                  role="switch" aria-checked="false"></button>
-        </div>
-        <div class="dm-effect-controls">
-          <div class="dm-effect-param">
-            <label for="dmStereoWidth" class="dm-effect-param-label">Width</label>
-            <span class="dm-effect-param-value" id="dmStereoWidthVal">100%</span>
-          </div>
-          <input type="range" class="dm-effect-slider" id="dmStereoWidth" min="0" max="200" value="100">
-        </div>
-      </div>
     `;
   }
 
@@ -1761,24 +1622,6 @@
         </div>
       </div>
 
-      <!-- Tape Stop -->
-      <div class="dm-effect-unit" id="dmTapeStopUnit">
-        <div class="dm-effect-header">
-          <span class="dm-effect-title">TAPE STOP</span>
-          <button class="dm-effect-toggle" id="dmTapeStopToggle"
-                  aria-label="Toggle tape stop effect"
-                  role="switch" aria-checked="false"></button>
-        </div>
-        <div class="dm-effect-controls">
-          <div class="dm-effect-param">
-            <label for="dmTapeStopSpeed" class="dm-effect-param-label">Speed</label>
-            <span class="dm-effect-param-value" id="dmTapeStopSpeedVal">50%</span>
-          </div>
-          <input type="range" class="dm-effect-slider" id="dmTapeStopSpeed" min="10" max="100" value="50">
-          <button class="dm-effect-preset-btn" id="dmTapeStopTrigger" aria-label="Trigger tape stop effect">TRIGGER</button>
-        </div>
-      </div>
-
       <!-- Stutter -->
       <div class="dm-effect-unit" id="dmStutterUnit">
         <div class="dm-effect-header">
@@ -1798,28 +1641,6 @@
             <span class="dm-effect-param-value" id="dmStutterProbabilityVal">50%</span>
           </div>
           <input type="range" class="dm-effect-slider" id="dmStutterProbability" min="0" max="100" value="50">
-        </div>
-      </div>
-
-      <!-- Glitch -->
-      <div class="dm-effect-unit" id="dmGlitchUnit">
-        <div class="dm-effect-header">
-          <span class="dm-effect-title">GLITCH</span>
-          <button class="dm-effect-toggle" id="dmGlitchToggle"
-                  aria-label="Toggle glitch effect"
-                  role="switch" aria-checked="false"></button>
-        </div>
-        <div class="dm-effect-controls">
-          <div class="dm-effect-param">
-            <label for="dmGlitchIntensity" class="dm-effect-param-label">Intensity</label>
-            <span class="dm-effect-param-value" id="dmGlitchIntensityVal">50%</span>
-          </div>
-          <input type="range" class="dm-effect-slider" id="dmGlitchIntensity" min="0" max="100" value="50">
-          <div class="dm-effect-param">
-            <label for="dmGlitchFrequency" class="dm-effect-param-label">Frequency</label>
-            <span class="dm-effect-param-value" id="dmGlitchFrequencyVal">30%</span>
-          </div>
-          <input type="range" class="dm-effect-slider" id="dmGlitchFrequency" min="0" max="100" value="30">
         </div>
       </div>
 
@@ -1888,16 +1709,10 @@
         reverb: createReverb(),
         delay: createDelay(),
         filter: createFilter(),
-        compressor: createCompressor(),
-        distortion: createDistortion(),
-        chorus: createChorus(),
         phaser: createPhaser(),
         bitcrusher: createBitcrusher(),
-        stereoWidth: createStereoWidth(),
         gatedReverb: createGatedReverb(),
-        tapeStop: createTapeStop(),
         stutter: createStutter(),
-        glitch: createGlitch(),
         granular: createGranular(),
         limiter: limiter
       };
@@ -2022,79 +1837,6 @@
     return { filter, lfo, lfoGain };
   }
 
-  function createCompressor() {
-    const compressor = audioContext.createDynamicsCompressor();
-    compressor.threshold.value = -20;
-    compressor.ratio.value = 4;
-    compressor.attack.value = 0.003;
-    compressor.release.value = 0.25;
-    return compressor;
-  }
-
-  function createDistortion() {
-    const waveshaper = audioContext.createWaveShaper();
-    const inputGain = audioContext.createGain();
-    const outputGain = audioContext.createGain();
-    const toneFilter = audioContext.createBiquadFilter();
-    
-    inputGain.gain.value = 1;
-    outputGain.gain.value = 1;
-    toneFilter.type = 'highshelf';
-    toneFilter.frequency.value = 3000;
-    toneFilter.gain.value = 0;
-    
-    const updateCurve = (type) => {
-      const samples = 44100;
-      const curve = new Float32Array(samples);
-      
-      for (let i = 0; i < samples; i++) {
-        const x = (i * 2) / samples - 1;
-        
-        switch(type) {
-          case 'soft':
-            curve[i] = Math.tanh(x * 2);
-            break;
-          case 'hard':
-            curve[i] = Math.sign(x) * Math.min(Math.abs(x * 5), 1);
-            break;
-          case 'fuzz':
-            curve[i] = Math.sign(x) * (1 - Math.exp(-Math.abs(x * 10)));
-            break;
-          default:
-            curve[i] = x;
-        }
-      }
-      
-      waveshaper.curve = curve;
-    };
-    
-    updateCurve(globalParams.distortion.type);
-    waveshaper.oversample = '4x';
-    
-    return { waveshaper, inputGain, outputGain, toneFilter, updateCurve };
-  }
-
-  function createChorus() {
-    const delay = audioContext.createDelay(0.1);
-    const lfo = audioContext.createOscillator();
-    const lfoGain = audioContext.createGain();
-    const wetGain = audioContext.createGain();
-    
-    lfo.type = 'sine';
-    lfo.frequency.value = 1.5;
-    lfoGain.gain.value = 0.002;
-    wetGain.gain.value = 0;
-    
-    lfo.connect(lfoGain);
-    lfoGain.connect(delay.delayTime);
-    
-    delay.delayTime.value = 0.02;
-    
-    lfo.start();
-    
-    return { delay, lfo, lfoGain, wetGain };
-  }
-
   function createPhaser() {
     const stages = [];
     const lfo = audioContext.createOscillator();
@@ -2149,18 +1891,6 @@
     };
   }
 
-  function createStereoWidth() {
-    const splitter = audioContext.createChannelSplitter(2);
-    const merger = audioContext.createChannelMerger(2);
-    const midGain = audioContext.createGain();
-    const sideGain = audioContext.createGain();
-    
-    midGain.gain.value = 1;
-    sideGain.gain.value = 1;
-    
-    return { splitter, merger, midGain, sideGain };
-  }
-
   // Creative effects
   function createGatedReverb() {
     const convolver = audioContext.createConvolver();
@@ -2183,21 +1913,6 @@
     return { convolver, gate };
   }
 
-  function createTapeStop() {
-    const delayNode = audioContext.createDelay(1);
-    const feedbackGain = audioContext.createGain();
-    const outputGain = audioContext.createGain();
-    
-    delayNode.delayTime.value = 0;
-    feedbackGain.gain.value = 0.9;
-    outputGain.gain.value = 1;
-    
-    delayNode.connect(feedbackGain);
-    feedbackGain.connect(delayNode);
-    
-    return { delayNode, feedbackGain, outputGain };
-  }
-
   function createStutter() {
     const bufferSize = audioContext.sampleRate * 2;
     const buffer = audioContext.createBuffer(2, bufferSize, audioContext.sampleRate);
@@ -2207,39 +1922,6 @@
     bufferSource.loop = true;
     
     return { buffer, bufferSource };
-  }
-
-  function createGlitch() {
-    // Replace with waveshaper-based glitch effect
-    const waveshaper = audioContext.createWaveShaper();
-    let glitchIntensity = 0.5;
-    let glitchFrequency = 0.3;
-    
-    const updateCurve = () => {
-      const samples = 256;
-      const curve = new Float32Array(samples);
-      
-      for (let i = 0; i < samples; i++) {
-        const x = (i * 2) / samples - 1;
-        
-        if (Math.random() < glitchFrequency) {
-          // Apply glitch distortion
-          curve[i] = Math.round(x * 4) / 4 * glitchIntensity + x * (1 - glitchIntensity);
-        } else {
-          curve[i] = x;
-        }
-      }
-      
-      waveshaper.curve = curve;
-    };
-    
-    updateCurve();
-    
-    return {
-      scriptNode: waveshaper,
-      setIntensity: (val) => { glitchIntensity = val; updateCurve(); },
-      setFrequency: (val) => { glitchFrequency = val; updateCurve(); }
-    };
   }
 
   function createGranular() {
@@ -2338,36 +2020,12 @@
     let currentNode = panner;
     let compensationGain = 1;
     
-    // Glitch effect
-    if (globalParams.glitch.enabled && effectsChain.glitch) {
-      effectsChain.glitch.setIntensity(globalParams.glitch.intensity);
-      effectsChain.glitch.setFrequency(globalParams.glitch.frequency);
-      currentNode.connect(effectsChain.glitch.scriptNode);
-      currentNode = effectsChain.glitch.scriptNode;
-    }
-    
     // Bitcrusher
     if (globalParams.bitcrusher.enabled && effectsChain.bitcrusher) {
       currentNode.connect(effectsChain.bitcrusher.scriptNode);
       currentNode = effectsChain.bitcrusher.scriptNode;
       effectsChain.bitcrusher.setBits(globalParams.bitcrusher.bits);
       effectsChain.bitcrusher.setDownsample(globalParams.bitcrusher.downsample);
-    }
-    
-    // Distortion
-    if (globalParams.distortion.enabled && effectsChain.distortion) {
-      effectsChain.distortion.updateCurve(globalParams.distortion.type);
-      effectsChain.distortion.inputGain.gain.value = 1 + globalParams.distortion.amount;
-      effectsChain.distortion.outputGain.gain.value = 1 / (1 + globalParams.distortion.amount * 0.5);
-      effectsChain.distortion.toneFilter.gain.value = globalParams.distortion.tone * 12 - 6;
-      
-      currentNode.connect(effectsChain.distortion.inputGain);
-      effectsChain.distortion.inputGain.connect(effectsChain.distortion.waveshaper);
-      effectsChain.distortion.waveshaper.connect(effectsChain.distortion.toneFilter);
-      effectsChain.distortion.toneFilter.connect(effectsChain.distortion.outputGain);
-      currentNode = effectsChain.distortion.outputGain;
-      
-      compensationGain *= 0.8;
     }
     
     // Filter with sweep
@@ -2404,19 +2062,6 @@
         }
       }
       currentNode = effectsChain.phaser.stages[activeStages - 1];
-    }
-    
-    // Compression
-    if (globalParams.compression.enabled && effectsChain.compressor) {
-      effectsChain.compressor.threshold.value = globalParams.compression.threshold;
-      effectsChain.compressor.ratio.value = globalParams.compression.ratio;
-      effectsChain.compressor.attack.value = globalParams.compression.attack / 1000;
-      effectsChain.compressor.release.value = globalParams.compression.release / 1000;
-      currentNode.connect(effectsChain.compressor);
-      currentNode = effectsChain.compressor;
-      
-      const reductionDb = Math.abs(globalParams.compression.threshold) / globalParams.compression.ratio;
-      compensationGain *= dbToGain(reductionDb * 0.5 + globalParams.compression.makeup);
     }
     
     // Create dry/wet paths
@@ -2492,26 +2137,6 @@
         effectsChain.delay.feedback.gain.value = globalParams.delay.feedback;
         effectsChain.delay.delay.connect(masterGain);
       }
-    }
-    
-    // Chorus send
-    if (globalParams.chorus.enabled && effectsChain.chorus) {
-      const chorusSend = audioContext.createGain();
-      chorusSend.gain.value = globalParams.chorus.mix;
-      
-      effectsChain.chorus.lfo.frequency.value = globalParams.chorus.rate;
-      effectsChain.chorus.lfoGain.gain.value = globalParams.chorus.depth * 0.01;
-      
-      sendBus.connect(chorusSend);
-      chorusSend.connect(effectsChain.chorus.delay);
-      effectsChain.chorus.delay.connect(masterGain);
-    }
-    
-    // Stereo width
-    if (globalParams.stereoWidth.enabled && effectsChain.stereoWidth) {
-      const width = globalParams.stereoWidth.width;
-      effectsChain.stereoWidth.midGain.gain.value = 2 - width;
-      effectsChain.stereoWidth.sideGain.gain.value = width;
     }
     
     postEffectGain.connect(masterGain);
@@ -2800,9 +2425,7 @@
     });
     
     // Update creative effect buttons
-    document.getElementById('dmTapeStopBtn')?.classList.toggle('active', globalParams.tapeStop.enabled);
     document.getElementById('dmStutterBtn')?.classList.toggle('active', globalParams.stutter.enabled);
-    document.getElementById('dmGlitchBtn')?.classList.toggle('active', globalParams.glitch.enabled);
     document.getElementById('dmReverseBtn')?.classList.toggle('active', globalParams.reverse.enabled);
     document.getElementById('dmGranularBtn')?.classList.toggle('active', globalParams.granular.enabled);
     document.getElementById('dmLayeringBtn')?.classList.toggle('active', globalParams.layering);
@@ -3216,19 +2839,9 @@
     });
 
     // Creative effect buttons
-    document.getElementById('dmTapeStopBtn')?.addEventListener('click', () => {
-      globalParams.tapeStop.enabled = !globalParams.tapeStop.enabled;
-      document.getElementById('dmTapeStopBtn').classList.toggle('active');
-    });
-
     document.getElementById('dmStutterBtn')?.addEventListener('click', () => {
       globalParams.stutter.enabled = !globalParams.stutter.enabled;
       document.getElementById('dmStutterBtn').classList.toggle('active');
-    });
-
-    document.getElementById('dmGlitchBtn')?.addEventListener('click', () => {
-      globalParams.glitch.enabled = !globalParams.glitch.enabled;
-      document.getElementById('dmGlitchBtn').classList.toggle('active');
     });
 
     document.getElementById('dmReverseBtn')?.addEventListener('click', () => {
@@ -3244,11 +2857,6 @@
     document.getElementById('dmLayeringBtn')?.addEventListener('click', () => {
       globalParams.layering = !globalParams.layering;
       document.getElementById('dmLayeringBtn').classList.toggle('active');
-    });
-
-    // Tape stop trigger
-    document.getElementById('dmTapeStopTrigger')?.addEventListener('click', () => {
-      globalParams.tapeStop.active = true;
     });
 
     // Setup all effect controls
@@ -3267,36 +2875,18 @@
     setupEffectToggle('dmFilterToggle', 'filter');
     setupEffectSliders('Filter', 'filter');
     
-    setupEffectToggle('dmCompToggle', 'compression');
-    setupEffectSliders('Comp', 'compression');
-    
-    setupEffectToggle('dmDistToggle', 'distortion');
-    setupEffectSliders('Dist', 'distortion');
-    
-    setupEffectToggle('dmChorusToggle', 'chorus');
-    setupEffectSliders('Chorus', 'chorus');
-    
     setupEffectToggle('dmPhaserToggle', 'phaser');
     setupEffectSliders('Phaser', 'phaser');
     
     setupEffectToggle('dmBitcrusherToggle', 'bitcrusher');
     setupEffectSliders('Bitcrusher', 'bitcrusher');
     
-    setupEffectToggle('dmStereoWidthToggle', 'stereoWidth');
-    setupEffectSliders('StereoWidth', 'stereoWidth');
-    
     // Creative effects
     setupEffectToggle('dmGatedReverbToggle', 'gatedReverb');
     setupEffectSliders('GatedReverb', 'gatedReverb');
     
-    setupEffectToggle('dmTapeStopToggle', 'tapeStop');
-    setupEffectSliders('TapeStop', 'tapeStop');
-    
     setupEffectToggle('dmStutterToggle', 'stutter');
     setupEffectSliders('Stutter', 'stutter');
-    
-    setupEffectToggle('dmGlitchToggle', 'glitch');
-    setupEffectSliders('Glitch', 'glitch');
     
     setupEffectToggle('dmReverseToggle', 'reverse');
     setupEffectSliders('Reverse', 'reverse');
@@ -3370,16 +2960,6 @@
         const mode = e.target.dataset.mode;
         globalParams.filter.type = mode;
         document.querySelectorAll('.dm-filter-mode-btn').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-      });
-    });
-    
-    // Distortion types
-    document.querySelectorAll('#dmDistUnit .dm-effect-preset-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const type = e.target.dataset.type;
-        globalParams.distortion.type = type;
-        document.querySelectorAll('#dmDistUnit .dm-effect-preset-btn').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active');
       });
     });
