@@ -1275,6 +1275,7 @@
           <button class="dm-preset-btn" data-preset="Robofunk" aria-label="Load Robofunk preset">Robofunk</button>
           <button class="dm-preset-btn" data-preset="Power pose" aria-label="Load Power pose preset">Power pose</button>
           <button class="dm-preset-btn" data-preset="Future Funk" aria-label="Load Future Funk preset">Future Funk</button>
+          <button class="dm-preset-btn" data-preset="Minimal" aria-label="Load Minimal preset">Minimal</button>
         </div>
 
         <!-- Panel Toggle -->
