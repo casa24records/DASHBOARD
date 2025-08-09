@@ -604,15 +604,6 @@ const Life24Viewer = (() => {
               ${utils.escapeHtml(magazine.displayName || magazine.name.replace('.pdf', ''))}
             </h3>
             <div class="flex items-center gap-2">
-              <!-- Fullscreen button - desktop only -->
-              ${!isMobile ? `
-                <button id="fullscreen-btn" class="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-full"
-                        aria-label="Toggle fullscreen">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
-                  </svg>
-                </button>
-              ` : ''}
               <!-- Close button -->
               <button id="close-modal-btn" class="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-800 rounded-full"
                       aria-label="Close viewer">
@@ -623,14 +614,13 @@ const Life24Viewer = (() => {
             </div>
           </div>
           
-          <!-- PDF Viewer -->
-          <div class="flex-grow overflow-hidden bg-gray-950">
-            <iframe 
-              src="${magazine.previewUrl}" 
-              class="w-full h-full border-0"
-              title="${utils.escapeHtml(magazine.name)}"
-              allowFullScreen
-            ></iframe>
+          <!-- PDF Viewer with fallback -->
+          <div id="pdf-viewer-container" class="flex-grow overflow-hidden bg-gray-950 flex items-center justify-center">
+            <!-- Initial content - will be replaced by iframe or error message -->
+            <div class="text-center p-8">
+              <div class="animate-spin rounded-full h-12 w-12 border-4 border-t-green-500 border-gray-700 mx-auto mb-4"></div>
+              <p class="text-gray-400">Loading preview...</p>
+            </div>
           </div>
           
           <!-- Action buttons -->
@@ -639,14 +629,13 @@ const Life24Viewer = (() => {
               href="${magazine.viewUrl}" 
               target="_blank" 
               rel="noopener noreferrer"
-              class="flex items-center gap-2 px-4 sm:px-6 py-2 bg-gray-800 text-white text-sm sm:text-base rounded-lg hover:bg-gray-700 transition-all hover:scale-105 touch-manipulation"
-              style="border: 2px solid #00a651"
+              class="flex items-center gap-2 px-4 sm:px-6 py-2 bg-accent text-white text-sm sm:text-base rounded-lg hover:bg-opacity-90 transition-all hover:scale-105 touch-manipulation"
+              style="background-color: #00a651"
             >
               <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
               </svg>
-              <span class="hidden sm:inline">Open in Drive</span>
-              <span class="sm:hidden">Drive</span>
+              <span>View in Google Drive</span>
             </a>
             <a 
               href="${magazine.downloadUrl}" 
@@ -658,7 +647,7 @@ const Life24Viewer = (() => {
               <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
               </svg>
-              <span>Download</span>
+              <span>Download PDF</span>
             </a>
           </div>
         </div>
@@ -687,26 +676,54 @@ const Life24Viewer = (() => {
     attachEventHandlers(modalEl, isMobile) {
       const backdrop = modalEl.querySelector('#modal-backdrop');
       const closeBtn = modalEl.querySelector('#close-modal-btn');
-      const fullscreenBtn = modalEl.querySelector('#fullscreen-btn');
+      const viewerContainer = modalEl.querySelector('#pdf-viewer-container');
+      
+      // Try to load iframe after modal is shown
+      if (viewerContainer && state.currentMagazine) {
+        setTimeout(() => {
+          const iframe = document.createElement('iframe');
+          iframe.src = state.currentMagazine.previewUrl;
+          iframe.className = 'w-full h-full border-0';
+          iframe.title = state.currentMagazine.name;
+          iframe.setAttribute('allowFullScreen', 'true');
+          
+          // Handle iframe load errors
+          let iframeLoaded = false;
+          
+          iframe.onload = () => {
+            iframeLoaded = true;
+            // Clear loading message
+            viewerContainer.innerHTML = '';
+            viewerContainer.appendChild(iframe);
+          };
+          
+          iframe.onerror = () => {
+            modal.showIframeError(viewerContainer);
+          };
+          
+          // Timeout fallback - if iframe doesn't load in 5 seconds, show error
+          setTimeout(() => {
+            if (!iframeLoaded && viewerContainer.querySelector('.animate-spin')) {
+              modal.showIframeError(viewerContainer);
+            }
+          }, 5000);
+          
+          // Try to append iframe (may fail due to CSP)
+          try {
+            viewerContainer.innerHTML = '';
+            viewerContainer.appendChild(iframe);
+          } catch (e) {
+            console.warn('Failed to load iframe:', e);
+            modal.showIframeError(viewerContainer);
+          }
+        }, 100);
+      }
       
       // Close handlers
       const closeModal = () => modal.close();
       
       backdrop?.addEventListener('click', closeModal);
       closeBtn?.addEventListener('click', closeModal);
-      
-      // Fullscreen toggle
-      if (fullscreenBtn) {
-        fullscreenBtn.addEventListener('click', () => {
-          if (!document.fullscreenElement) {
-            modalEl.requestFullscreen().catch(err => {
-              console.log(`Error attempting fullscreen: ${err.message}`);
-            });
-          } else {
-            document.exitFullscreen();
-          }
-        });
-      }
       
       // Keyboard handler
       const keyHandler = (e) => {
@@ -744,6 +761,44 @@ const Life24Viewer = (() => {
         modalEl._touchStartHandler = touchStartHandler;
         modalEl._touchEndHandler = touchEndHandler;
       }
+    },
+
+    showIframeError(container) {
+      if (!state.currentMagazine) return;
+      
+      container.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-full p-8 text-center">
+          <div class="mb-6">
+            <svg class="w-16 h-16 sm:w-20 sm:h-20 text-gray-500 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/>
+            </svg>
+            <h3 class="text-lg sm:text-xl font-semibold text-white mb-2">Preview Unavailable</h3>
+            <p class="text-gray-400 text-sm sm:text-base mb-6 max-w-md">
+              Due to security restrictions, the preview cannot be displayed here. 
+              Please use the buttons below to view or download the magazine.
+            </p>
+          </div>
+          
+          <div class="space-y-4">
+            <a 
+              href="${state.currentMagazine.viewUrl}" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-2 px-6 py-3 bg-accent text-white text-base rounded-lg hover:bg-opacity-90 transition-all transform hover:scale-105"
+              style="background-color: #00a651"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+              </svg>
+              <span>Open in Google Drive</span>
+            </a>
+            
+            <p class="text-xs text-gray-500">
+              This will open the magazine in a new tab where you can view it directly
+            </p>
+          </div>
+        </div>
+      `;
     },
 
     close() {
