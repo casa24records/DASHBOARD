@@ -1,4 +1,5 @@
-// Drum Machine Pro - Complete MVP Implementation with Repository Integration
+// Drum Machine Pro - Final Production Version
+// Merges DMP's proven UI/soundkit system with PSP's superior audio engine
 (function() {
   'use strict';
   
@@ -32,6 +33,7 @@
   let availableSoundkits = [];
   let instruments = instrumentMapping;
   let audioBuffers = {};
+  let qualityTier = 1; // 0=low, 1=med, 2=high
 
   // Default parameters with expanded creative options
   const defaultGlobalParams = {
@@ -229,6 +231,7 @@
   let lookahead = 25.0; // ms
   let scheduleAheadTime = 0.1; // seconds
   let stepQueue = [];
+  let workletReady = false;
 
   // Initialize empty pattern
   instruments.forEach(inst => {
@@ -1522,7 +1525,7 @@
             <label for="dmDelayFeedback" class="dm-effect-param-label">Feedback</label>
             <span class="dm-effect-param-value" id="dmDelayFeedbackVal">30%</span>
           </div>
-          <input type="range" class="dm-effect-slider" id="dmDelayFeedback" min="0" max="85" value="30">
+          <input type="range" class="dm-effect-slider" id="dmDelayFeedback" min="0" max="80" value="30">
           <div class="dm-effect-param">
             <label for="dmDelayMixSlider" class="dm-effect-param-label">Mix</label>
             <span class="dm-effect-param-value" id="dmDelayMixVal">20%</span>
@@ -1553,7 +1556,7 @@
             <label for="dmFilterResonance" class="dm-effect-param-label">Resonance</label>
             <span class="dm-effect-param-value" id="dmFilterResonanceVal">1.0</span>
           </div>
-          <input type="range" class="dm-effect-slider" id="dmFilterResonance" min="1" max="30" value="1">
+          <input type="range" class="dm-effect-slider" id="dmFilterResonance" min="0.1" max="10" step="0.1" value="1">
           <div class="dm-filter-mode-selector">
             <button class="dm-filter-mode-btn active" data-mode="lowpass" aria-label="Low-pass filter mode">LOW-PASS</button>
             <button class="dm-filter-mode-btn" data-mode="highpass" aria-label="High-pass filter mode">HIGH-PASS</button>
@@ -1585,12 +1588,12 @@
             <label for="dmCompAttack" class="dm-effect-param-label">Attack</label>
             <span class="dm-effect-param-value" id="dmCompAttackVal">3ms</span>
           </div>
-          <input type="range" class="dm-effect-slider" id="dmCompAttack" min="0" max="100" value="3">
+          <input type="range" class="dm-effect-slider" id="dmCompAttack" min="1" max="20" value="3">
           <div class="dm-effect-param">
             <label for="dmCompRelease" class="dm-effect-param-label">Release</label>
             <span class="dm-effect-param-value" id="dmCompReleaseVal">250ms</span>
           </div>
-          <input type="range" class="dm-effect-slider" id="dmCompRelease" min="10" max="1000" value="250">
+          <input type="range" class="dm-effect-slider" id="dmCompRelease" min="50" max="300" value="250">
         </div>
       </div>
 
@@ -1693,7 +1696,7 @@
             <label for="dmBitcrusherDownsample" class="dm-effect-param-label">Downsample</label>
             <span class="dm-effect-param-value" id="dmBitcrusherDownsampleVal">1x</span>
           </div>
-          <input type="range" class="dm-effect-slider" id="dmBitcrusherDownsample" min="1" max="20" value="1">
+          <input type="range" class="dm-effect-slider" id="dmBitcrusherDownsample" min="1" max="40" value="1">
         </div>
       </div>
 
@@ -1857,11 +1860,17 @@
     `;
   }
 
-  // Initialize audio and setup modular effect creation functions
-  function initAudio() {
+  // Initialize audio with PSP's superior engine
+  async function initAudio() {
     if (!audioContext) {
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const AudioContextCls = window.AudioContext || window.webkitAudioContext;
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      audioContext = new AudioContextCls({
+        latencyHint: isMobile ? 'balanced' : 'interactive',
+        sampleRate: 44100
+      });
       
+      // Master & safety limiter
       masterGain = audioContext.createGain();
       masterGain.gain.value = globalParams.masterVolume;
       
@@ -1869,90 +1878,290 @@
       limiter.threshold.value = -1;
       limiter.knee.value = 0;
       limiter.ratio.value = 20;
-      limiter.attack.value = 0.001;
-      limiter.release.value = 0.01;
+      limiter.attack.value = 0.003;
+      limiter.release.value = 0.025;
+      
+      // Placeholder chain while worklets load
+      const passThrough = () => {
+        const g = audioContext.createGain();
+        g.gain.value = 1;
+        return { scriptNode: g };
+      };
       
       effectsChain = {
         reverb: createReverb(),
         delay: createDelay(),
         filter: createFilter(),
-        compressor: createCompressor(),
+        compressor: audioContext.createDynamicsCompressor(),
         distortion: createDistortion(),
         chorus: createChorus(),
         phaser: createPhaser(),
-        bitcrusher: createBitcrusher(),
+        bitcrusher: passThrough(),
         stereoWidth: createStereoWidth(),
         gatedReverb: createGatedReverb(),
         tapeStop: createTapeStop(),
-        stutter: createStutter(),
-        glitch: createGlitch(),
-        granular: createGranular(),
+        stutter: passThrough(),
+        glitch: passThrough(),
+        granular: passThrough(),
         limiter: limiter
       };
       
-      masterGain.connect(limiter);
+      // Compressor musical defaults
+      effectsChain.compressor.threshold.value = -14;
+      effectsChain.compressor.ratio.value = 4;
+      effectsChain.compressor.attack.value = 0.006;
+      effectsChain.compressor.release.value = 0.08;
+      
+      // DC blocker / subsonic HPF
+      const dcBlock = audioContext.createBiquadFilter();
+      dcBlock.type = 'highpass';
+      dcBlock.frequency.value = 20;
+      masterGain.connect(dcBlock);
+      dcBlock.connect(limiter);
       limiter.connect(audioContext.destination);
+      
+      // Register AudioWorklet processors
+      try {
+        const workletCode = `
+        class BitcrusherProcessor extends AudioWorkletProcessor {
+          constructor(){ super(); this.lpl=0; this.lpr=0; this.a=Math.exp(-2*Math.PI*6000/sampleRate);}
+          static get parameterDescriptors() {
+            return [
+              { name: 'bitDepth', defaultValue: 12, minValue: 1, maxValue: 16 },
+              { name: 'sampleReduction', defaultValue: 1, minValue: 1, maxValue: 40 }
+            ];
+          }
+          process(inputs, outputs, parameters) {
+            const input = inputs[0]; const output = outputs[0];
+            const bitDepth = parameters.bitDepth.length>1 ? parameters.bitDepth : [parameters.bitDepth[0]];
+            const reduction = parameters.sampleReduction.length>1 ? parameters.sampleReduction : [parameters.sampleReduction[0]];
+            const step = Math.pow(0.5, bitDepth[0]); const a=this.a;
+            for (let ch=0; ch<input.length; ch++) {
+              const inp = input[ch]; const out = output[ch];
+              if (!inp || !out) continue;
+              for (let i=0; i<inp.length; i++) {
+                const r = reduction.length>1 ? reduction[i] : reduction[0];
+                if ((this.phase % Math.max(1, r|0)) === 0) {
+                  this.lastSample = step * Math.floor(inp[i] / step);
+                }
+                const y = this.lastSample; const prev = (ch===0?this.lpl:this.lpr); const f = a*prev + (1-a)*y; if (ch===0) this.lpl=f; else this.lpr=f; out[i] = f;
+                this.phase++;
+              }
+            }
+            return true;
+          }
+        }
+        registerProcessor('bitcrusher-processor', BitcrusherProcessor);
+        
+        class GlitchProcessor extends AudioWorkletProcessor {
+          static get parameterDescriptors() {
+            return [
+              { name: 'intensity', defaultValue: 0.5, minValue: 0, maxValue: 1 },
+              { name: 'frequency', defaultValue: 0.3, minValue: 0, maxValue: 1 }
+            ];
+          }
+          constructor(){ super(); this.hold = 0; this.value = 0; }
+          process(inputs, outputs, parameters) {
+            const input = inputs[0], output = outputs[0];
+            const intensity = parameters.intensity;
+            const freq = parameters.frequency;
+            for (let ch=0; ch<input.length; ch++) {
+              const inp = input[ch], out = output[ch];
+              if (!inp || !out) continue;
+              for (let i=0; i<inp.length; i++) {
+                const f = freq.length>1 ? freq[i] : freq[0];
+                if (Math.random() < f * 0.02) {
+                  this.value = Math.max(-1, Math.min(1, Math.tanh(inp[i] * (1 + (intensity[0]*8)))));
+                  this.hold = 16;
+                }
+                if (this.hold > 0) { 
+                  out[i] = this.value; 
+                  this.hold--;
+                } else {
+                  out[i] = inp[i];
+                }
+              }
+            }
+            return true;
+          }
+        }
+        registerProcessor('glitch-processor', GlitchProcessor);
+        
+        class StutterProcessor extends AudioWorkletProcessor {
+          static get parameterDescriptors() {
+            return [
+              { name: 'enabled', defaultValue: 0, minValue: 0, maxValue: 1 },
+              { name: 'loopSamples', defaultValue: 11025, minValue: 256, maxValue: 262144 },
+              { name: 'xfade', defaultValue: 256, minValue: 0, maxValue: 2048 },
+              { name: 'prob', defaultValue: 0.5, minValue: 0, maxValue: 1 }
+            ];
+          }
+          constructor(){
+            super();
+            this.size = 16384;
+            this.bufL = new Float32Array(this.size);
+            this.bufR = new Float32Array(this.size);
+            this.w = 0; this.r = 0; this.phase = 0;
+            this.active = false;
+          }
+          process(inputs, outputs, parameters) {
+            const input = inputs[0], output = outputs[0];
+            const loop = parameters.loopSamples[0]|0;
+            const xfade = parameters.xfade[0]|0;
+            const enabled = parameters.enabled[0] > 0.5;
+            const prob = parameters.prob[0];
+            for (let i=0; i<128; i++) {
+              if (!input[0]) break;
+              const inL = input[0][i] || 0;
+              const inR = (input[1]?input[1][i]:inL) || 0;
+              this.bufL[this.w] = inL; this.bufR[this.w] = inR;
+              if (enabled && !this.active && Math.random() < prob * 0.002) {
+                this.active = true;
+                this.r = (this.w - loop) & (this.size - 1);
+              }
+              let outL = inL, outR = inR;
+              if (this.active) {
+                outL = this.bufL[this.r]; outR = this.bufR[this.r];
+                const pos = (this.r % loop);
+                if (xfade>0 && (pos < xfade)) {
+                  const t = pos/xfade;
+                  const dryL = this.bufL[(this.r - 1 + this.size) & (this.size - 1)];
+                  const dryR = this.bufR[(this.r - 1 + this.size) & (this.size - 1)];
+                  outL = dryL*(1-t) + outL*t;
+                  outR = dryR*(1-t) + outR*t;
+                }
+                this.r = (this.r + 1) & (this.size - 1);
+                if (pos >= loop-1) this.active = false;
+              }
+              output[0][i] = outL;
+              if (output[1]) output[1][i] = outR;
+              this.w = (this.w + 1) & (this.size - 1);
+            }
+            return true;
+          }
+        }
+        registerProcessor('stutter-processor', StutterProcessor);
+        
+        class GranularProcessor extends AudioWorkletProcessor {
+          static get parameterDescriptors() {
+            return [
+              { name: 'grainSize', defaultValue: 0.05, minValue: 0.02, maxValue: 0.2 },
+              { name: 'overlap', defaultValue: 0.5, minValue: 0, maxValue: 0.95 },
+              { name: 'pitch', defaultValue: 1.0, minValue: 0.5, maxValue: 2.0 }
+            ];
+          }
+          constructor(){ super(); this.bufL = new Float32Array(48000); this.bufR = new Float32Array(48000); this.w=0; this.grains=[]; }
+          process(inputs, outputs, parameters) {
+            const input = inputs[0], output = outputs[0];
+            const gs = Math.floor(parameters.grainSize[0]*sampleRate);
+            const ov = parameters.overlap[0];
+            const pitch = parameters.pitch[0];
+            for (let i=0; i<128; i++) {
+              const inL = (input[0] && input[0][i]) || 0;
+              const inR = (input[1] && input[1][i]) || inL;
+              this.bufL[this.w]=inL; this.bufR[this.w]=inR;
+              let outL=0, outR=0;
+              if (Math.random() < 0.005) {
+                this.grains.push({pos:(this.w - Math.floor(Math.random()*gs)) & 47999, idx:0});
+                if (this.grains.length>32) this.grains.shift();
+              }
+              for (let g=0; g<this.grains.length; g++) {
+                const gr = this.grains[g];
+                const p = (gr.pos + Math.floor(gr.idx*pitch)) % 48000;
+                const env = 0.5*(1 - Math.cos(2*Math.PI*(gr.idx/gs)));
+                outL += this.bufL[p]*env; outR += this.bufR[p]*env;
+                gr.idx++;
+                if (gr.idx>=gs*(1+ov)) { this.grains.splice(g,1); g--; }
+              }
+              output[0][i]=outL; if (output[1]) output[1][i]=outR;
+              this.w = (this.w+1)%48000;
+            }
+            return true;
+          }
+        }
+        registerProcessor('granular-processor', GranularProcessor);
+        `;
+        
+        const blob = new Blob([workletCode], { type: 'application/javascript' });
+        const url = URL.createObjectURL(blob);
+        await audioContext.audioWorklet.addModule(url);
+        URL.revokeObjectURL(url);
+        
+        // Replace placeholders with real worklet nodes
+        effectsChain.bitcrusher = createBitcrusher();
+        effectsChain.glitch = createGlitch();
+        effectsChain.stutter = createStutter();
+        effectsChain.granular = createGranular();
+        workletReady = true;
+        
+        // Adaptive quality tier
+        if ('baseLatency' in audioContext) {
+          const base = audioContext.baseLatency || 0.02;
+          if (base < 0.01) qualityTier = 2;
+          else if (base < 0.03) qualityTier = 1;
+          else qualityTier = 0;
+        }
+      } catch(e) {
+        console.warn('AudioWorklet not supported, using fallbacks:', e);
+        workletReady = false;
+      }
     }
   }
-
-  // Standard effects creation (modularized)
+  
+  // PSP's superior effect creation functions
   function createReverb() {
-    const convolver = audioContext.createConvolver();
-    const wetGain = audioContext.createGain();
-    const dryGain = audioContext.createGain();
+    if (!audioContext) return null;
+    
+    const preDelay = audioContext.createDelay(0.2);
+    const hp = audioContext.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 180;
+    const lp = audioContext.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 6000;
+    const wet = audioContext.createGain();
+    const dry = audioContext.createGain();
+    wet.gain.value = 0;
+    dry.gain.value = 1;
+    
+    // Create impulse responses
     const presets = {};
-    
-    // Room impulse
-    const roomLength = audioContext.sampleRate * 0.5;
-    const roomImpulse = audioContext.createBuffer(2, roomLength, audioContext.sampleRate);
-    for (let channel = 0; channel < 2; channel++) {
-      const channelData = roomImpulse.getChannelData(channel);
-      for (let i = 0; i < roomLength; i++) {
-        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / roomLength, 1.5);
+    const makeImpulse = (seconds, decayExp=0.5) => {
+      const length = Math.floor(audioContext.sampleRate * seconds);
+      const impulse = audioContext.createBuffer(2, length, audioContext.sampleRate);
+      for (let ch=0; ch<2; ch++) {
+        const data = impulse.getChannelData(ch);
+        for (let i=0; i<length; i++) {
+          data[i] = (Math.random()*2-1) * Math.pow(1 - i/length, decayExp);
+        }
       }
-    }
-    presets.room = roomImpulse;
+      return impulse;
+    };
     
-    // Hall impulse
-    const hallLength = audioContext.sampleRate * 2;
-    const hallImpulse = audioContext.createBuffer(2, hallLength, audioContext.sampleRate);
-    for (let channel = 0; channel < 2; channel++) {
-      const channelData = hallImpulse.getChannelData(channel);
-      for (let i = 0; i < hallLength; i++) {
-        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / hallLength, 2);
+    presets.room = makeImpulse(0.8, 0.7);
+    presets.hall = makeImpulse(2.2, 0.9);
+    presets.plate = makeImpulse(1.0, 0.8);
+    presets.cathedral = makeImpulse(3.5, 1.0);
+    
+    const convolver = audioContext.createConvolver();
+    convolver.buffer = presets.room;
+    convolver.normalize = true;
+    
+    preDelay.connect(convolver);
+    convolver.connect(hp);
+    hp.connect(lp);
+    lp.connect(wet);
+    
+    const setPreset = (name) => {
+      const preset = presets[name];
+      if (preset) {
+        convolver.buffer = preset;
       }
-    }
-    presets.hall = hallImpulse;
+    };
     
-    // Plate impulse
-    const plateLength = audioContext.sampleRate * 1;
-    const plateImpulse = audioContext.createBuffer(2, plateLength, audioContext.sampleRate);
-    for (let channel = 0; channel < 2; channel++) {
-      const channelData = plateImpulse.getChannelData(channel);
-      for (let i = 0; i < plateLength; i++) {
-        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / plateLength, 0.8);
-      }
-    }
-    presets.plate = plateImpulse;
-    
-    // Cathedral impulse
-    const cathedralLength = audioContext.sampleRate * 4;
-    const cathedralImpulse = audioContext.createBuffer(2, cathedralLength, audioContext.sampleRate);
-    for (let channel = 0; channel < 2; channel++) {
-      const channelData = cathedralImpulse.getChannelData(channel);
-      for (let i = 0; i < cathedralLength; i++) {
-        channelData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / cathedralLength, 2.5);
-      }
-    }
-    presets.cathedral = cathedralImpulse;
-    
-    convolver.buffer = presets[globalParams.reverb.preset];
-    wetGain.gain.value = 0;
-    dryGain.gain.value = 1;
-    
-    return { convolver, wetGain, dryGain, presets };
+    return { convolver, preDelay, hp, lp, wet, dry, presets, currentPreset: 'room', setPreset };
   }
-
+  
   function createDelay() {
     const delay = audioContext.createDelay(2);
     const feedback = audioContext.createGain();
@@ -1991,14 +2200,13 @@
       merger, splitter
     };
   }
-
+  
   function createFilter() {
     const filter = audioContext.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.value = 20000;
-    filter.Q.value = 1;
+    filter.Q.value = 1.2;
     
-    // LFO for filter sweep
     const lfo = audioContext.createOscillator();
     const lfoGain = audioContext.createGain();
     lfo.type = 'sine';
@@ -2009,59 +2217,71 @@
     
     return { filter, lfo, lfoGain };
   }
-
-  function createCompressor() {
-    const compressor = audioContext.createDynamicsCompressor();
-    compressor.threshold.value = -20;
-    compressor.ratio.value = 4;
-    compressor.attack.value = 0.003;
-    compressor.release.value = 0.25;
-    return compressor;
-  }
-
+  
   function createDistortion() {
-    const waveshaper = audioContext.createWaveShaper();
-    const inputGain = audioContext.createGain();
-    const outputGain = audioContext.createGain();
-    const toneFilter = audioContext.createBiquadFilter();
-    
-    inputGain.gain.value = 1;
-    outputGain.gain.value = 1;
-    toneFilter.type = 'highshelf';
-    toneFilter.frequency.value = 3000;
-    toneFilter.gain.value = 0;
-    
-    const updateCurve = (type) => {
-      const samples = 44100;
-      const curve = new Float32Array(samples);
+    if (workletReady) {
+      const node = new AudioWorkletNode(audioContext, 'distortion-processor', {
+        numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2]
+      });
+      const setAmount = (val) => node.parameters.get('drive').setTargetAtTime(
+        Math.max(0.1, Math.min(20, 1 + val*19)), audioContext.currentTime, 0.01
+      );
+      const setTone = (db) => node.parameters.get('tone').setTargetAtTime(db, audioContext.currentTime, 0.01);
+      return { node, setAmount, setTone };
+    } else {
+      // Fallback to waveshaper
+      const waveshaper = audioContext.createWaveShaper();
+      const inputGain = audioContext.createGain();
+      const outputGain = audioContext.createGain();
+      const toneFilter = audioContext.createBiquadFilter();
       
-      for (let i = 0; i < samples; i++) {
-        const x = (i * 2) / samples - 1;
+      inputGain.gain.value = 1;
+      outputGain.gain.value = 1;
+      toneFilter.type = 'highshelf';
+      toneFilter.frequency.value = 3000;
+      toneFilter.gain.value = 0;
+      
+      const updateCurve = (type) => {
+        const samples = 44100;
+        const curve = new Float32Array(samples);
         
-        switch(type) {
-          case 'soft':
-            curve[i] = Math.tanh(x * 2);
-            break;
-          case 'hard':
-            curve[i] = Math.sign(x) * Math.min(Math.abs(x * 5), 1);
-            break;
-          case 'fuzz':
-            curve[i] = Math.sign(x) * (1 - Math.exp(-Math.abs(x * 10)));
-            break;
-          default:
-            curve[i] = x;
+        for (let i = 0; i < samples; i++) {
+          const x = (i * 2) / samples - 1;
+          
+          switch(type) {
+            case 'soft':
+              curve[i] = Math.tanh(x * 2);
+              break;
+            case 'hard':
+              curve[i] = Math.sign(x) * Math.min(Math.abs(x * 5), 1);
+              break;
+            case 'fuzz':
+              curve[i] = Math.sign(x) * (1 - Math.exp(-Math.abs(x * 10)));
+              break;
+            default:
+              curve[i] = x;
+          }
         }
-      }
+        
+        waveshaper.curve = curve;
+      };
       
-      waveshaper.curve = curve;
-    };
-    
-    updateCurve(globalParams.distortion.type);
-    waveshaper.oversample = '4x';
-    
-    return { waveshaper, inputGain, outputGain, toneFilter, updateCurve };
+      updateCurve('soft');
+      waveshaper.oversample = '4x';
+      
+      return { 
+        waveshaper, 
+        inputGain, 
+        outputGain, 
+        toneFilter, 
+        updateCurve,
+        node: waveshaper,
+        setAmount: (val) => { inputGain.gain.value = 1 + val; },
+        setTone: (val) => { toneFilter.gain.value = val; }
+      };
+    }
   }
-
+  
   function createChorus() {
     const delay = audioContext.createDelay(0.1);
     const lfo = audioContext.createOscillator();
@@ -2082,7 +2302,7 @@
     
     return { delay, lfo, lfoGain, wetGain };
   }
-
+  
   function createPhaser() {
     const stages = [];
     const lfo = audioContext.createOscillator();
@@ -2106,37 +2326,48 @@
     
     return { stages, lfo, lfoGain };
   }
-
-  // Replace deprecated ScriptProcessorNode with AudioWorkletProcessor
+  
   function createBitcrusher() {
-    // For now, we'll use a workaround with existing nodes
-    // In production, you'd register an AudioWorkletProcessor
-    const waveshaper = audioContext.createWaveShaper();
-    let bits = 8;
-    let downsample = 1;
-    
-    const updateCurve = () => {
-      const samples = 256;
-      const curve = new Float32Array(samples);
-      const step = Math.pow(0.5, bits);
+    if (workletReady) {
+      const node = new AudioWorkletNode(audioContext, 'bitcrusher-processor', {
+        numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2]
+      });
+      const setBits = (b) => node.parameters.get('bitDepth').setTargetAtTime(
+        Math.max(1, Math.min(16, b)), audioContext.currentTime, 0.005
+      );
+      const setDownsample = (d) => node.parameters.get('sampleReduction').setTargetAtTime(
+        Math.max(1, Math.min(40, d)), audioContext.currentTime, 0.005
+      );
+      return { scriptNode: node, setBits, setDownsample };
+    } else {
+      // Fallback to waveshaper
+      const waveshaper = audioContext.createWaveShaper();
+      let bits = 8;
+      let downsample = 1;
       
-      for (let i = 0; i < samples; i++) {
-        const x = (i * 2) / samples - 1;
-        curve[i] = step * Math.floor(x / step + 0.5);
-      }
+      const updateCurve = () => {
+        const samples = 256;
+        const curve = new Float32Array(samples);
+        const step = Math.pow(0.5, bits);
+        
+        for (let i = 0; i < samples; i++) {
+          const x = (i * 2) / samples - 1;
+          curve[i] = step * Math.floor(x / step + 0.5);
+        }
+        
+        waveshaper.curve = curve;
+      };
       
-      waveshaper.curve = curve;
-    };
-    
-    updateCurve();
-    
-    return { 
-      scriptNode: waveshaper, // Using waveshaper as replacement
-      setBits: (b) => { bits = b; updateCurve(); },
-      setDownsample: (d) => { downsample = d; }
-    };
+      updateCurve();
+      
+      return { 
+        scriptNode: waveshaper,
+        setBits: (b) => { bits = b; updateCurve(); },
+        setDownsample: (d) => { downsample = d; }
+      };
+    }
   }
-
+  
   function createStereoWidth() {
     const splitter = audioContext.createChannelSplitter(2);
     const merger = audioContext.createChannelMerger(2);
@@ -2148,13 +2379,11 @@
     
     return { splitter, merger, midGain, sideGain };
   }
-
-  // Creative effects
+  
   function createGatedReverb() {
     const convolver = audioContext.createConvolver();
     const gate = audioContext.createGain();
     
-    // Create short burst impulse
     const length = audioContext.sampleRate * 0.5;
     const impulse = audioContext.createBuffer(2, length, audioContext.sampleRate);
     
@@ -2170,82 +2399,59 @@
     
     return { convolver, gate };
   }
-
+  
   function createTapeStop() {
-    const delayNode = audioContext.createDelay(1);
-    const feedbackGain = audioContext.createGain();
-    const outputGain = audioContext.createGain();
-    
-    delayNode.delayTime.value = 0;
-    feedbackGain.gain.value = 0.9;
-    outputGain.gain.value = 1;
-    
-    delayNode.connect(feedbackGain);
-    feedbackGain.connect(delayNode);
-    
-    return { delayNode, feedbackGain, outputGain };
+    const g = audioContext.createGain();
+    g.gain.value = 1;
+    return { node: g };
   }
-
+  
   function createStutter() {
-    const bufferSize = audioContext.sampleRate * 2;
-    const buffer = audioContext.createBuffer(2, bufferSize, audioContext.sampleRate);
-    const bufferSource = audioContext.createBufferSource();
-    
-    bufferSource.buffer = buffer;
-    bufferSource.loop = true;
-    
-    return { buffer, bufferSource };
-  }
-
-  function createGlitch() {
-    // Replace with waveshaper-based glitch effect
-    const waveshaper = audioContext.createWaveShaper();
-    let glitchIntensity = 0.5;
-    let glitchFrequency = 0.3;
-    
-    const updateCurve = () => {
-      const samples = 256;
-      const curve = new Float32Array(samples);
-      
-      for (let i = 0; i < samples; i++) {
-        const x = (i * 2) / samples - 1;
-        
-        if (Math.random() < glitchFrequency) {
-          // Apply glitch distortion
-          curve[i] = Math.round(x * 4) / 4 * glitchIntensity + x * (1 - glitchIntensity);
-        } else {
-          curve[i] = x;
-        }
-      }
-      
-      waveshaper.curve = curve;
-    };
-    
-    updateCurve();
-    
-    return {
-      scriptNode: waveshaper,
-      setIntensity: (val) => { glitchIntensity = val; updateCurve(); },
-      setFrequency: (val) => { glitchFrequency = val; updateCurve(); }
-    };
-  }
-
-  function createGranular() {
-    const grainSize = 50; // ms
-    const overlap = 0.5;
-    const grains = [];
-    
-    // Create grain windows
-    for (let i = 0; i < 8; i++) {
-      const gain = audioContext.createGain();
-      gain.gain.value = 0;
-      grains.push(gain);
+    if (workletReady) {
+      const node = new AudioWorkletNode(audioContext, 'stutter-processor', {
+        numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2]
+      });
+      return { scriptNode: node };
+    } else {
+      const g = audioContext.createGain();
+      g.gain.value = 1;
+      return { scriptNode: g };
     }
-    
-    return { grains, grainSize, overlap };
+  }
+  
+  function createGlitch() {
+    if (workletReady) {
+      const node = new AudioWorkletNode(audioContext, 'glitch-processor', {
+        numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2]
+      });
+      const setIntensity = (val) => node.parameters.get('intensity').setTargetAtTime(val, audioContext.currentTime, 0.01);
+      const setFrequency = (val) => node.parameters.get('frequency').setTargetAtTime(val, audioContext.currentTime, 0.01);
+      return { scriptNode: node, setIntensity, setFrequency };
+    } else {
+      const g = audioContext.createGain();
+      g.gain.value = 1;
+      return { 
+        scriptNode: g,
+        setIntensity: () => {},
+        setFrequency: () => {}
+      };
+    }
+  }
+  
+  function createGranular() {
+    if (workletReady) {
+      const node = new AudioWorkletNode(audioContext, 'granular-processor', {
+        numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2]
+      });
+      return { scriptNode: node };
+    } else {
+      const g = audioContext.createGain();
+      g.gain.value = 1;
+      return { scriptNode: g };
+    }
   }
 
-  // Play sound with full effects chain and layering - USING AUDIO BUFFERS
+  // PSP's superior sound generation with full effects
   function playSound(instId, time) {
     if (!audioContext) return;
     if (!audioBuffers[instId]) return;
@@ -2327,7 +2533,7 @@
     let compensationGain = 1;
     
     // Glitch effect
-    if (globalParams.glitch.enabled && effectsChain.glitch) {
+    if (globalParams.glitch.enabled && effectsChain.glitch && effectsChain.glitch.setIntensity) {
       effectsChain.glitch.setIntensity(globalParams.glitch.intensity);
       effectsChain.glitch.setFrequency(globalParams.glitch.frequency);
       currentNode.connect(effectsChain.glitch.scriptNode);
@@ -2338,23 +2544,20 @@
     if (globalParams.bitcrusher.enabled && effectsChain.bitcrusher) {
       currentNode.connect(effectsChain.bitcrusher.scriptNode);
       currentNode = effectsChain.bitcrusher.scriptNode;
-      effectsChain.bitcrusher.setBits(globalParams.bitcrusher.bits);
-      effectsChain.bitcrusher.setDownsample(globalParams.bitcrusher.downsample);
+      if (effectsChain.bitcrusher.setBits) {
+        effectsChain.bitcrusher.setBits(globalParams.bitcrusher.bits);
+        effectsChain.bitcrusher.setDownsample(globalParams.bitcrusher.downsample);
+      }
     }
     
     // Distortion
     if (globalParams.distortion.enabled && effectsChain.distortion) {
-      effectsChain.distortion.updateCurve(globalParams.distortion.type);
-      effectsChain.distortion.inputGain.gain.value = 1 + globalParams.distortion.amount;
-      effectsChain.distortion.outputGain.gain.value = 1 / (1 + globalParams.distortion.amount * 0.5);
-      effectsChain.distortion.toneFilter.gain.value = globalParams.distortion.tone * 12 - 6;
-      
-      currentNode.connect(effectsChain.distortion.inputGain);
-      effectsChain.distortion.inputGain.connect(effectsChain.distortion.waveshaper);
-      effectsChain.distortion.waveshaper.connect(effectsChain.distortion.toneFilter);
-      effectsChain.distortion.toneFilter.connect(effectsChain.distortion.outputGain);
-      currentNode = effectsChain.distortion.outputGain;
-      
+      if (effectsChain.distortion.setAmount) {
+        effectsChain.distortion.setAmount(globalParams.distortion.amount);
+        effectsChain.distortion.setTone((globalParams.distortion.tone * 12) - 6);
+      }
+      currentNode.connect(effectsChain.distortion.node || effectsChain.distortion.waveshaper);
+      currentNode = effectsChain.distortion.node || effectsChain.distortion.outputGain;
       compensationGain *= 0.8;
     }
     
@@ -2415,8 +2618,10 @@
     currentNode.connect(dryGain);
     currentNode.connect(wetGain);
     
-    dryGain.gain.value = 1;
-    wetGain.gain.value = 1;
+    // Equal-power crossfade
+    const mix = Math.max(0, Math.min(1, globalParams.reverb?.mix ?? 0.0));
+    dryGain.gain.value = Math.cos(mix * Math.PI * 0.5);
+    wetGain.gain.value = Math.sin(mix * Math.PI * 0.5);
     
     postEffectGain.gain.value = compensationGain;
     
@@ -2430,16 +2635,17 @@
     // Reverb send
     if (globalParams.reverb.enabled && effectsChain.reverb) {
       const reverbSend = audioContext.createGain();
-      reverbSend.gain.value = globalParams.reverb.mix;
+      const m = globalParams.reverb.mix;
+      reverbSend.gain.value = Math.sin(m * Math.PI * 0.5);
       
       if (effectsChain.reverb.currentPreset !== globalParams.reverb.preset) {
-        effectsChain.reverb.convolver.buffer = effectsChain.reverb.presets[globalParams.reverb.preset];
+        effectsChain.reverb.setPreset(globalParams.reverb.preset);
         effectsChain.reverb.currentPreset = globalParams.reverb.preset;
       }
       
       sendBus.connect(reverbSend);
-      reverbSend.connect(effectsChain.reverb.convolver);
-      effectsChain.reverb.convolver.connect(masterGain);
+      reverbSend.connect(effectsChain.reverb.preDelay);
+      effectsChain.reverb.wet.connect(masterGain);
     }
     
     // Gated reverb send
@@ -2463,7 +2669,8 @@
     // Delay send
     if (globalParams.delay.enabled && effectsChain.delay) {
       const delaySend = audioContext.createGain();
-      delaySend.gain.value = globalParams.delay.mix;
+      const m = globalParams.delay.mix;
+      delaySend.gain.value = Math.sin(m * Math.PI * 0.5);
       
       if (globalParams.delay.pingPong) {
         sendBus.connect(delaySend);
@@ -2485,7 +2692,8 @@
     // Chorus send
     if (globalParams.chorus.enabled && effectsChain.chorus) {
       const chorusSend = audioContext.createGain();
-      chorusSend.gain.value = globalParams.chorus.mix;
+      const m = globalParams.chorus.mix;
+      chorusSend.gain.value = Math.sin(m * Math.PI * 0.5);
       
       effectsChain.chorus.lfo.frequency.value = globalParams.chorus.rate;
       effectsChain.chorus.lfoGain.gain.value = globalParams.chorus.depth * 0.01;
@@ -2508,8 +2716,37 @@
     const baseVolume = params.volume * referenceGain;
     gainNode.gain.value = baseVolume;
     
+    // Apply tape stop if active
+    if (globalParams.tapeStop.enabled && globalParams.tapeStop.active) {
+      const speed = Math.max(0.1, Math.min(1.0, globalParams.tapeStop.speed));
+      const duration = 0.4 + (1.6 * (1 - speed));
+      const now = startTime;
+      const endT = now + duration;
+      source.playbackRate.cancelScheduledValues(now);
+      source.playbackRate.setValueAtTime(source.playbackRate.value, now);
+      source.playbackRate.exponentialRampToValueAtTime(0.01, endT);
+      
+      // Optional gentle LPF during stop
+      if (effectsChain.filter && effectsChain.filter.filter) {
+        const lp = effectsChain.filter.filter;
+        const startFreq = lp.frequency.value || 20000;
+        lp.frequency.cancelScheduledValues(now);
+        lp.frequency.setValueAtTime(startFreq, now);
+        lp.frequency.exponentialRampToValueAtTime(200, endT);
+      }
+      globalParams.tapeStop.active = false;
+    }
+    
     // Start playback
     source.start(startTime);
+    
+    // Cleanup to avoid leaks
+    source.onended = () => {
+      try { source.disconnect(); } catch(e) {}
+      try { gainNode.disconnect(); } catch(e) {}
+      try { panner.disconnect(); } catch(e) {}
+      try { source.buffer = null; } catch(e) {}
+    };
   }
 
   // Sequencer functions with lookahead scheduling
@@ -2756,8 +2993,8 @@
     
     // Re-initialize effect states
     if (effectsChain.reverb) {
-      effectsChain.reverb.wetGain.gain.value = 0;
-      effectsChain.reverb.dryGain.gain.value = 1;
+      effectsChain.reverb.wet.gain.value = 0;
+      effectsChain.reverb.dry.gain.value = 1;
     }
     
     if (isPlaying) {
